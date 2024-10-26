@@ -12,6 +12,8 @@ base64 = "0.21"
 wasm-bindgen = "0.2"
 getrandom = { version = "0.2", features = ["js"] }
 js-sys = "0.3.72"
+serde = "1.0.213"
+sha1 = "0.10.6"
 
 [lib]
 crate-type = ["cdylib"]

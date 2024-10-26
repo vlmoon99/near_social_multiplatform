@@ -1,52 +1,56 @@
-use rsa::{Pkcs1v15Encrypt, RsaPrivateKey, RsaPublicKey};
+use pkcs1::{DecodeRsaPrivateKey, DecodeRsaPublicKey, EncodeRsaPrivateKey, EncodeRsaPublicKey};
+use pkcs8::LineEnding;
 use wasm_bindgen::prelude::*;
+use rsa::*;
+use rand::rngs::OsRng;
+use sha1::Sha1;
+use base64::{decode, encode};
 
-// lifted from the `console_log` example
-#[wasm_bindgen]
-extern "C" {
-    #[wasm_bindgen(js_namespace = console)]
-    fn log(s: &str);
-}
-
-
-#[wasm_bindgen(start)]
-fn run() {
-    log("Hello, World!");
-}
-
-fn encode_base64(data: &[u8]) -> String {
-    base64::encode(data)
-}
-
-fn decode_base64(encoded_str: &str) -> Result<Vec<u8>, base64::DecodeError> {
-    base64::decode(encoded_str)
+#[wasm_bindgen(getter_with_clone)]
+pub struct KeyPair {
+    pub public_key: String,
+    pub private_key: String,
 }
 
 #[wasm_bindgen]
-pub fn test() -> u8 {
-    let mut rng = rand::thread_rng();
+pub fn generate_keypair() -> KeyPair  {
+    let mut rng = OsRng; 
     let bits = 2048;
-    let priv_key = RsaPrivateKey::new(&mut rng, bits).expect("failed to generate a key");
-    let pub_key = RsaPublicKey::from(&priv_key);
+    let private_key = RsaPrivateKey::new(&mut rng, bits).expect("Failed to generate a key");
+    let public_key = RsaPublicKey::from(&private_key);
+
+    let public_key_pem = public_key.to_pkcs1_pem(LineEnding::LF).expect("Failed to convert public key to PEM");
+    let private_key_pem = private_key.to_pkcs1_pem(LineEnding::LF).expect("Failed to convert private key to PEM");
     
-    let data = b"hello world";
-    let enc_data = pub_key.encrypt(&mut rng, Pkcs1v15Encrypt, &data[..]).expect("failed to encrypt");
-    assert_ne!(&data[..], &enc_data[..]);
+    KeyPair {
+        public_key: public_key_pem,
+        private_key: private_key_pem.to_string(),
+    }
+}
 
-    // Encode encrypted data for logging
-    let encoded_enc_data = encode_base64(&enc_data);
-    log(&format!("Encrypted Data (Base64): {}", encoded_enc_data));
+#[wasm_bindgen]
+pub fn encrypt_message(public_key_pem: String, message: String) -> String {
+    let public_key: RsaPublicKey = RsaPublicKey::from_pkcs1_pem(&public_key_pem).expect("Incorrect Public Key");
 
-    let dec_data = priv_key.decrypt(Pkcs1v15Encrypt, &enc_data).expect("failed to decrypt");
-    assert_eq!(&data[..], &dec_data[..]);
+    let message_bytes = message.as_bytes();
 
-    // Encode decrypted data for logging
-    let encoded_dec_data = encode_base64(&dec_data);
-    log(&format!("Decrypted Data (Base64): {}", encoded_dec_data));
+    let mut rng = OsRng;
 
-    // Example of decoding back to binary (not necessary for just logging)
-    // let decoded_data = decode_base64(&encoded_dec_data).expect("Failed to decode");
-    // assert_eq!(&data[..], &decoded_data[..]);
+    let encrypted_data = public_key
+    .encrypt(&mut rng, Oaep::new::<Sha1>(), &message_bytes)
+    .expect("Failed to encrypt");
 
-    return 1;
+    encode(encrypted_data)
+}
+
+#[wasm_bindgen]
+pub fn decrypt_message(private_key_pem: String, encrypted_message_base64: String) -> String {
+   let encrypted_bytes: Vec<u8> = decode(encrypted_message_base64).expect("Incorrect Public Key");
+   let private_key: RsaPrivateKey = RsaPrivateKey::from_pkcs1_pem(&private_key_pem).expect("Incorrect Private Key");
+
+   let decrypted_bytes = private_key.decrypt(Oaep::new::<Sha1>(), &encrypted_bytes).expect("Error while decrypting");
+
+   let message_string = String::from_utf8(decrypted_bytes).expect("Invalid UTF-8");
+
+   message_string
 }
