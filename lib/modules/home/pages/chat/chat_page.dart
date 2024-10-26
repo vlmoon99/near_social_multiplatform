@@ -1,11 +1,21 @@
+import 'dart:convert';
+import 'dart:math';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
 import 'package:flutter_chat_ui/flutter_chat_ui.dart';
 import 'package:flutter_firebase_chat_core/flutter_firebase_chat_core.dart';
 import 'package:flutter_modular/flutter_modular.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:flutterchain/flutterchain_lib.dart';
 import 'package:near_social_mobile/modules/home/apis/near_social.dart';
 import 'package:near_social_mobile/modules/vms/core/auth_controller.dart';
+import 'package:pointycastle/api.dart';
+import 'package:pointycastle/asymmetric/api.dart';
+import 'package:pointycastle/key_generators/api.dart';
+import 'package:pointycastle/key_generators/rsa_key_generator.dart';
+import 'package:pointycastle/random/fortuna_random.dart';
 import 'package:rxdart/rxdart.dart';
 
 import 'package:encrypt/encrypt.dart' as encrypt;
@@ -32,66 +42,28 @@ class _ChatPageState extends State<ChatPage> {
   final BehaviorSubject<types.Room?> roomSubject =
       BehaviorSubject<types.Room?>();
 
-
-  Future<Map<String, dynamic>> generateECCKeyPair() async {
-    final eccParams = crypto.ECDomainParameters('prime256v1');
-    final keyParams = crypto.ECKeyGeneratorParameters(eccParams);
-    final random = crypto.SecureRandom("Fortuna")..seed(crypto.KeyParameter(Uint8List(32)));
-
-    final generator = crypto.ECKeyGenerator();
-    generator.init(crypto.ParametersWithRandom(keyParams, random));
-
-    final pair = generator.generateKeyPair();
-    final privateKey = pair.privateKey as crypto.ECPrivateKey;
-    final publicKey = pair.publicKey as crypto.ECPublicKey;
-
-    return {'privateKey': privateKey, 'publicKey': publicKey};
-  }
-
-  String deriveSharedSecret(
-      crypto.ECPrivateKey privateKey, crypto.ECPublicKey publicKey) {
-    final ecdh = crypto.ECDHBasicAgreement();
-    ecdh.init(privateKey);
-    final sharedSecret = ecdh.calculateAgreement(publicKey).toRadixString(16);
-    return sharedSecret;
-  }
-
-  String encryptMessageForParticipant(String message, String sharedSecret) {
-    final key = encrypt.Key.fromUtf8(sharedSecret.substring(0, 32));
-    final iv = encrypt.IV.fromLength(12);
-    final encrypter =
-        encrypt.Encrypter(encrypt.AES(key, mode: encrypt.AESMode.gcm));
-
-    final encrypted = encrypter.encrypt(message, iv: iv);
-    return encrypted.base64;
-  }
-
-  String decryptMessage(String encryptedMessage, String sharedSecret) {
-    final key = encrypt.Key.fromUtf8(sharedSecret.substring(0, 32));
-    final iv = encrypt.IV.fromLength(12);
-    final encrypter =
-        encrypt.Encrypter(encrypt.AES(key, mode: encrypt.AESMode.gcm));
-
-    final decrypted = encrypter.decrypt64(encryptedMessage, iv: iv);
-    return decrypted;
-  }
-
-
   @override
   void initState() {
     super.initState();
     listenToRoom(widget.room.id);
+    print(
+        "cehcks   ${(widget.isSecure && widget.room.metadata != null && ((widget.room.metadata!['encryptionKeys'] as List<String>?)?.length ?? 0) == 0)}");
+
     if (widget.isSecure &&
         widget.room.metadata != null &&
         ((widget.room.metadata!['encryptionKeys'] as List<String>?)?.length ??
-                0) <
-            2) {
-      print("Create Keys pls");
+                0) ==
+            0) {
+      Modular.get<NearSocialApi>()
+          .nearBlockChainService
+          .jsVMService
+          .callJS("window.generateMnemonic()")
+          .then((value) => {
+            print(value)
+          });
+      print("");
     }
   }
-
-
-
 
   types.Room transformRoomData(String roomId, Map<String, dynamic> roomData) {
     return types.Room(
@@ -264,3 +236,5 @@ class _ChatPageState extends State<ChatPage> {
     );
   }
 }
+
+class CryptoHelper {}

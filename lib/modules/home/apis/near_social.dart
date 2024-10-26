@@ -37,10 +37,10 @@ import 'package:flutter_firebase_chat_core/flutter_firebase_chat_core.dart';
 
 class NearSocialApi {
   final Dio _dio = Dio();
-  final NearBlockChainService _nearBlockChainService;
+  final NearBlockChainService nearBlockChainService;
 
   NearSocialApi({required NearBlockChainService nearBlockChainService})
-      : _nearBlockChainService = nearBlockChainService {
+      : nearBlockChainService = nearBlockChainService {
     _dio.interceptors.addAll([
       RetryInterceptor(
         dio: _dio,
@@ -927,7 +927,7 @@ class NearSocialApi {
     required String privateKey,
   }) async {
     try {
-      final response = await _nearBlockChainService.callSmartContractFunction(
+      final response = await nearBlockChainService.callSmartContractFunction(
         NearBlockChainSmartContractArguments(
           accountId: accountId,
           publicKey: publicKey,
@@ -967,7 +967,7 @@ class NearSocialApi {
     required String privateKey,
   }) async {
     try {
-      final response = await _nearBlockChainService.callSmartContractFunction(
+      final response = await nearBlockChainService.callSmartContractFunction(
         NearBlockChainSmartContractArguments(
           accountId: accountId,
           publicKey: publicKey,
@@ -1005,7 +1005,7 @@ class NearSocialApi {
     required String privateKey,
   }) async {
     try {
-      final response = await _nearBlockChainService.callSmartContractFunction(
+      final response = await nearBlockChainService.callSmartContractFunction(
         NearBlockChainSmartContractArguments(
           accountId: accountId,
           publicKey: publicKey,
@@ -1043,7 +1043,7 @@ class NearSocialApi {
     required String privateKey,
   }) async {
     try {
-      final response = await _nearBlockChainService.callSmartContractFunction(
+      final response = await nearBlockChainService.callSmartContractFunction(
         NearBlockChainSmartContractArguments(
           accountId: accountId,
           publicKey: publicKey,
@@ -1081,7 +1081,7 @@ class NearSocialApi {
     required String privateKey,
   }) async {
     try {
-      final response = await _nearBlockChainService.callSmartContractFunction(
+      final response = await nearBlockChainService.callSmartContractFunction(
         NearBlockChainSmartContractArguments(
           accountId: accountId,
           publicKey: publicKey,
@@ -1144,7 +1144,7 @@ class NearSocialApi {
       final imageParameters = postBody.mediaLink != null
           ? """,\\"image\\":{\\"ipfs_cid\\":\\"${postBody.mediaLink}\\"}"""
           : "";
-      final response = await _nearBlockChainService.callSmartContractFunction(
+      final response = await nearBlockChainService.callSmartContractFunction(
         NearBlockChainSmartContractArguments(
           accountId: accountId,
           publicKey: publicKey,
@@ -1190,7 +1190,7 @@ class NearSocialApi {
       final imageParameters = postBody.mediaLink != null
           ? """,\\"image\\":{\\"ipfs_cid\\":\\"${postBody.mediaLink}\\"}"""
           : "";
-      final response = await _nearBlockChainService.callSmartContractFunction(
+      final response = await nearBlockChainService.callSmartContractFunction(
         NearBlockChainSmartContractArguments(
           accountId: accountId,
           publicKey: publicKey,
@@ -1466,7 +1466,7 @@ class NearSocialApi {
     required String privateKey,
   }) async {
     try {
-      final response = await _nearBlockChainService.callSmartContractFunction(
+      final response = await nearBlockChainService.callSmartContractFunction(
         NearBlockChainSmartContractArguments(
           accountId: accountId,
           publicKey: publicKey,
@@ -1508,7 +1508,7 @@ class NearSocialApi {
     required String privateKey,
   }) async {
     try {
-      final response = await _nearBlockChainService.callSmartContractFunction(
+      final response = await nearBlockChainService.callSmartContractFunction(
         NearBlockChainSmartContractArguments(
           accountId: accountId,
           publicKey: publicKey,
@@ -1550,7 +1550,7 @@ class NearSocialApi {
     required String privateKey,
   }) async {
     try {
-      final response = await _nearBlockChainService.callSmartContractFunction(
+      final response = await nearBlockChainService.callSmartContractFunction(
         NearBlockChainSmartContractArguments(
           accountId: accountId,
           publicKey: publicKey,
@@ -1655,7 +1655,7 @@ class NearSocialApi {
     Future<Map<String, dynamic>> getRawDataFromContract(
         Map<String, dynamic> args) async {
       final nftInfoResponse =
-          await _nearBlockChainService.nearRpcClient.networkClient.dio.request(
+          await nearBlockChainService.nearRpcClient.networkClient.dio.request(
         "",
         data: {
           'jsonrpc': '2.0',
@@ -1840,9 +1840,9 @@ class NearSocialApi {
     required String key,
   }) async {
     try {
-      final publicKeyOfSecretKey = await _nearBlockChainService
+      final publicKeyOfSecretKey = await nearBlockChainService
           .getPublicKeyFromSecretKeyFromNearApiJSFormat(key.split(":").last);
-      final base58PubKey = await _nearBlockChainService
+      final base58PubKey = await nearBlockChainService
           .getBase58PubKeyFromHexValue(hexEncodedPubKey: publicKeyOfSecretKey);
       final request = {
         "jsonrpc": "2.0",
@@ -1856,7 +1856,7 @@ class NearSocialApi {
         }
       };
       final response =
-          await _nearBlockChainService.nearRpcClient.networkClient.dio.request(
+          await nearBlockChainService.nearRpcClient.networkClient.dio.request(
         "",
         options: Options(
           method: 'POST',
@@ -1906,7 +1906,7 @@ class NearSocialApi {
   }) async {
     const transactionFeeFor2Transactions = "0.00001";
 
-    final currentBalance = double.parse(await _nearBlockChainService
+    final currentBalance = double.parse(await nearBlockChainService
         .getWalletBalance(NearAccountInfoRequest(accountId: accountId)));
     final neededBalance = double.parse(amountToSend) +
         double.parse(EnterpriseVariables.amountOfServiceFeeForDonation) +
@@ -1921,7 +1921,7 @@ class NearSocialApi {
       );
     }
 
-    final txInfo = await _nearBlockChainService.getTransactionInfo(
+    final txInfo = await nearBlockChainService.getTransactionInfo(
       accountId: accountId,
       publicKey: publicKey,
     );
@@ -1976,7 +1976,7 @@ class NearSocialApi {
       }
     ];
 
-    final signedAction = await _nearBlockChainService.signNearActions(
+    final signedAction = await nearBlockChainService.signNearActions(
       fromAddress: fromAddress,
       toAddress: toAddress,
       transferAmount: NearFormatter.nearToYoctoNear(transferAmount),
@@ -2019,7 +2019,7 @@ class NearSocialApi {
       blockHash: blockHash,
     );
 
-    final mainTransfer = await _nearBlockChainService.nearRpcClient
+    final mainTransfer = await nearBlockChainService.nearRpcClient
         .sendSyncTx([mainTransferSignedAction]);
 
     if (mainTransfer.status != BlockchainResponses.success) {
@@ -2037,7 +2037,7 @@ class NearSocialApi {
       }
     }
 
-    while ((await _nearBlockChainService.nearRpcClient
+    while ((await nearBlockChainService.nearRpcClient
                 .sendSyncTx([serviceFeeTransferSignedAction]))
             .status !=
         BlockchainResponses.success) {

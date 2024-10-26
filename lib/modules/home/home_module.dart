@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_modular/flutter_modular.dart';
+import 'package:flutterchain/flutterchain_lib/services/core/js_engines/core/js_vm.dart';
 import 'package:near_social_mobile/modules/core_module.dart';
 import 'package:near_social_mobile/modules/home/apis/near_social.dart';
 import 'package:near_social_mobile/modules/home/pages/home_menu/home_menu_page.dart';
