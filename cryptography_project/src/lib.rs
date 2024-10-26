@@ -1,56 +1,52 @@
-use secp256k1::{SecretKey, PublicKey, Message, sign, verify};
+use rsa::{Pkcs1v15Encrypt, RsaPrivateKey, RsaPublicKey};
 use wasm_bindgen::prelude::*;
-use rand::rngs::OsRng;
 
+// lifted from the `console_log` example
 #[wasm_bindgen]
-pub struct KeyPair {
-    pub public_key: String,
-    pub private_key: String,
+extern "C" {
+    #[wasm_bindgen(js_namespace = console)]
+    fn log(s: &str);
+}
+
+
+#[wasm_bindgen(start)]
+fn run() {
+    log("Hello, World!");
+}
+
+fn encode_base64(data: &[u8]) -> String {
+    base64::encode(data)
+}
+
+fn decode_base64(encoded_str: &str) -> Result<Vec<u8>, base64::DecodeError> {
+    base64::decode(encoded_str)
 }
 
 #[wasm_bindgen]
-pub fn generate_keypair() -> KeyPair {
-    let mut rng = OsRng;
-    let private_key = SecretKey::new(&mut rng);
-    let public_key = PublicKey::from_secret_key(&private_key);
+pub fn test() -> u8 {
+    let mut rng = rand::thread_rng();
+    let bits = 2048;
+    let priv_key = RsaPrivateKey::new(&mut rng, bits).expect("failed to generate a key");
+    let pub_key = RsaPublicKey::from(&priv_key);
+    
+    let data = b"hello world";
+    let enc_data = pub_key.encrypt(&mut rng, Pkcs1v15Encrypt, &data[..]).expect("failed to encrypt");
+    assert_ne!(&data[..], &enc_data[..]);
 
-    KeyPair {
-        public_key: hex::encode(public_key.serialize()),
-        private_key: hex::encode(private_key.secret_bytes()),
-    }
-}
+    // Encode encrypted data for logging
+    let encoded_enc_data = encode_base64(&enc_data);
+    log(&format!("Encrypted Data (Base64): {}", encoded_enc_data));
 
-#[wasm_bindgen]
-pub fn sign_message(private_key: &str, message: &str) -> String {
-    let private_key_bytes = hex::decode(private_key).expect("Invalid private key");
-    let secret_key = SecretKey::from_slice(&private_key_bytes).expect("Invalid secret key");
-    let msg = Message::from_slice(message.as_bytes()).expect("Message creation failed");
+    let dec_data = priv_key.decrypt(Pkcs1v15Encrypt, &enc_data).expect("failed to decrypt");
+    assert_eq!(&data[..], &dec_data[..]);
 
-    let (signature, _) = sign(&msg, &secret_key);
-    hex::encode(signature.serialize_compact())
-}
+    // Encode decrypted data for logging
+    let encoded_dec_data = encode_base64(&dec_data);
+    log(&format!("Decrypted Data (Base64): {}", encoded_dec_data));
 
-#[wasm_bindgen]
-pub fn verify_signature(public_key: &str, message: &str, signature: &str) -> bool {
-    let public_key_bytes = hex::decode(public_key).expect("Invalid public key");
-    let signature_bytes = hex::decode(signature).expect("Invalid signature");
+    // Example of decoding back to binary (not necessary for just logging)
+    // let decoded_data = decode_base64(&encoded_dec_data).expect("Failed to decode");
+    // assert_eq!(&data[..], &decoded_data[..]);
 
-    let public_key = PublicKey::from_slice(&public_key_bytes).expect("Invalid public key");
-    let msg = Message::from_slice(message.as_bytes()).expect("Message creation failed");
-    let signature = secp256k1::Signature::from_compact(&signature_bytes).expect("Invalid signature");
-
-    verify(&msg, &signature, &public_key)
-}
-
-#[wasm_bindgen]
-pub fn encrypt(public_key: &str, message: &str) -> String {
-    // ECC-based encryption can be implemented via hybrid methods like ECDH + AES
-    // This is a placeholder for the full implementation
-    format!("Encrypted data with pubkey {}", public_key)
-}
-
-#[wasm_bindgen]
-pub fn decrypt(private_key: &str, encrypted_message: &str) -> String {
-    // ECC-based decryption to be implemented
-    format!("Decrypted data with privkey {}", private_key)
+    return 1;
 }
