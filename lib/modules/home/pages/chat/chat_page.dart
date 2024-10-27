@@ -75,12 +75,12 @@ class _ChatPageState extends State<ChatPage> {
     if(!sessionKeys.hasValue){
       sessionKeys.add(keys);
     }
-    if (sessionKeys.hasValue) {
+    if (keys != null) {
       List<types.Message> decdryptedChatMessages = [];
       List<Future<String>> decryptedMessagesFutures = messages.mapIndexed(
         (i, e) {
           return CryptoHelper.decryptMessage(
-              sessionKeys.value!.privateKey,
+              keys!.privateKey,
               e.metadata!["${widget.currentUser.id}:encryptedMessage"]
                   .toString());
         },
