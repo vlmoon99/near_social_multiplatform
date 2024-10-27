@@ -44,6 +44,12 @@
     defer></script>
   <script type="module">
     import initSync, { generate_keypair,encrypt_message,decrypt_message } from "./pkg/cryptography_project.js";
+    
+    window.generate_keypair = generate_keypair;
+
+    window.encrypt_message = encrypt_message;
+
+    window.decrypt_message = decrypt_message;
 
     initSync().then(() => {
       console.log("Generating RSA Keypair...");
@@ -66,11 +72,6 @@
         console.error("Failure! The decrypted message does not match the original.");
       }
 
-      window.generate_keypair = generate_keypair;
-
-      window.encrypt_message = encrypt_message;
-
-      window.decrypt_message = decrypt_message;
 
 
     });
