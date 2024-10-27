@@ -47,6 +47,8 @@ class _ChatPageState extends State<ChatPage> {
       BehaviorSubject<types.Room?>();
   final BehaviorSubject<EncryptionKeypair?> sessionKeys =
       BehaviorSubject<EncryptionKeypair?>();
+  final BehaviorSubject<List<types.Message>> messagesStream =
+      BehaviorSubject<List<types.Message>>();
   final enCryptedChatKey = ValueKey("enCryptedChatKey");
   final deCryptedChatKey = ValueKey("deCryptedChatKey");
 
@@ -55,6 +57,37 @@ class _ChatPageState extends State<ChatPage> {
     super.initState();
     listenToRoom(widget.room.id);
     initChatFunctionality();
+    FirebaseChatCore.instance.messages(widget.room).listen((messages) async {
+      if (!widget.isSecure) {
+        messagesStream.add(messages);
+      } else {
+        List<types.Message> decdryptedChatMessages = [];
+        List<Future<String>> decryptedMessagesFutures = messages.mapIndexed(
+              (i, e) {
+                return CryptoHelper.decryptMessage(
+                    sessionKeys.value!.privateKey,
+                    e.metadata!["${widget.currentUser.id}:encryptedMessage"]
+                        .toString());
+              },
+            ).toList();
+
+         final decryptedMessages = await Future.wait(decryptedMessagesFutures);
+            
+        if (decryptedMessages.length < messages.length) {
+          decdryptedChatMessages = messages
+              .sublist(0, messages.length - 1)
+              .mapIndexed((index, message) => (message as types.TextMessage)
+                  .copyWith(text: decryptedMessages[index]))
+              .toList();
+        } else {
+          decdryptedChatMessages = messages
+              .mapIndexed((index, message) => (message as types.TextMessage)
+                  .copyWith(text: decryptedMessages[index]))
+              .toList();
+        }
+        messagesStream.add(decdryptedChatMessages);
+      }
+    });
   }
 
   Future<void> initChatFunctionality() async {
@@ -245,78 +278,20 @@ class _ChatPageState extends State<ChatPage> {
         initialData: widget.room,
         builder: (context, snapshot) {
           final room = snapshot.data!;
-          if (widget.isSecure) {
-            return StreamBuilder<List<types.Message>>(
-              initialData: [],
-              stream: FirebaseChatCore.instance.messages(room),
-              builder: (context, messagesSnapshot) {
-                List<Future<String>> decryptedMessages =
-                    messagesSnapshot.data?.mapIndexed(
-                          (i, e) {
-                            print("I  : ${i}");
-                            print("e  : ${e}");
-
-                            return CryptoHelper.decryptMessage(
-                                sessionKeys.value!.privateKey,
-                                e.metadata![
-                                        "${widget.currentUser.id}:encryptedMessage"]
-                                    .toString());
-                          },
-                        ).toList() ??
-                        [];
-                return FutureBuilder(
-                  future: Future.wait(decryptedMessages),
-                  builder: (context, snapshot) {
-
-                    final decryptedMessages = snapshot.data ?? [];
-                    var messages = <types.Message>[];
-                    if(decryptedMessages.length < (messagesSnapshot.data?.length ?? 0)) {
-                      messages =  (messagesSnapshot.data ?? []).sublist(0, messagesSnapshot.data!.length - 1)
-                          .mapIndexed((index, message) =>
-                              (message as types.TextMessage)
-                                  .copyWith(text: decryptedMessages[index]))
-                          .toList();
-                    } else {
-                      messages =  (messagesSnapshot.data ?? [])
-                          .mapIndexed((index, message) =>
-                              (message as types.TextMessage)
-                                  .copyWith(text: decryptedMessages[index]))
-                          .toList();
-                    }
-                      
-
-                      return Chat(
-                        key: enCryptedChatKey,
-                        scrollPhysics: const BouncingScrollPhysics(),
-                        messages: messages,
-                        onSendPressed: (data) async {
-                          sendMessage(data, room);
-                        },
-                        user: widget.currentUser,
-                      );
-
-                   
-                  },
-                );
-              },
-            );
-          } else {
-            return StreamBuilder<List<types.Message>>(
-              initialData: [],
-              stream: FirebaseChatCore.instance.messages(room),
-              builder: (context, snapshot) {
-                return Chat(
-                  key: deCryptedChatKey,
-                  scrollPhysics: const BouncingScrollPhysics(),
-                  messages: snapshot.data ?? [],
-                  onSendPressed: (data) async {
-                    sendMessage(data, room);
-                  },
-                  user: widget.currentUser,
-                );
-              },
-            );
-          }
+          return StreamBuilder<List<types.Message>>(
+            initialData: [],
+            stream: messagesStream,
+            builder: (context, messagesSnapshot) {
+              return Chat(
+                scrollPhysics: const BouncingScrollPhysics(),
+                messages: messagesSnapshot.data ?? [],
+                onSendPressed: (data) async {
+                  sendMessage(data, room);
+                },
+                user: widget.currentUser,
+              );
+            },
+          );
         },
       ),
     );
@@ -328,30 +303,28 @@ class _ChatPageState extends State<ChatPage> {
           .sendMessage(data, room.id, widget.currentUser.id);
     } else if (sessionKeys.hasValue && sessionKeys.value != null) {
       final keys = sessionKeys.value!;
-      if(data.metadata == null){
+      if (data.metadata == null) {
+        final listOfPubKeys =
+            (room.metadata?['encryptionKeys'] as List<dynamic>)
+                .map((e) => e.toString())
+                .toList();
 
-        final listOfPubKeys = (room.metadata?['encryptionKeys'] as List<dynamic>).map((e) => e.toString()).toList();
-
-        final newMessage = types.PartialText(text: "Encrypted",metadata: {});
+        final newMessage = types.PartialText(text: "Encrypted", metadata: {});
 
         for (String key in listOfPubKeys) {
-          final encryptedText = await CryptoHelper.encryptMessage(sessionKeys.value!.publicKey, data.text);
+          final encryptedText = await CryptoHelper.encryptMessage(
+              sessionKeys.value!.publicKey, data.text);
           newMessage.metadata!["${widget.currentUser.id}:encryptedMessage"] =
               encryptedText;
-
-
         }
 
         Modular.get<NearSocialApi>()
             .sendMessage(newMessage, room.id, widget.currentUser.id);
-
       } else {
         data.metadata!["${widget.currentUser.id}:encryptedMessage"];
         Modular.get<NearSocialApi>()
             .sendMessage(data, room.id, widget.currentUser.id);
-
       }
-    
 
       //send encypted message
     } else if (sessionKeys.value == null) {
