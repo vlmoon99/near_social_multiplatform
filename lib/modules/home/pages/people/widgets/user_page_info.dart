@@ -481,6 +481,7 @@ class UserPageMainInfo extends StatelessWidget {
                                           isSecure: false,
                                           room: room,
                                           currentUser: currentUser,
+                                          otherUser: otherUser,
                                         ),
                                       ),
                                     );

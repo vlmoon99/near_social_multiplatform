@@ -300,7 +300,6 @@ class NearSocialApi {
     final type = data['type'] as String;
     final userIds = data['userIds'] as List<dynamic>;
     final userRoles = data['userRoles'] as Map<String, dynamic>?;
-    print("USERSSS :  ${userIds.toString()}");
     final users = await Future.wait(
       userIds.map(
         (userId) => fetchUser(
