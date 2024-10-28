@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:developer';
 import 'dart:typed_data';
+import 'package:crypto/crypto.dart' as crypto;
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
@@ -120,9 +121,7 @@ class NearSocialApi {
           .collection('rooms')
           .where('type', isEqualTo: types.RoomType.direct.toShortString())
           .where('userIds', isEqualTo: userIds)
-          .where('metadata.isSecure',
-              isEqualTo: true)
-
+          .where('metadata.isSecure', isEqualTo: true)
           .limit(1)
           .get();
 
@@ -193,7 +192,8 @@ class NearSocialApi {
       final roomQuery = await FirebaseFirestore.instance
           .collection('rooms')
           .where('type', isEqualTo: types.RoomType.direct.toShortString())
-          .where('userIds', isEqualTo: userIds)  
+          .where('userIds', isEqualTo: userIds)
+          .where('metadata.isSecure', isNotEqualTo: true)
           .limit(1)
           .get();
 
@@ -213,6 +213,7 @@ class NearSocialApi {
           .collection('rooms')
           .where('type', isEqualTo: types.RoomType.direct.toShortString())
           .where('userIds', isEqualTo: userIds.reversed.toList())
+          .where('metadata.isSecure', isNotEqualTo: true)
           .limit(1)
           .get();
 
@@ -257,6 +258,87 @@ class NearSocialApi {
       );
     }
   }
+
+  Future<types.Room> createChatRoom(
+    bool isSecure,
+    types.User currentUser,
+    types.User otherUser, {
+    Map<String, dynamic>? metadata,
+  }) async {
+
+    final users = [currentUser, otherUser];
+    String roomId;
+
+    if (isSecure) {
+      roomId =
+          combineAndHash("${currentUser.id}secure", "${otherUser.id}secure");
+    } else {
+      roomId = combineAndHash(currentUser.id, otherUser.id);
+    }
+
+    final roomDoc =
+        await FirebaseFirestore.instance.collection('rooms').doc(roomId).get();
+
+    if (roomDoc.exists) {
+      var roomData = roomDoc.data();
+      final room = transformRoomData(roomId, roomData!);
+      return room;
+    } else {
+      await FirebaseFirestore.instance.collection('rooms').doc(roomId).set({
+        'createdAt': FieldValue.serverTimestamp(),
+        'imageUrl': null,
+        'metadata': metadata,
+        'name': null,
+        'type': types.RoomType.direct.toShortString(),
+        'updatedAt': FieldValue.serverTimestamp(),
+        'userIds': users.map((user) => user.id).toList(),
+        'userRoles': null,
+      });
+
+      return types.Room(
+        id: roomId,
+        metadata: metadata,
+        type: types.RoomType.direct,
+        users: users,
+      );
+    }
+  }
+
+  types.Room transformRoomData(String roomId, Map<String, dynamic> roomData) {
+    return types.Room(
+      createdAt: (roomData['createdAt'] as Timestamp?)?.millisecondsSinceEpoch,
+      id: roomId,
+      imageUrl: roomData['imageUrl'] as String?,
+      lastMessages: (roomData['lastMessages'] as List<dynamic>?)
+          ?.map((message) => types.Message.fromJson(message))
+          .toList(),
+      metadata: roomData['metadata'] as Map<String, dynamic>?,
+      name: roomData['name'] as String?,
+      type: roomData['type'] != null
+          ? types.RoomType.values.firstWhere(
+              (type) => type.toString() == 'RoomType.${roomData['type']}')
+          : null,
+      updatedAt:
+          (roomData['updatedAt'] as Timestamp?)?.millisecondsSinceEpoch ?? 0,
+      users: (roomData['users'] as List<dynamic>?)
+              ?.map((user) => types.User.fromJson(user))
+              .toList() ??
+          <types.User>[],
+    );
+  }
+
+String combineAndHash(String str1, String str2) {
+    List<String> sortedStrings = [str1, str2]..sort();
+
+    String combined = sortedStrings[0] + sortedStrings[1];
+
+    List<int> bytes = utf8.encode(combined);
+
+    crypto.Digest hash = crypto.sha256.convert(bytes);
+
+    return hash.toString();
+  }
+
 
   Future<List<types.Room>> processRoomsQuery(
     User firebaseUser,
@@ -349,25 +431,6 @@ class NearSocialApi {
     }
 
     return types.Room.fromJson(data);
-  }
-
-  Future<void> createUserInChat() async {
-    await FirebaseChatCore.instance.createUserInFirestore(
-      types.User(
-        firstName: 'John',
-        id: "",
-        imageUrl: 'https://i.pravatar.cc/300',
-        lastName: 'Doe',
-      ),
-    );
-  }
-
-  Future<void> sendMessages(types.Message message, String roomId) async {
-    FirebaseChatCore.instance.sendMessage(message, roomId);
-  }
-
-  Future<void> updateMessage(types.Message message, String roomId) async {
-    FirebaseChatCore.instance.updateMessage(message, roomId);
   }
 
   Future<List<Post>> getPosts({

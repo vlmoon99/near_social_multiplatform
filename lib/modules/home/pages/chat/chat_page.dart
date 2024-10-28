@@ -10,22 +10,10 @@ import 'package:flutter_chat_ui/flutter_chat_ui.dart';
 import 'package:flutter_firebase_chat_core/flutter_firebase_chat_core.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:flutterchain/flutterchain_lib.dart';
-import 'package:flutterchain/flutterchain_lib/repositories/wallet_repository.dart';
 import 'package:near_social_mobile/modules/home/apis/models/encryption_keypair.dart';
 import 'package:near_social_mobile/modules/home/apis/near_social.dart';
 import 'package:near_social_mobile/modules/vms/core/auth_controller.dart';
-import 'package:pointycastle/api.dart';
-import 'package:pointycastle/asymmetric/api.dart';
-import 'package:pointycastle/key_generators/api.dart';
-import 'package:pointycastle/key_generators/rsa_key_generator.dart';
-import 'package:pointycastle/random/fortuna_random.dart';
 import 'package:rxdart/rxdart.dart';
-
-import 'package:encrypt/encrypt.dart' as encrypt;
-
-import 'dart:typed_data';
-import 'package:pointycastle/export.dart' as crypto;
 
 class ChatPage extends StatefulWidget {
   const ChatPage({
@@ -51,8 +39,6 @@ class _ChatPageState extends State<ChatPage> {
       BehaviorSubject<EncryptionKeypair?>();
   final BehaviorSubject<List<types.Message>> messagesStream =
       BehaviorSubject<List<types.Message>>()..add([]);
-  final enCryptedChatKey = ValueKey("enCryptedChatKey");
-  final deCryptedChatKey = ValueKey("deCryptedChatKey");
 
   @override
   void initState() {
@@ -66,13 +52,11 @@ class _ChatPageState extends State<ChatPage> {
         await initMessages(messages);
       }
     });
-  
   }
-  
 
   Future<void> initMessages(List<types.Message> messages) async {
     final keys = await CryptoHelper.getKeysFromSecureDB(widget.room.id);
-    if(!sessionKeys.hasValue){
+    if (!sessionKeys.hasValue) {
       sessionKeys.add(keys);
     }
     if (keys != null) {
@@ -80,14 +64,14 @@ class _ChatPageState extends State<ChatPage> {
       List<Future<String>> decryptedMessagesFutures = messages.mapIndexed(
         (i, e) {
           return CryptoHelper.decryptMessage(
-              keys!.privateKey,
+              keys.privateKey,
               e.metadata!["${widget.currentUser.id}:encryptedMessage"]
                   .toString());
         },
       ).toList();
-    
+
       final decryptedMessages = await Future.wait(decryptedMessagesFutures);
-    
+
       if (decryptedMessages.length < messages.length) {
         decdryptedChatMessages = messages
             .sublist(0, messages.length - 1)
@@ -116,7 +100,7 @@ class _ChatPageState extends State<ChatPage> {
             'no_pub_key';
     final chatMetadata = widget.room.metadata ?? {};
     final chatEncryptionsKeys =
-        (widget.room.metadata!['encryptionKeys'] as List<dynamic>?)
+        (chatMetadata['encryptionKeys'] as List<dynamic>?)
                 ?.map((val) => val.toString())
                 .toList() ??
             [];
@@ -170,6 +154,74 @@ class _ChatPageState extends State<ChatPage> {
     }
   }
 
+  Future<void> sendMessage(types.PartialText data, types.Room room) async {
+    final listOfPubKeys = (room.metadata?['encryptionKeys'] as List<dynamic>?)
+            ?.map((e) => e.toString())
+            .toList() ??
+        [];
+
+    final isThereMoreThanOnePublicKeyInside = listOfPubKeys.length > 1;
+
+    if (!widget.isSecure) {
+      Modular.get<NearSocialApi>()
+          .sendMessage(data, room.id, widget.currentUser.id);
+    } else if (!isThereMoreThanOnePublicKeyInside && widget.isSecure) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            "Your conversation partner must add his keys to this chat",
+          ),
+        ),
+      );
+    } else if (sessionKeys.hasValue &&
+        sessionKeys.value != null &&
+        isThereMoreThanOnePublicKeyInside) {
+      if (data.metadata == null) {
+        final newMessage = types.PartialText(text: "Encrypted", metadata: {});
+        final usersInsideRoom = room.metadata!.entries.where((entry) => entry.key.contains(":pub_key")).map((entry) => entry).toList();
+
+        for (MapEntry<String, dynamic> userEntry  in usersInsideRoom) {
+          final pubKey = userEntry.value;
+          final accountId = userEntry.key.split(":");
+          final encryptedText =
+              await CryptoHelper.encryptMessage(pubKey, data.text);
+          newMessage.metadata!["${accountId.first}:encryptedMessage"] =
+              encryptedText;
+        }
+
+        Modular.get<NearSocialApi>()
+            .sendMessage(newMessage, room.id, widget.currentUser.id);
+      } else {
+        data.metadata!["${widget.currentUser.id}:encryptedMessage"];
+        Modular.get<NearSocialApi>()
+            .sendMessage(data, room.id, widget.currentUser.id);
+      }
+    } else if (sessionKeys.value == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            "There no keys to encrypt message",
+          ),
+        ),
+      );
+    }
+  }
+
+  void listenToRoom(String roomId) {
+    FirebaseFirestore.instance
+        .collection('rooms')
+        .doc(roomId)
+        .snapshots()
+        .listen((snapshot) {
+      if (snapshot.exists) {
+        final roomData = snapshot.data()!;
+        roomSubject.add(transformRoomData(roomId, roomData));
+      } else {
+        roomSubject.add(widget.room);
+      }
+    });
+  }
+
   types.Room transformRoomData(String roomId, Map<String, dynamic> roomData) {
     return types.Room(
       createdAt: (roomData['createdAt'] as Timestamp?)?.millisecondsSinceEpoch,
@@ -193,21 +245,6 @@ class _ChatPageState extends State<ChatPage> {
     );
   }
 
-  void listenToRoom(String roomId) {
-    FirebaseFirestore.instance
-        .collection('rooms')
-        .doc(roomId)
-        .snapshots()
-        .listen((snapshot) {
-      if (snapshot.exists) {
-        final roomData = snapshot.data()!;
-        roomSubject.add(transformRoomData(roomId, roomData));
-      } else {
-        roomSubject.add(widget.room);
-      }
-    });
-  }
-
   @override
   void dispose() {
     super.dispose();
@@ -226,66 +263,22 @@ class _ChatPageState extends State<ChatPage> {
               ? IconButton(
                   onPressed: () async {
                     if (!widget.isSecure) {
-                      var room;
-                      final isChatAlredyCreated = (await FirebaseFirestore
-                              .instance
-                              .collection('rooms')
-                              .where('userIds',
-                                  arrayContains: widget.currentUser.id)
-                              .where('metadata.isSecure', isEqualTo: true)
-                              .get())
-                          .docs;
+                      final room = await Modular.get<NearSocialApi>()
+                          .createChatRoom(
+                              true, widget.currentUser, widget.otherUser,
+                              metadata: {"isSecure": true});
 
-                      if (isChatAlredyCreated.isNotEmpty) {
-                        final rawData = isChatAlredyCreated.first.data();
-                        final users = [];
-                        rawData['createdAt'] =
-                            (rawData['createdAt'] as Timestamp)
-                                .millisecondsSinceEpoch;
-                        rawData['updatedAt'] =
-                            (rawData['updatedAt'] as Timestamp)
-                                .millisecondsSinceEpoch;
-                        rawData['id'] = isChatAlredyCreated.first.id;
-                        rawData['userRoles'] = [];
-                        rawData['users'] = [];
-
-                        users.add(widget.otherUser.toJson());
-                        users.add(widget.currentUser.toJson());
-
-                        rawData['users'] = users;
-
-                        room = types.Room.fromJson(rawData);
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (ctx) => ChatPage(
-                              room: room,
-                              currentUser: widget.currentUser,
-                              otherUser: widget.otherUser,
-                              isSecure: true,
-                            ),
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (ctx) => ChatPage(
+                            room: room,
+                            currentUser: widget.currentUser,
+                            otherUser: widget.otherUser,
+                            isSecure: true,
                           ),
-                        );
-                      } else {
-                        room = await Modular.get<NearSocialApi>().createRoom(
-                          true,
-                          Modular.get<AuthController>().state.accountId,
-                          widget.otherUser,
-                          metadata: {'isSecure': true},
-                        );
-
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (ctx) => ChatPage(
-                              room: room,
-                              currentUser: widget.currentUser,
-                              otherUser: widget.otherUser,
-                              isSecure: true,
-                            ),
-                          ),
-                        );
-                      }
+                        ),
+                      );
                     }
                   },
                   icon: Icon(
@@ -328,46 +321,6 @@ class _ChatPageState extends State<ChatPage> {
         },
       ),
     );
-  }
-
-  Future<void> sendMessage(types.PartialText data, types.Room room) async {
-    if (!widget.isSecure) {
-      Modular.get<NearSocialApi>()
-          .sendMessage(data, room.id, widget.currentUser.id);
-    } else if (sessionKeys.hasValue && sessionKeys.value != null) {
-      if (data.metadata == null) {
-        final listOfPubKeys =
-            (room.metadata?['encryptionKeys'] as List<dynamic>)
-                .map((e) => e.toString())
-                .toList();
-
-        final newMessage = types.PartialText(text: "Encrypted", metadata: {});
-
-        for (String key in listOfPubKeys) {
-          final encryptedText =
-              await CryptoHelper.encryptMessage(key, data.text);
-          newMessage.metadata!["${widget.currentUser.id}:encryptedMessage"] =
-              encryptedText;
-        }
-
-        Modular.get<NearSocialApi>()
-            .sendMessage(newMessage, room.id, widget.currentUser.id);
-      } else {
-        data.metadata!["${widget.currentUser.id}:encryptedMessage"];
-        Modular.get<NearSocialApi>()
-            .sendMessage(data, room.id, widget.currentUser.id);
-      }
-
-      //send encypted message
-    } else if (sessionKeys.value == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            "The keys can't be generated because this chat was first registered on a different device.",
-          ),
-        ),
-      );
-    }
   }
 }
 

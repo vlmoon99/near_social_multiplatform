@@ -6,7 +6,6 @@ import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_firebase_chat_core/flutter_firebase_chat_core.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -443,19 +442,11 @@ class UserPageMainInfo extends StatelessWidget {
                                     final otherUser =
                                         types.User.fromJson(userData);
 
-                                    final room =
-                                        await Modular.get<NearSocialApi>()
-                                            .createRoom(
-                                                false,
-                                                Modular.get<AuthController>()
-                                                    .state
-                                                    .accountId,
-                                                otherUser);
 
                                     final currentUserDocReq =
                                         await FirebaseFirestore.instance
                                             .collection('users')
-                                            .doc(accountIdOfUser)
+                                            .doc(Modular.get<AuthController>().state.accountId)
                                             .get();
 
                                     final currentUserDoc = {
@@ -473,6 +464,14 @@ class UserPageMainInfo extends StatelessWidget {
 
                                     final currentUser =
                                         types.User.fromJson(currentUserDoc);
+
+                                    final room =
+                                        await Modular.get<NearSocialApi>()
+                                            .createChatRoom(
+                                      false,
+                                      currentUser,
+                                      otherUser,
+                                    );
 
                                     Navigator.push(
                                       context,
