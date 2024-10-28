@@ -244,20 +244,6 @@ class _HomeMenuPageState extends State<HomeMenuPage> {
                 ),
                 SizedBox(height: 15.h),
                 HomeMenuListTile(
-                  title: "Chats",
-                  tile: const Icon(Icons.chat),
-                  onTap: () async {
-                    HapticFeedback.lightImpact();
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (ctx) => RoomsPage(),
-                      ),
-                    );
-                  },
-                ),
-                SizedBox(height: 15.h),
-                HomeMenuListTile(
                   title: "Logout",
                   tile: const Icon(Icons.logout),
                   onTap: () async {

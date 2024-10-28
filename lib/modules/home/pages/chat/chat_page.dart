@@ -12,7 +12,6 @@ import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:near_social_mobile/modules/home/apis/models/encryption_keypair.dart';
 import 'package:near_social_mobile/modules/home/apis/near_social.dart';
-import 'package:near_social_mobile/modules/vms/core/auth_controller.dart';
 import 'package:rxdart/rxdart.dart';
 
 class ChatPage extends StatefulWidget {
