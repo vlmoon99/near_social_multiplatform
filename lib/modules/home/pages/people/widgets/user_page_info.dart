@@ -199,11 +199,7 @@ class UserPageMainInfo extends StatelessWidget {
                               color: Colors.white,
                               border: Border.all(color: Colors.black, width: 1),
                             ),
-                            child: Container(
-                              decoration: const BoxDecoration(
-                                shape: BoxShape.circle,
-                              ),
-                              clipBehavior: Clip.antiAlias,
+                            child: ClipOval(
                               child: NearNetworkImage(
                                 imageUrl:
                                     user.generalAccountInfo.profileImageLink,
