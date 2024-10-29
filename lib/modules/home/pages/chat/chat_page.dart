@@ -264,7 +264,8 @@ class _ChatPageState extends State<ChatPage> {
             builder: (context, snapshot) {
               final isLoading = snapshot.data ?? false;
               if (isLoading){
-                return const CircularProgressIndicator.adaptive();
+                // ignore: prefer_const_constructors
+                return CircularProgressIndicator.adaptive();
               }
               return !widget.isSecure && !isLoading
                   ? IconButton(
@@ -280,7 +281,7 @@ class _ChatPageState extends State<ChatPage> {
                             context,
                             MaterialPageRoute(
                               builder: (ctx) => ChatPage(
-                                room: room,
+                                room: room!,
                                 currentUser: widget.currentUser,
                                 otherUser: widget.otherUser,
                                 isSecure: true,

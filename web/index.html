@@ -52,28 +52,7 @@
     window.decrypt_message = decrypt_message;
 
     initSync().then(() => {
-      console.log("Generating RSA Keypair...");
-      const keypair = generate_keypair();
-      console.log("Public Key:", keypair.public_key);
-      console.log("Private Key:", keypair.private_key);
-
-      const message = "Hello, World!";
-      console.log("Original Message:", message);
-
-      const encryptedMessage = encrypt_message(keypair.public_key, message);
-      console.log("Encrypted Message (Base64):", encryptedMessage);
-
-      const decryptedMessage = decrypt_message(keypair.private_key, encryptedMessage);
-      console.log("Decrypted Message:", decryptedMessage);
-
-      if (message === decryptedMessage) {
-        console.log("Success! The message was correctly encrypted and decrypted.");
-      } else {
-        console.error("Failure! The decrypted message does not match the original.");
-      }
-
-
-
+      console.log("Cryptography module was intied sucsessfully");
     });
   </script>
 </head>

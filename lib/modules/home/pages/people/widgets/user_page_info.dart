@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:developer';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
 
 import 'package:flutter/cupertino.dart';
@@ -418,6 +419,11 @@ class UserPageMainInfo extends StatelessWidget {
                             child: CustomButton(
                               primary: true,
                               onPressed: () async {
+                                final uid =
+                                    FirebaseAuth.instance.currentUser!.uid;
+
+                                print("uid $uid");
+
                                 try {
                                   final userDoc = await FirebaseFirestore
                                       .instance
@@ -438,11 +444,12 @@ class UserPageMainInfo extends StatelessWidget {
                                     final otherUser =
                                         types.User.fromJson(userData);
 
-
                                     final currentUserDocReq =
                                         await FirebaseFirestore.instance
                                             .collection('users')
-                                            .doc(Modular.get<AuthController>().state.accountId)
+                                            .doc(Modular.get<AuthController>()
+                                                .state
+                                                .accountId)
                                             .get();
 
                                     final currentUserDoc = {
@@ -467,22 +474,24 @@ class UserPageMainInfo extends StatelessWidget {
                                       false,
                                       currentUser,
                                       otherUser,
+                                      metadata: {"isSecure": false},
                                     );
 
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (ctx) => ChatPage(
-                                          isSecure: false,
-                                          room: room,
-                                          currentUser: currentUser,
-                                          otherUser: otherUser,
+                                    if (room != null) {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (ctx) => ChatPage(
+                                            isSecure: false,
+                                            room: room,
+                                            currentUser: currentUser,
+                                            otherUser: otherUser,
+                                          ),
                                         ),
-                                      ),
-                                    );
-
-                                    print(
-                                        'Chat room created successfully with user: $room');
+                                      );
+                                      print(
+                                          'Chat room created successfully with user: $room');
+                                    }
                                   } else {
                                     print('No user found with the given ID');
                                     ScaffoldMessenger.of(context).showSnackBar(
