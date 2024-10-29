@@ -38,6 +38,7 @@ class _ChatPageState extends State<ChatPage> {
       BehaviorSubject<EncryptionKeypair?>();
   final BehaviorSubject<List<types.Message>> messagesStream =
       BehaviorSubject<List<types.Message>>()..add([]);
+  final BehaviorSubject<bool> isLoadingStream = BehaviorSubject<bool>()..add(false);
 
   @override
   void initState() {
@@ -258,37 +259,47 @@ class _ChatPageState extends State<ChatPage> {
         centerTitle: true,
         title: Text(widget.isSecure ? "Secure Chat" : "Chat"),
         actions: [
-          !widget.isSecure
-              ? IconButton(
-                  onPressed: () async {
-                    if (!widget.isSecure) {
-                      final room = await Modular.get<NearSocialApi>()
-                          .createChatRoom(
-                              true, widget.currentUser, widget.otherUser,
-                              metadata: {"isSecure": true});
-
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (ctx) => ChatPage(
-                            room: room,
-                            currentUser: widget.currentUser,
-                            otherUser: widget.otherUser,
-                            isSecure: true,
-                          ),
-                        ),
-                      );
-                    }
-                  },
-                  icon: Icon(
-                    Icons.security,
-                    color: widget.isSecure ? Colors.lightBlue : Colors.grey,
-                  ),
-                )
-              : IconButton(
-                  onPressed: () {},
-                  icon: const Icon(Icons.key),
-                ),
+          StreamBuilder<bool>(
+            stream: isLoadingStream,
+            builder: (context, snapshot) {
+              final isLoading = snapshot.data ?? false;
+              if (isLoading){
+                return const CircularProgressIndicator.adaptive();
+              }
+              return !widget.isSecure && !isLoading
+                  ? IconButton(
+                      onPressed: () async {
+                        if (!widget.isSecure) {
+                          isLoadingStream.add(true);
+                          final room = await Modular.get<NearSocialApi>()
+                              .createChatRoom(
+                                  true, widget.currentUser, widget.otherUser,
+                                  metadata: {"isSecure": true});
+                          isLoadingStream.add(false);
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (ctx) => ChatPage(
+                                room: room,
+                                currentUser: widget.currentUser,
+                                otherUser: widget.otherUser,
+                                isSecure: true,
+                              ),
+                            ),
+                          );
+                        }
+                      },
+                      icon: Icon(
+                        Icons.security,
+                        color: widget.isSecure ? Colors.lightBlue : Colors.grey,
+                      ),
+                    )
+                  : IconButton(
+                      onPressed: () {},
+                      icon: const Icon(Icons.key),
+                    );
+            }
+          ),
         ],
         leading: IconButton(
           onPressed: () {
