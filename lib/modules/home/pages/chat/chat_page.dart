@@ -124,7 +124,7 @@ class _ChatPageState extends State<ChatPage> {
           )
           .then(
               (value) => print("Metadata update , userKey inside secure room"))
-          .catchError((error) => print("Failed to add user: $error"));
+          .catchError((error) => print("Failed to Metadata update: $error"));
 
       sessionKeys.add(keys);
     } else {
