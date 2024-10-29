@@ -2,10 +2,13 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:developer';
 import 'dart:typed_data';
+import 'package:crypto/crypto.dart' as crypto;
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:dio/dio.dart';
 import 'package:dio_smart_retry/dio_smart_retry.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutterchain/flutterchain_lib/constants/core/blockchain_response.dart';
 import 'package:flutterchain/flutterchain_lib/constants/core/blockchains_gas.dart';
 import 'package:flutterchain/flutterchain_lib/constants/core/supported_blockchains.dart';
@@ -30,18 +33,15 @@ import 'package:near_social_mobile/modules/home/apis/models/reposter_info.dart';
 import 'package:near_social_mobile/network/dio_interceptors/retry_on_connection_changed_interceptor.dart';
 import 'package:near_social_mobile/utils/is_web_image_avaliable.dart';
 
-
 import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
 import 'package:flutter_firebase_chat_core/flutter_firebase_chat_core.dart';
 
 class NearSocialApi {
   final Dio _dio = Dio();
-  final NearBlockChainService _nearBlockChainService;
-
-  
+  final NearBlockChainService nearBlockChainService;
 
   NearSocialApi({required NearBlockChainService nearBlockChainService})
-      : _nearBlockChainService = nearBlockChainService {
+      : nearBlockChainService = nearBlockChainService {
     _dio.interceptors.addAll([
       RetryInterceptor(
         dio: _dio,
@@ -58,30 +58,380 @@ class NearSocialApi {
     ]);
   }
 
-  Future<void> createUserInChat () async {
-    await FirebaseChatCore.instance.createUserInFirestore(
-      types.User(
-        firstName: 'John',
-        id: "",
-        imageUrl: 'https://i.pravatar.cc/300',
-        lastName: 'Doe',
-      ),
+  void sendMessage(
+      dynamic partialMessage, String roomId, String currentUserId) async {
+    types.Message? message;
+
+    if (partialMessage is types.PartialCustom) {
+      message = types.CustomMessage.fromPartial(
+        author: types.User(id: currentUserId),
+        id: '',
+        partialCustom: partialMessage,
+      );
+    } else if (partialMessage is types.PartialFile) {
+      message = types.FileMessage.fromPartial(
+        author: types.User(id: currentUserId),
+        id: '',
+        partialFile: partialMessage,
+      );
+    } else if (partialMessage is types.PartialImage) {
+      message = types.ImageMessage.fromPartial(
+        author: types.User(id: currentUserId),
+        id: '',
+        partialImage: partialMessage,
+      );
+    } else if (partialMessage is types.PartialText) {
+      message = types.TextMessage.fromPartial(
+        author: types.User(id: currentUserId),
+        id: '',
+        partialText: partialMessage,
+      );
+    }
+
+    if (message != null) {
+      final messageMap = message.toJson();
+      messageMap.removeWhere((key, value) => key == 'author' || key == 'id');
+      messageMap['authorId'] = currentUserId;
+      messageMap['createdAt'] = FieldValue.serverTimestamp();
+      messageMap['updatedAt'] = FieldValue.serverTimestamp();
+
+      await FirebaseFirestore.instance
+          .collection('rooms/$roomId/messages')
+          .add(messageMap);
+
+      await FirebaseFirestore.instance
+          .collection('rooms')
+          .doc(roomId)
+          .update({'updatedAt': FieldValue.serverTimestamp()});
+    }
+  }
+
+  Future<types.Room> createRoom(
+    bool isSecure,
+    String currentUserID,
+    types.User otherUser, {
+    Map<String, dynamic>? metadata,
+  }) async {
+    if (isSecure) {
+      final fu = FirebaseAuth.instance.currentUser!;
+
+      final userIds = [currentUserID, otherUser.id]..sort();
+
+      final roomQuery = await FirebaseFirestore.instance
+          .collection('rooms')
+          .where('type', isEqualTo: types.RoomType.direct.toShortString())
+          .where('userIds', isEqualTo: userIds)
+          .where('metadata.isSecure', isEqualTo: true)
+          .limit(1)
+          .get();
+
+      if (roomQuery.docs.isNotEmpty) {
+        final room = (await processRoomsQuery(
+          fu,
+          FirebaseFirestore.instance,
+          roomQuery,
+          'users',
+        ))
+            .first;
+
+        return room;
+      }
+
+      final oldRoomQuery = await FirebaseFirestore.instance
+          .collection('rooms')
+          .where('type', isEqualTo: types.RoomType.direct.toShortString())
+          .where('userIds', isEqualTo: userIds.reversed.toList())
+          .where('metadata.isSecure', isEqualTo: true)
+          .limit(1)
+          .get();
+
+      if (oldRoomQuery.docs.isNotEmpty) {
+        log("oldRoomQuery.docs.isNotEmpty  ${oldRoomQuery.docs.isNotEmpty}");
+        final room = (await processRoomsQuery(
+          fu,
+          FirebaseFirestore.instance,
+          oldRoomQuery,
+          'users',
+        ));
+        log("room  ${room}");
+        return room.isNotEmpty
+            ? room.first
+            : types.Room(id: '', type: null, users: []);
+      }
+
+      final currentUser = await fetchUser(
+        FirebaseFirestore.instance,
+        currentUserID,
+        'users',
+      );
+
+      final users = [types.User.fromJson(currentUser), otherUser];
+
+      final room = await FirebaseFirestore.instance.collection('rooms').add({
+        'createdAt': FieldValue.serverTimestamp(),
+        'imageUrl': null,
+        'metadata': metadata,
+        'name': null,
+        'type': types.RoomType.direct.toShortString(),
+        'updatedAt': FieldValue.serverTimestamp(),
+        'userIds': userIds,
+        'userRoles': null,
+      });
+
+      return types.Room(
+        id: room.id,
+        metadata: metadata,
+        type: types.RoomType.direct,
+        users: users,
+      );
+    } else {
+      final fu = FirebaseAuth.instance.currentUser!;
+
+      final userIds = [currentUserID, otherUser.id]..sort();
+
+      final roomQuery = await FirebaseFirestore.instance
+          .collection('rooms')
+          .where('type', isEqualTo: types.RoomType.direct.toShortString())
+          .where('userIds', isEqualTo: userIds)
+          .where('metadata.isSecure', isNotEqualTo: true)
+          .limit(1)
+          .get();
+
+      if (roomQuery.docs.isNotEmpty) {
+        final room = (await processRoomsQuery(
+          fu,
+          FirebaseFirestore.instance,
+          roomQuery,
+          'users',
+        ))
+            .first;
+
+        return room;
+      }
+
+      final oldRoomQuery = await FirebaseFirestore.instance
+          .collection('rooms')
+          .where('type', isEqualTo: types.RoomType.direct.toShortString())
+          .where('userIds', isEqualTo: userIds.reversed.toList())
+          .where('metadata.isSecure', isNotEqualTo: true)
+          .limit(1)
+          .get();
+
+      if (oldRoomQuery.docs.isNotEmpty) {
+        log("oldRoomQuery.docs.isNotEmpty  ${oldRoomQuery.docs.isNotEmpty}");
+        final room = (await processRoomsQuery(
+          fu,
+          FirebaseFirestore.instance,
+          oldRoomQuery,
+          'users',
+        ));
+        log("room  ${room}");
+        return room.isNotEmpty
+            ? room.first
+            : types.Room(id: '', type: null, users: []);
+      }
+
+      final currentUser = await fetchUser(
+        FirebaseFirestore.instance,
+        currentUserID,
+        'users',
+      );
+
+      final users = [types.User.fromJson(currentUser), otherUser];
+
+      final room = await FirebaseFirestore.instance.collection('rooms').add({
+        'createdAt': FieldValue.serverTimestamp(),
+        'imageUrl': null,
+        'metadata': metadata,
+        'name': null,
+        'type': types.RoomType.direct.toShortString(),
+        'updatedAt': FieldValue.serverTimestamp(),
+        'userIds': userIds,
+        'userRoles': null,
+      });
+
+      return types.Room(
+        id: room.id,
+        metadata: metadata,
+        type: types.RoomType.direct,
+        users: users,
+      );
+    }
+  }
+
+  Future<types.Room> createChatRoom(
+    bool isSecure,
+    types.User currentUser,
+    types.User otherUser, {
+    Map<String, dynamic>? metadata,
+  }) async {
+
+    final users = [currentUser, otherUser];
+    String roomId;
+
+    if (isSecure) {
+      roomId =
+          combineAndHash("${currentUser.id}secure", "${otherUser.id}secure");
+    } else {
+      roomId = combineAndHash(currentUser.id, otherUser.id);
+    }
+
+    final roomDoc =
+        await FirebaseFirestore.instance.collection('rooms').doc(roomId).get();
+
+    if (roomDoc.exists) {
+      var roomData = roomDoc.data();
+      final room = transformRoomData(roomId, roomData!);
+      return room;
+    } else {
+      await FirebaseFirestore.instance.collection('rooms').doc(roomId).set({
+        'createdAt': FieldValue.serverTimestamp(),
+        'imageUrl': null,
+        'metadata': metadata,
+        'name': null,
+        'type': types.RoomType.direct.toShortString(),
+        'updatedAt': FieldValue.serverTimestamp(),
+        'userIds': users.map((user) => user.id).toList(),
+        'userRoles': null,
+      });
+
+      return types.Room(
+        id: roomId,
+        metadata: metadata,
+        type: types.RoomType.direct,
+        users: users,
+      );
+    }
+  }
+
+  types.Room transformRoomData(String roomId, Map<String, dynamic> roomData) {
+    return types.Room(
+      createdAt: (roomData['createdAt'] as Timestamp?)?.millisecondsSinceEpoch,
+      id: roomId,
+      imageUrl: roomData['imageUrl'] as String?,
+      lastMessages: (roomData['lastMessages'] as List<dynamic>?)
+          ?.map((message) => types.Message.fromJson(message))
+          .toList(),
+      metadata: roomData['metadata'] as Map<String, dynamic>?,
+      name: roomData['name'] as String?,
+      type: roomData['type'] != null
+          ? types.RoomType.values.firstWhere(
+              (type) => type.toString() == 'RoomType.${roomData['type']}')
+          : null,
+      updatedAt:
+          (roomData['updatedAt'] as Timestamp?)?.millisecondsSinceEpoch ?? 0,
+      users: (roomData['users'] as List<dynamic>?)
+              ?.map((user) => types.User.fromJson(user))
+              .toList() ??
+          <types.User>[],
     );
   }
 
-    Future<void> sendMessages(types.Message message,String roomId) async {
+String combineAndHash(String str1, String str2) {
+    List<String> sortedStrings = [str1, str2]..sort();
 
-      FirebaseChatCore.instance.sendMessage(message, roomId);
+    String combined = sortedStrings[0] + sortedStrings[1];
 
+    List<int> bytes = utf8.encode(combined);
+
+    crypto.Digest hash = crypto.sha256.convert(bytes);
+
+    return hash.toString();
+  }
+
+
+  Future<List<types.Room>> processRoomsQuery(
+    User firebaseUser,
+    FirebaseFirestore instance,
+    QuerySnapshot<Map<String, dynamic>> query,
+    String usersCollectionName,
+  ) async {
+    List<types.Room> rooms = [];
+
+    for (var doc in query.docs) {
+      final room = await processRoomDocument(
+        doc,
+        firebaseUser,
+        instance,
+        usersCollectionName,
+      );
+
+      rooms.add(room);
+
+      print('Processed room: $room');
     }
 
+    return rooms;
+  }
 
-    Future<void> updateMessage(types.Message message, String roomId) async {
-    
-      FirebaseChatCore.instance.updateMessage(message, roomId);
-    
+  /// Returns a [types.Room] created from Firebase document.
+  Future<types.Room> processRoomDocument(
+    DocumentSnapshot<Map<String, dynamic>> doc,
+    User firebaseUser,
+    FirebaseFirestore instance,
+    String usersCollectionName,
+  ) async {
+    final data = doc.data()!;
+
+    data['createdAt'] = data['createdAt']?.millisecondsSinceEpoch;
+    data['id'] = doc.id;
+    data['updatedAt'] = data['updatedAt']?.millisecondsSinceEpoch;
+
+    var imageUrl = data['imageUrl'] as String?;
+    var name = data['name'] as String?;
+    final type = data['type'] as String;
+    final userIds = data['userIds'] as List<dynamic>;
+    final userRoles = data['userRoles'] as Map<String, dynamic>?;
+    final users = await Future.wait(
+      userIds.map(
+        (userId) => fetchUser(
+          instance,
+          userId as String,
+          usersCollectionName,
+          role: userRoles?[userId] as String?,
+        ),
+      ),
+    );
+
+    if (type == types.RoomType.direct.toShortString()) {
+      try {
+        final otherUser = users.firstWhere(
+          (u) => u['id'] != firebaseUser.uid,
+        );
+
+        imageUrl = otherUser['imageUrl'] as String?;
+        name = '${otherUser['firstName'] ?? ''} ${otherUser['lastName'] ?? ''}'
+            .trim();
+      } catch (e) {
+        // Do nothing if other user is not found, because he should be found.
+        // Consider falling back to some default values.
+      }
     }
 
+    data['imageUrl'] = imageUrl;
+    data['name'] = name;
+    data['users'] = users;
+
+    if (data['lastMessages'] != null) {
+      final lastMessages = data['lastMessages'].map((lm) {
+        final author = users.firstWhere(
+          (u) => u['id'] == lm['authorId'],
+          orElse: () => {'id': lm['authorId'] as String},
+        );
+
+        lm['author'] = author;
+        lm['createdAt'] = lm['createdAt']?.millisecondsSinceEpoch;
+        lm['id'] = lm['id'] ?? '';
+        lm['updatedAt'] = lm['updatedAt']?.millisecondsSinceEpoch;
+
+        return lm;
+      }).toList();
+
+      data['lastMessages'] = lastMessages;
+    }
+
+    return types.Room.fromJson(data);
+  }
 
   Future<List<Post>> getPosts({
     int? lastBlockHeightIndexOfPosts,
@@ -639,7 +989,7 @@ class NearSocialApi {
     required String privateKey,
   }) async {
     try {
-      final response = await _nearBlockChainService.callSmartContractFunction(
+      final response = await nearBlockChainService.callSmartContractFunction(
         NearBlockChainSmartContractArguments(
           accountId: accountId,
           publicKey: publicKey,
@@ -679,7 +1029,7 @@ class NearSocialApi {
     required String privateKey,
   }) async {
     try {
-      final response = await _nearBlockChainService.callSmartContractFunction(
+      final response = await nearBlockChainService.callSmartContractFunction(
         NearBlockChainSmartContractArguments(
           accountId: accountId,
           publicKey: publicKey,
@@ -717,7 +1067,7 @@ class NearSocialApi {
     required String privateKey,
   }) async {
     try {
-      final response = await _nearBlockChainService.callSmartContractFunction(
+      final response = await nearBlockChainService.callSmartContractFunction(
         NearBlockChainSmartContractArguments(
           accountId: accountId,
           publicKey: publicKey,
@@ -755,7 +1105,7 @@ class NearSocialApi {
     required String privateKey,
   }) async {
     try {
-      final response = await _nearBlockChainService.callSmartContractFunction(
+      final response = await nearBlockChainService.callSmartContractFunction(
         NearBlockChainSmartContractArguments(
           accountId: accountId,
           publicKey: publicKey,
@@ -793,7 +1143,7 @@ class NearSocialApi {
     required String privateKey,
   }) async {
     try {
-      final response = await _nearBlockChainService.callSmartContractFunction(
+      final response = await nearBlockChainService.callSmartContractFunction(
         NearBlockChainSmartContractArguments(
           accountId: accountId,
           publicKey: publicKey,
@@ -856,7 +1206,7 @@ class NearSocialApi {
       final imageParameters = postBody.mediaLink != null
           ? """,\\"image\\":{\\"ipfs_cid\\":\\"${postBody.mediaLink}\\"}"""
           : "";
-      final response = await _nearBlockChainService.callSmartContractFunction(
+      final response = await nearBlockChainService.callSmartContractFunction(
         NearBlockChainSmartContractArguments(
           accountId: accountId,
           publicKey: publicKey,
@@ -902,7 +1252,7 @@ class NearSocialApi {
       final imageParameters = postBody.mediaLink != null
           ? """,\\"image\\":{\\"ipfs_cid\\":\\"${postBody.mediaLink}\\"}"""
           : "";
-      final response = await _nearBlockChainService.callSmartContractFunction(
+      final response = await nearBlockChainService.callSmartContractFunction(
         NearBlockChainSmartContractArguments(
           accountId: accountId,
           publicKey: publicKey,
@@ -1178,7 +1528,7 @@ class NearSocialApi {
     required String privateKey,
   }) async {
     try {
-      final response = await _nearBlockChainService.callSmartContractFunction(
+      final response = await nearBlockChainService.callSmartContractFunction(
         NearBlockChainSmartContractArguments(
           accountId: accountId,
           publicKey: publicKey,
@@ -1220,7 +1570,7 @@ class NearSocialApi {
     required String privateKey,
   }) async {
     try {
-      final response = await _nearBlockChainService.callSmartContractFunction(
+      final response = await nearBlockChainService.callSmartContractFunction(
         NearBlockChainSmartContractArguments(
           accountId: accountId,
           publicKey: publicKey,
@@ -1262,7 +1612,7 @@ class NearSocialApi {
     required String privateKey,
   }) async {
     try {
-      final response = await _nearBlockChainService.callSmartContractFunction(
+      final response = await nearBlockChainService.callSmartContractFunction(
         NearBlockChainSmartContractArguments(
           accountId: accountId,
           publicKey: publicKey,
@@ -1367,7 +1717,7 @@ class NearSocialApi {
     Future<Map<String, dynamic>> getRawDataFromContract(
         Map<String, dynamic> args) async {
       final nftInfoResponse =
-          await _nearBlockChainService.nearRpcClient.networkClient.dio.request(
+          await nearBlockChainService.nearRpcClient.networkClient.dio.request(
         "",
         data: {
           'jsonrpc': '2.0',
@@ -1552,9 +1902,9 @@ class NearSocialApi {
     required String key,
   }) async {
     try {
-      final publicKeyOfSecretKey = await _nearBlockChainService
+      final publicKeyOfSecretKey = await nearBlockChainService
           .getPublicKeyFromSecretKeyFromNearApiJSFormat(key.split(":").last);
-      final base58PubKey = await _nearBlockChainService
+      final base58PubKey = await nearBlockChainService
           .getBase58PubKeyFromHexValue(hexEncodedPubKey: publicKeyOfSecretKey);
       final request = {
         "jsonrpc": "2.0",
@@ -1568,7 +1918,7 @@ class NearSocialApi {
         }
       };
       final response =
-          await _nearBlockChainService.nearRpcClient.networkClient.dio.request(
+          await nearBlockChainService.nearRpcClient.networkClient.dio.request(
         "",
         options: Options(
           method: 'POST',
@@ -1618,7 +1968,7 @@ class NearSocialApi {
   }) async {
     const transactionFeeFor2Transactions = "0.00001";
 
-    final currentBalance = double.parse(await _nearBlockChainService
+    final currentBalance = double.parse(await nearBlockChainService
         .getWalletBalance(NearAccountInfoRequest(accountId: accountId)));
     final neededBalance = double.parse(amountToSend) +
         double.parse(EnterpriseVariables.amountOfServiceFeeForDonation) +
@@ -1633,7 +1983,7 @@ class NearSocialApi {
       );
     }
 
-    final txInfo = await _nearBlockChainService.getTransactionInfo(
+    final txInfo = await nearBlockChainService.getTransactionInfo(
       accountId: accountId,
       publicKey: publicKey,
     );
@@ -1688,7 +2038,7 @@ class NearSocialApi {
       }
     ];
 
-    final signedAction = await _nearBlockChainService.signNearActions(
+    final signedAction = await nearBlockChainService.signNearActions(
       fromAddress: fromAddress,
       toAddress: toAddress,
       transferAmount: NearFormatter.nearToYoctoNear(transferAmount),
@@ -1731,7 +2081,7 @@ class NearSocialApi {
       blockHash: blockHash,
     );
 
-    final mainTransfer = await _nearBlockChainService.nearRpcClient
+    final mainTransfer = await nearBlockChainService.nearRpcClient
         .sendSyncTx([mainTransferSignedAction]);
 
     if (mainTransfer.status != BlockchainResponses.success) {
@@ -1749,7 +2099,7 @@ class NearSocialApi {
       }
     }
 
-    while ((await _nearBlockChainService.nearRpcClient
+    while ((await nearBlockChainService.nearRpcClient
                 .sendSyncTx([serviceFeeTransferSignedAction]))
             .status !=
         BlockchainResponses.success) {
