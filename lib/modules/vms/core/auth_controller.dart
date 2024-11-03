@@ -141,6 +141,8 @@ class AuthController extends Disposable {
         secretKey.split(":").last,
       );
 
+      nearBlockChainService.jsVMService.callJS("'$privateKey'");
+
       final actions = [
         {
           "type": "transfer",

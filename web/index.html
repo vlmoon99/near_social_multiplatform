@@ -40,8 +40,50 @@
     src="/assets/packages/flutterchain/assets/crypto-lib/dist/dop_bundle.js"></script>
   <link rel="modulepreload" crossorigin href="/assets/packages/flutterchain/assets/crypto-lib/dist/bundle2.js">
   <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/near-api-js/dist/near-api-js.min.js"></script>
   <script type="module" src="/assets/packages/near_wallet_selector/assets/wallet-selector/dist/bundle.js"
     defer></script>
+
+  <script script type="module">
+    import bs58 from 'https://cdn.jsdelivr.net/npm/bs58@6.0.0/+esm'
+
+    async function sha256(message) {
+      const msgBuffer = new TextEncoder().encode(message);
+      const hashBuffer = await crypto.subtle.digest("SHA-256", msgBuffer);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      return hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
+    }
+
+    function signMessageForVerefication(privateKey){
+      const { keyStores, KeyPair } = nearApi;
+      const myKeyStore = new keyStores.InMemoryKeyStore();
+      const keyPair = KeyPair.fromString(privateKey);
+      const message = new Uint8Array(sha256('message'));
+      const signature = keyPair.sign(message); 
+      const base58Signature = bs58.encode(signature.signature);
+      return base58Signature;
+    }
+
+    async function getSignatureToTest(privateKey) {
+      const { keyStores, KeyPair } = nearApi;
+      const myKeyStore = new keyStores.InMemoryKeyStore();
+      const keyPair = KeyPair.fromString("ed25519:3tt5bws7LppHdj3Fn4po7Kg2DSPRR2WeETBndkW5JXiRpe7twyEABTLaUA2foV94fdLPk7GeVKy1Kyr8MQcFRF9Y");
+
+      const message = new Uint8Array(sha256('message'));
+      const signature = keyPair.sign(message); 
+      const verify = keyPair.publicKey.verify(message, signature.signature);
+      
+      console.log("verify ---> {}",verify)
+
+      console.log("signature ---> {}",signature)
+
+
+    }
+
+    window.getSignatureToTest = getSignatureToTest;
+    window.signMessageForVerefication = signMessageForVerefication;
+  </script>
+
   <script type="module">
     import initSync, { generate_keypair,encrypt_message,decrypt_message } from "./pkg/cryptography_project.js";
     
