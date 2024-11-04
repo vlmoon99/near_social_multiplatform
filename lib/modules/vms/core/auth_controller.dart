@@ -98,7 +98,7 @@ class AuthController extends Disposable {
   }
 
   Future<bool> verifyTransaction({
-    required String signedTx,
+    required String signature,
     required String publicKeyStr,
     required String uuid,
     required String accountId,
@@ -110,7 +110,7 @@ class AuthController extends Disposable {
           functions.httpsCallable('verifySignedTransaction');
 
       final response = await callable.call(<String, dynamic>{
-        'signedTx': signedTx,
+        'signature': signature,
         'publicKeyStr': publicKeyStr,
         'uuid': uuid,
         'accountId': accountId,
@@ -141,34 +141,15 @@ class AuthController extends Disposable {
         secretKey.split(":").last,
       );
 
-      nearBlockChainService.jsVMService.callJS("'$privateKey'");
+      String base58EncodedPublicKey = (await nearBlockChainService.jsVMService.callJS("window.fromSecretToNearAPIJSPublicKey('$secretKey')"));
 
-      final actions = [
-        {
-          "type": "transfer",
-          "data": {"amount": "1"}
-        }
-      ];
+      String signedMessagedForVerification = (await nearBlockChainService.jsVMService.callJS("window.signMessageForVerification('$secretKey')")).toString();
 
-      final info = await nearBlockChainService.getTransactionInfo(
-          accountId: accountId, publicKey: publicKey);
-
-      String signedTx = await nearBlockChainService.signNearActions(
-        fromAddress: accountId,
-        toAddress: "fake.near",
-        transferAmount: "1",
-        privateKey: privateKey,
-        gas: BlockchainGas.gas[BlockChains.near]!,
-        nonce: info.nonce,
-        blockHash: info.blockHash,
-        actions: actions,
-      );
-
-      print("signedTx  " + signedTx);
+      print("signedMessagedForVerification  " + signedMessagedForVerification);
 
        verifyTransaction(
-        signedTx: signedTx,
-        publicKeyStr: publicKey,
+        signature: signedMessagedForVerification,
+        publicKeyStr: base58EncodedPublicKey,
         uuid: FirebaseAuth.instance.currentUser!.uid,
         accountId: accountId,
       ).then((resVerefication) async {
