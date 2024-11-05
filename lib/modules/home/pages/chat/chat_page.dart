@@ -3,7 +3,9 @@ import 'dart:math';
 import 'dart:collection';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:collection/collection.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
 import 'package:flutter_chat_ui/flutter_chat_ui.dart';
@@ -38,7 +40,8 @@ class _ChatPageState extends State<ChatPage> {
       BehaviorSubject<EncryptionKeypair?>();
   final BehaviorSubject<List<types.Message>> messagesStream =
       BehaviorSubject<List<types.Message>>()..add([]);
-  final BehaviorSubject<bool> isLoadingStream = BehaviorSubject<bool>()..add(false);
+  final BehaviorSubject<bool> isLoadingStream = BehaviorSubject<bool>()
+    ..add(false);
 
   @override
   void initState() {
@@ -154,6 +157,25 @@ class _ChatPageState extends State<ChatPage> {
     }
   }
 
+Future<void> deleteRoom(String roomId, String uuid,bool isSecure) async {
+    try {
+      final HttpsCallable callable =
+          FirebaseFunctions.instance.httpsCallable('deleteRoom');
+
+      final response = await callable.call(<String, dynamic>{
+        'roomId': roomId,
+        'uuid': uuid,
+        'isSecure': isSecure,
+      });
+
+      if (response.data['success'] == true) {
+        print('Room deleted successfully: ${response.data['message']}');
+      }
+    } catch (e) {
+      print('Failed to delete room: $e');
+    }
+  }
+
   Future<void> sendMessage(types.PartialText data, types.Room room) async {
     final listOfPubKeys = (room.metadata?['encryptionKeys'] as List<dynamic>?)
             ?.map((e) => e.toString())
@@ -178,9 +200,12 @@ class _ChatPageState extends State<ChatPage> {
         isThereMoreThanOnePublicKeyInside) {
       if (data.metadata == null) {
         final newMessage = types.PartialText(text: "Encrypted", metadata: {});
-        final usersInsideRoom = room.metadata!.entries.where((entry) => entry.key.contains(":pub_key")).map((entry) => entry).toList();
+        final usersInsideRoom = room.metadata!.entries
+            .where((entry) => entry.key.contains(":pub_key"))
+            .map((entry) => entry)
+            .toList();
 
-        for (MapEntry<String, dynamic> userEntry  in usersInsideRoom) {
+        for (MapEntry<String, dynamic> userEntry in usersInsideRoom) {
           final pubKey = userEntry.value;
           final accountId = userEntry.key.split(":");
           final encryptedText =
@@ -259,48 +284,68 @@ class _ChatPageState extends State<ChatPage> {
         centerTitle: true,
         title: Text(widget.isSecure ? "Secure Chat" : "Chat"),
         actions: [
-          StreamBuilder<bool>(
-            stream: isLoadingStream,
-            builder: (context, snapshot) {
-              final isLoading = snapshot.data ?? false;
-              if (isLoading){
-                // ignore: prefer_const_constructors
-                return CircularProgressIndicator.adaptive();
+          IconButton(
+            onPressed: () async {
+
+
+              if (widget.isSecure) {
+                await CryptoHelper.deleteEncryptionKeysForRoom(widget.room.id);
+                await deleteRoom(
+                    widget.room.id, FirebaseAuth.instance.currentUser!.uid,true);
+              } else {
+                await deleteRoom(
+                    widget.room.id, FirebaseAuth.instance.currentUser!.uid,false);
               }
-              return !widget.isSecure && !isLoading
-                  ? IconButton(
-                      onPressed: () async {
-                        if (!widget.isSecure) {
-                          isLoadingStream.add(true);
-                          final room = await Modular.get<NearSocialApi>()
-                              .createChatRoom(
-                                  true, widget.currentUser, widget.otherUser,
-                                  metadata: {"isSecure": true});
-                          isLoadingStream.add(false);
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (ctx) => ChatPage(
-                                room: room!,
-                                currentUser: widget.currentUser,
-                                otherUser: widget.otherUser,
-                                isSecure: true,
-                              ),
-                            ),
-                          );
-                        }
-                      },
-                      icon: Icon(
-                        Icons.security,
-                        color: widget.isSecure ? Colors.lightBlue : Colors.grey,
-                      ),
-                    )
-                  : IconButton(
-                      onPressed: () {},
-                      icon: const Icon(Icons.key),
-                    );
-            }
+
+              Navigator.pop(context);
+            },
+            icon: const Icon(
+              Icons.delete,
+              color: Colors.red,
+            ),
           ),
+          StreamBuilder<bool>(
+              stream: isLoadingStream,
+              builder: (context, snapshot) {
+                final isLoading = snapshot.data ?? false;
+                if (isLoading) {
+                  // ignore: prefer_const_constructors
+                  return CircularProgressIndicator.adaptive();
+                }
+                return !widget.isSecure && !isLoading
+                    ? IconButton(
+                        onPressed: () async {
+                          if (!widget.isSecure) {
+                            isLoadingStream.add(true);
+                            final room = await Modular.get<NearSocialApi>()
+                                .createChatRoom(
+                                    true, widget.currentUser, widget.otherUser,
+                                    metadata: {"isSecure": true});
+                            isLoadingStream.add(false);
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (ctx) => ChatPage(
+                                  room: room!,
+                                  currentUser: widget.currentUser,
+                                  otherUser: widget.otherUser,
+                                  isSecure: true,
+                                ),
+                              ),
+                            );
+                          }
+                        },
+                        icon: Icon(
+                          Icons.security,
+                          color:
+                              widget.isSecure ? Colors.lightBlue : Colors.grey,
+                        ),
+                      )
+                    : IconButton(
+                        onPressed: () {},
+                        icon: const Icon(Icons.key),
+                      );
+              }),
         ],
         leading: IconButton(
           onPressed: () {
@@ -397,6 +442,10 @@ class CryptoHelper {
         .write(key: roomId, value: jsonEncode(keys));
 
     return keys;
+  }
+
+  static Future<void> deleteEncryptionKeysForRoom(String roomId) async {
+    await const FlutterSecureStorage().delete(key: roomId);
   }
 
   static Future<EncryptionKeypair?> getKeysFromSecureDB(String roomId) async {
