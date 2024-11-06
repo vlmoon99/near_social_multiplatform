@@ -286,14 +286,13 @@ Future<void> deleteRoom(String roomId, String uuid,bool isSecure) async {
         actions: [
           IconButton(
             onPressed: () async {
-
-
+              
               if (widget.isSecure) {
                 await CryptoHelper.deleteEncryptionKeysForRoom(widget.room.id);
-                await deleteRoom(
+                 deleteRoom(
                     widget.room.id, FirebaseAuth.instance.currentUser!.uid,true);
               } else {
-                await deleteRoom(
+                 deleteRoom(
                     widget.room.id, FirebaseAuth.instance.currentUser!.uid,false);
               }
 
