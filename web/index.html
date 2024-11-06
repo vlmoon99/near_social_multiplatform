@@ -40,8 +40,55 @@
     src="/assets/packages/flutterchain/assets/crypto-lib/dist/dop_bundle.js"></script>
   <link rel="modulepreload" crossorigin href="/assets/packages/flutterchain/assets/crypto-lib/dist/bundle2.js">
   <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+  
+  <script src="https://cdn.jsdelivr.net/npm/near-api-js/dist/near-api-js.min.js"></script>
+  
   <script type="module" src="/assets/packages/near_wallet_selector/assets/wallet-selector/dist/bundle.js"
     defer></script>
+
+  <script script type="module">
+    import bs58 from 'https://cdn.jsdelivr.net/npm/bs58@6.0.0/+esm'
+
+    async function sha256(message) {
+      const msgBuffer = new TextEncoder().encode(message);
+      const hashBuffer = await crypto.subtle.digest("SHA-256", msgBuffer);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      return hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
+    }
+
+    function signMessageForVerification(privateKey){
+      const { keyStores, KeyPair } = nearApi;
+      const keyPair = KeyPair.fromString(privateKey);
+      const message = new Uint8Array([]);
+      const signature = keyPair.sign(message); 
+      const base58Signature = bs58.encode(signature.signature);
+      return base58Signature;
+    }
+
+    async function getSignatureToTest(privateKey) {
+      const { keyStores, KeyPair } = nearApi;
+      const keyPair = KeyPair.fromString("ed25519:3tt5bws7LppHdj3Fn4po7Kg2DSPRR2WeETBndkW5JXiRpe7twyEABTLaUA2foV94fdLPk7GeVKy1Kyr8MQcFRF9Y");
+
+      const message = new Uint8Array(sha256('message'));
+      const signature = keyPair.sign(message); 
+      const verify = keyPair.publicKey.verify(message, signature.signature);
+      
+      console.log("verify ---> {}",verify)
+
+      console.log("signature ---> {}",signature)
+
+
+    }
+
+    function fromSecretToNearAPIJSPublicKey(secretKey) {
+      const keypair = nearApi.utils.KeyPair.fromString(secretKey);
+    return bs58.encode(keypair.getPublicKey().data)
+}
+    window.getSignatureToTest = getSignatureToTest;
+    window.signMessageForVerification = signMessageForVerification;
+    window.fromSecretToNearAPIJSPublicKey = fromSecretToNearAPIJSPublicKey;
+  </script>
+
   <script type="module">
     import initSync, { generate_keypair,encrypt_message,decrypt_message } from "./pkg/cryptography_project.js";
     
@@ -52,28 +99,7 @@
     window.decrypt_message = decrypt_message;
 
     initSync().then(() => {
-      console.log("Generating RSA Keypair...");
-      const keypair = generate_keypair();
-      console.log("Public Key:", keypair.public_key);
-      console.log("Private Key:", keypair.private_key);
-
-      const message = "Hello, World!";
-      console.log("Original Message:", message);
-
-      const encryptedMessage = encrypt_message(keypair.public_key, message);
-      console.log("Encrypted Message (Base64):", encryptedMessage);
-
-      const decryptedMessage = decrypt_message(keypair.private_key, encryptedMessage);
-      console.log("Decrypted Message:", decryptedMessage);
-
-      if (message === decryptedMessage) {
-        console.log("Success! The message was correctly encrypted and decrypted.");
-      } else {
-        console.error("Failure! The decrypted message does not match the original.");
-      }
-
-
-
+      console.log("Cryptography module was intied sucsessfully");
     });
   </script>
 </head>

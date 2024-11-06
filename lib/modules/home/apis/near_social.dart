@@ -99,10 +99,6 @@ class NearSocialApi {
           .collection('rooms/$roomId/messages')
           .add(messageMap);
 
-      await FirebaseFirestore.instance
-          .collection('rooms')
-          .doc(roomId)
-          .update({'updatedAt': FieldValue.serverTimestamp()});
     }
   }
 
@@ -259,13 +255,12 @@ class NearSocialApi {
     }
   }
 
-  Future<types.Room> createChatRoom(
+  Future<types.Room?> createChatRoom(
     bool isSecure,
     types.User currentUser,
     types.User otherUser, {
     Map<String, dynamic>? metadata,
   }) async {
-
     final users = [currentUser, otherUser];
     String roomId;
 
@@ -276,32 +271,62 @@ class NearSocialApi {
       roomId = combineAndHash(currentUser.id, otherUser.id);
     }
 
-    final roomDoc =
-        await FirebaseFirestore.instance.collection('rooms').doc(roomId).get();
+    var roomDoc;
+    var roomData;
+    try {
+      roomDoc = await FirebaseFirestore.instance
+          .collection('rooms')
+          .doc(roomId)
+          .get();
 
-    if (roomDoc.exists) {
-      var roomData = roomDoc.data();
-      final room = transformRoomData(roomId, roomData!);
-      return room;
-    } else {
-      await FirebaseFirestore.instance.collection('rooms').doc(roomId).set({
-        'createdAt': FieldValue.serverTimestamp(),
-        'imageUrl': null,
-        'metadata': metadata,
-        'name': null,
-        'type': types.RoomType.direct.toShortString(),
-        'updatedAt': FieldValue.serverTimestamp(),
-        'userIds': users.map((user) => user.id).toList(),
-        'userRoles': null,
-      });
+      if (roomDoc.exists) {
+        roomData = roomDoc.data();
+        final room = transformRoomData(roomId, roomData!);
+        return room;
+      } else {
+        await FirebaseFirestore.instance.collection('rooms').doc(roomId).set({
+          'createdAt': FieldValue.serverTimestamp(),
+          'imageUrl': null,
+          'metadata': metadata,
+          'name': null,
+          'type': types.RoomType.direct.toShortString(),
+          'updatedAt': FieldValue.serverTimestamp(),
+          'userIds': users.map((user) => user.id).toList(),
+          'userRoles': null,
+        });
 
-      return types.Room(
-        id: roomId,
-        metadata: metadata,
-        type: types.RoomType.direct,
-        users: users,
-      );
+        return types.Room(
+          id: roomId,
+          metadata: metadata,
+          type: types.RoomType.direct,
+          users: users,
+        );
+      }
+    } catch (e) {
+      if (e is FirebaseException && e.code == 'permission-denied') {
+        final userIds = users.map((user) => user.id).toList();
+        await FirebaseFirestore.instance.collection('rooms').doc(roomId).set({
+          'createdAt': FieldValue.serverTimestamp(),
+          'imageUrl': null,
+          'metadata': metadata,
+          'name': null,
+          'type': types.RoomType.direct.toShortString(),
+          'updatedAt': FieldValue.serverTimestamp(),
+          'userIds': userIds,
+          'userRoles': null,
+        });
+
+        return types.Room(
+          id: roomId,
+          metadata: metadata,
+          type: types.RoomType.direct,
+          users: users,
+        );
+      } else {
+        print("Unexpected error: $e");
+      }
     }
+
   }
 
   types.Room transformRoomData(String roomId, Map<String, dynamic> roomData) {
@@ -327,7 +352,7 @@ class NearSocialApi {
     );
   }
 
-String combineAndHash(String str1, String str2) {
+  String combineAndHash(String str1, String str2) {
     List<String> sortedStrings = [str1, str2]..sort();
 
     String combined = sortedStrings[0] + sortedStrings[1];
@@ -338,7 +363,6 @@ String combineAndHash(String str1, String str2) {
 
     return hash.toString();
   }
-
 
   Future<List<types.Room>> processRoomsQuery(
     User firebaseUser,
