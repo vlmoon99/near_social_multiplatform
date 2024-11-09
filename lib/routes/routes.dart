@@ -26,6 +26,7 @@ class _Home extends RouteClass {
   String notificationsPage = '/notifications';
   String keyManagerPage = '/key_manager';
   String settingsPage = '/settings';
+  String chatsPage = '/chats';
   String blockedUsersPage = '/blocked_users';
   String hiddenPostsPage = '/hided_posts';
   String mintManager = '/mint_manager';

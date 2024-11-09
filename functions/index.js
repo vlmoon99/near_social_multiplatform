@@ -34,6 +34,7 @@ async function clearMessages(db, collectionPath) {
 
 
 
+
 exports.deleteRoom = functions.https.onCall(async (body, context) => {
     const { roomId, uuid , isSecure } = body.data;
 
@@ -80,7 +81,6 @@ exports.deleteRoom = functions.https.onCall(async (body, context) => {
         throw new functions.https.HttpsError('internal', 'An error occurred while deleting the room');
     }
 });
-
 
 exports.verifySignedTransaction = functions.https.onCall(async (body, context) => {
     const { signature, publicKeyStr, uuid, accountId } = body.data;

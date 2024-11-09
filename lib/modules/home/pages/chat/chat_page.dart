@@ -1,6 +1,4 @@
 import 'dart:convert';
-import 'dart:math';
-import 'dart:collection';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
@@ -157,7 +155,7 @@ class _ChatPageState extends State<ChatPage> {
     }
   }
 
-Future<void> deleteRoom(String roomId, String uuid,bool isSecure) async {
+  Future<void> deleteRoom(String roomId, String uuid, bool isSecure) async {
     try {
       final HttpsCallable callable =
           FirebaseFunctions.instance.httpsCallable('deleteRoom');
@@ -286,14 +284,13 @@ Future<void> deleteRoom(String roomId, String uuid,bool isSecure) async {
         actions: [
           IconButton(
             onPressed: () async {
-              
               if (widget.isSecure) {
                 await CryptoHelper.deleteEncryptionKeysForRoom(widget.room.id);
-                 deleteRoom(
-                    widget.room.id, FirebaseAuth.instance.currentUser!.uid,true);
+                deleteRoom(widget.room.id,
+                    FirebaseAuth.instance.currentUser!.uid, true);
               } else {
-                 deleteRoom(
-                    widget.room.id, FirebaseAuth.instance.currentUser!.uid,false);
+                deleteRoom(widget.room.id,
+                    FirebaseAuth.instance.currentUser!.uid, false);
               }
 
               Navigator.pop(context);

@@ -1,8 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_modular/flutter_modular.dart';
-import 'package:flutterchain/flutterchain_lib/services/core/js_engines/core/js_vm.dart';
 import 'package:near_social_mobile/modules/core_module.dart';
 import 'package:near_social_mobile/modules/home/apis/near_social.dart';
+import 'package:near_social_mobile/modules/home/pages/chat/user_chats_page.dart';
 import 'package:near_social_mobile/modules/home/pages/home_menu/home_menu_page.dart';
 import 'package:near_social_mobile/modules/home/pages/home_menu/subpages/mint_manager/mintbase_module.dart';
 import 'package:near_social_mobile/modules/home/pages/home_menu/subpages/mint_manager/vm/mintbase_controller.dart';
@@ -89,6 +89,7 @@ class HomeModule extends Module {
       Routes.home.widgetPage,
       child: (context) => NearWidget(nearWidgetSetupCredentials: r.args.data),
     );
+    r.child(Routes.home.chatsPage, child: (context) => const UserChatsPage());
     r.child(
       Routes.home.userPage,
       child: (context) {
