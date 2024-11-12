@@ -1,17 +1,18 @@
 {
-  "hosting": {
-    "public": "build/web",
-    "ignore": [
-      "firebase.json",
-      "**/.*",
-      "**/node_modules/**"
-    ],
-    "rewrites": [
-      {
-        "source": "**",
-        "destination": "/index.html"
-      }
-    ]
+  "emulators": {
+    "auth": {
+      "port": 3333
+    },
+    "functions": {
+      "port": 2222
+    },
+    "firestore": {
+      "port": 1111
+    },
+    "ui": {
+      "enabled": true
+    },
+    "singleProjectMode": true
   },
   "functions": [
     {
@@ -25,5 +26,13 @@
         "*.local"
       ]
     }
-  ]
+  ],
+  "hosting": {
+    "public": "./build/web",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ]
+  }
 }

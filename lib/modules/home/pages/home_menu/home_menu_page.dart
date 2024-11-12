@@ -1,4 +1,5 @@
 import 'package:animated_text_kit/animated_text_kit.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -293,7 +294,7 @@ class _HomeMenuPageState extends State<HomeMenuPage> {
                         ],
                       ),
                     ).then(
-                      (value) {
+                      (value) async {
                         if (value != null && value) {
                           final authController = Modular.get<AuthController>();
                           if (!kIsWeb) {
@@ -301,7 +302,9 @@ class _HomeMenuPageState extends State<HomeMenuPage> {
                                 .unsubscribeFromNotifications(
                                     authController.state.accountId);
                           }
-                          authController.logout();
+                          // authController.logout();
+                          await FirebaseAuth.instance.signOut();
+
                           Modular.get<NotificationsController>().clear();
                           Modular.get<FilterController>().clear();
                           Modular.get<PostsController>().clear();
