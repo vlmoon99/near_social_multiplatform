@@ -21,15 +21,15 @@ void main() async {
     WidgetsFlutterBinding.ensureInitialized();
     await initOfApp();
 
-    if (kDebugMode) {
-      try {
-        FirebaseFirestore.instance.useFirestoreEmulator('localhost', 1111);
-        FirebaseFunctions.instance.useFunctionsEmulator('localhost', 2222);
-        await FirebaseAuth.instance.useAuthEmulator('localhost', 3333);
-      } catch (e) {
-        print(e);
-      }
-    }
+    // if (kDebugMode) {
+    //   try {
+    //     FirebaseFirestore.instance.useFirestoreEmulator('localhost', 1111);
+    //     FirebaseFunctions.instance.useFunctionsEmulator('localhost', 2222);
+    //     await FirebaseAuth.instance.useAuthEmulator('localhost', 3333);
+    //   } catch (e) {
+    //     print(e);
+    //   }
+    // }
 
     // FlutterError.onError = (FlutterErrorDetails details) {
     //   final catcher = Modular.get<Catcher>();
