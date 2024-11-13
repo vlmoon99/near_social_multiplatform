@@ -1,4 +1,5 @@
 import 'package:animated_text_kit/animated_text_kit.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -10,7 +11,6 @@ import 'package:flutterchain/flutterchain_lib/models/chains/near/near_account_in
 import 'package:flutterchain/flutterchain_lib/services/chains/near_blockchain_service.dart';
 import 'package:near_social_mobile/config/constants.dart';
 import 'package:near_social_mobile/config/theme.dart';
-import 'package:near_social_mobile/modules/home/pages/chat/rooms_page.dart';
 import 'package:near_social_mobile/modules/home/pages/home_menu/widgets/home_menu_list_tile.dart';
 import 'package:near_social_mobile/modules/home/vms/notifications/notifications_controller.dart';
 import 'package:near_social_mobile/modules/home/vms/posts/posts_controller.dart';
@@ -244,6 +244,17 @@ class _HomeMenuPageState extends State<HomeMenuPage> {
                 ),
                 SizedBox(height: 15.h),
                 HomeMenuListTile(
+                  tile: const Icon(Icons.message),
+                  title: "Chats",
+                  onTap: () {
+                    HapticFeedback.lightImpact();
+                    Modular.to.pushNamed(
+                      ".${Routes.home.chatsPage}",
+                    );
+                  },
+                ),
+                SizedBox(height: 15.h),
+                HomeMenuListTile(
                   title: "Logout",
                   tile: const Icon(Icons.logout),
                   onTap: () async {
@@ -283,7 +294,7 @@ class _HomeMenuPageState extends State<HomeMenuPage> {
                         ],
                       ),
                     ).then(
-                      (value) {
+                      (value) async {
                         if (value != null && value) {
                           final authController = Modular.get<AuthController>();
                           if (!kIsWeb) {
@@ -291,7 +302,9 @@ class _HomeMenuPageState extends State<HomeMenuPage> {
                                 .unsubscribeFromNotifications(
                                     authController.state.accountId);
                           }
-                          authController.logout();
+                          // authController.logout();
+                          await FirebaseAuth.instance.signOut();
+
                           Modular.get<NotificationsController>().clear();
                           Modular.get<FilterController>().clear();
                           Modular.get<PostsController>().clear();

@@ -45,3 +45,5 @@ app.*.map.json
 .vscode/
 
 cryptography_project/target/
+
+local_gateway/node_modules/
