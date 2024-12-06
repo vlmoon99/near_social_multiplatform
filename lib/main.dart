@@ -72,7 +72,7 @@ class AppWidget extends StatelessWidget {
     return ScreenUtilInit(
       builder: (_, __) {
         return MaterialApp.router(
-          title: 'Near Social Mobile',
+          title: 'Near Social Multiplatform',
           debugShowCheckedModeBanner: false,
           routerConfig: Modular.routerConfig,
           localizationsDelegates: context.localizationDelegates,

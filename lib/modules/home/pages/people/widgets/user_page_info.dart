@@ -497,7 +497,7 @@ class UserPageMainInfo extends StatelessWidget {
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(
                                         content: Text(
-                                            "AccountId ${user.generalAccountInfo.accountId} not found isnide chat system , he must to use Near Social Mobile gateway for chating"),
+                                            "AccountId ${user.generalAccountInfo.accountId} not found isnide chat system , he must to use Near Social Multiplatform gateway for chating"),
                                       ),
                                     );
                                   }

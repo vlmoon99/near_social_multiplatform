@@ -1,4 +1,4 @@
-# NEAR SOCIAL MOBILE
+# Near Social Multiplatform
 
 ## About
 
@@ -26,7 +26,7 @@ Web App preview: [https://near-social-mobile-777.web.app](https://near-social-mo
 ![screenshot](https://imgkub.com/images/2024/08/02/msn-preview-2.png "Preview 2")
 
 
-**NEAR SOCIAL MOBILE** is designed with the community in mind, offering unique and powerful features to enhance your mobile experience on the **NEAR Social network**.
+**Near Social Multiplatform** is designed with the community in mind, offering unique and powerful features to enhance your mobile experience on the **NEAR Social network**.
 
 ## How to contribute 
 
@@ -137,4 +137,4 @@ Also, tap on your key to see more details:
 
 ## A few words
 
-**NEAR SOCIAL MOBILE** is designed with the community in mind, offering unique and powerful features to enhance your mobile experience on the **NEAR Social network**. Thank you for your interest in NEAR SOCIAL MOBILE.
+**Near Social Multiplatform** is designed with the community in mind, offering unique and powerful features to enhance your mobile experience on the **NEAR Social network**. Thank you for your interest in Near Social Multiplatform.

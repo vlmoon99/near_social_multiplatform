@@ -34,7 +34,7 @@ class _StartSplashPageState extends State<StartSplashPage>
   //           padding: const EdgeInsets.all(20).r,
   //           child: Column(mainAxisSize: MainAxisSize.min, children: [
   //             const Text(
-  //               'Welcome to Near Social Mobile!',
+  //               'Welcome to Near Social Multiplatform!',
   //               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
   //             ),
   //             SizedBox(height: 5.h),
