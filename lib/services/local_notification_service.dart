@@ -32,9 +32,6 @@ class LocalNotificationService {
       requestAlertPermission: true,
       requestBadgePermission: true,
       requestCriticalPermission: true,
-      onDidReceiveLocalNotification: (id, title, body, payload) async {
-        log('id: $id, title: $title, body: $body, payload: $payload');
-      },
     );
     InitializationSettings initializationSettings = InitializationSettings(
       android: androidInitializationSettings,

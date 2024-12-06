@@ -65,13 +65,3 @@ class Catcher {
     );
   }
 }
-
-class ErrorMessageHandler {
-  static String getErrorMessageForNotFlutterExceptions(dynamic error) {
-    if (error is MissingPluginException) {
-      return 'This feature requires a native plugin that is not available.';
-    }
-
-    return 'An error occurred. Please try again later.';
-  }
-}
