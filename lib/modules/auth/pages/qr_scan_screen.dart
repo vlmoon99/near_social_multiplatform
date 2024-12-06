@@ -8,6 +8,7 @@ import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:near_social_mobile/exceptions/exceptions.dart';
 import 'package:near_social_mobile/formatters/qr_formatter.dart';
+import 'package:near_social_mobile/modules/auth/pages/utils/encrypt_data_and_login.dart';
 import 'package:near_social_mobile/routes/routes.dart';
 import 'package:qr_code_scanner/qr_code_scanner.dart';
 import 'package:qrcode_reader_web/qrcode_reader_web.dart';
@@ -56,10 +57,8 @@ class _QRReaderScreenState extends State<QRReaderScreen> {
     try {
       final authorizationCredentials =
           QRFormatter.convertURLToAuthorizationCredentials(code);
-      Modular.to.pushReplacementNamed(
-        Routes.auth.getRoute(Routes.auth.encryptData),
-        arguments: authorizationCredentials,
-      );
+      await encryptDataAndLogin(authorizationCredentials);
+      Modular.to.navigate(Routes.home.getModule());
     } on AppExceptions catch (err) {
       log(err.messageForDev);
       ScaffoldMessenger.of(context).showSnackBar(
