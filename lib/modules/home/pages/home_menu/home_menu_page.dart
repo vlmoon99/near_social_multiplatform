@@ -302,9 +302,8 @@ class _HomeMenuPageState extends State<HomeMenuPage> {
                                 .unsubscribeFromNotifications(
                                     authController.state.accountId);
                           }
-                          // authController.logout();
+                          authController.logout();
                           await FirebaseAuth.instance.signOut();
-
                           Modular.get<NotificationsController>().clear();
                           Modular.get<FilterController>().clear();
                           Modular.get<PostsController>().clear();

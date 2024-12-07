@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:developer';
 
 import 'package:easy_localization/easy_localization.dart';
@@ -6,17 +5,12 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:near_social_mobile/assets/localizations/localizations_strings.dart';
-import 'package:near_social_mobile/config/constants.dart';
+import 'package:near_social_mobile/modules/auth/pages/utils/encrypt_data_and_login.dart';
 import 'package:near_social_mobile/modules/vms/core/models/authorization_credentials.dart';
-import 'package:near_social_mobile/modules/vms/core/auth_controller.dart';
 import 'package:near_social_mobile/routes/routes.dart';
-import 'package:near_social_mobile/services/crypto_storage_service.dart';
-import 'package:near_social_mobile/services/crypto_service.dart';
 import 'package:near_social_mobile/services/local_auth_service.dart';
-import 'package:near_social_mobile/services/notification_subscription_service.dart';
 import 'package:near_social_mobile/shared_widgets/custom_button.dart';
 
 class EncryptionScreen extends StatefulWidget {
@@ -28,36 +22,6 @@ class EncryptionScreen extends StatefulWidget {
 }
 
 class _EncryptionScreenState extends State<EncryptionScreen> {
-  Future<void> encryptDataAndLogin() async {
-    final secureStorage = Modular.get<FlutterSecureStorage>();
-    final cryptoStorageService =
-        CryptoStorageService(secureStorage: secureStorage);
-    final cryptographicKey = CryptoUtils.generateCryptographicKey();
-    await cryptoStorageService.saveCryptographicKeyToStorage(
-        cryptographicKey: cryptographicKey);
-    await cryptoStorageService.write(
-      storageKey: StorageKeys.authInfo,
-      data: jsonEncode(widget.authorizationCredentials),
-    );
-    await Modular.get<FlutterSecureStorage>()
-        .write(key: StorageKeys.networkType, value: "mainnet");
-    final authController = Modular.get<AuthController>();
-    await authController
-        .login(
-      accountId: widget.authorizationCredentials.accountId,
-      secretKey: widget.authorizationCredentials.secretKey,
-    )
-        .then(
-      (_) {
-        if (!kIsWeb) {
-          Modular.get<NotificationSubscriptionService>()
-              .subscribeToNotifications(
-            widget.authorizationCredentials.accountId,
-          );
-        }
-      },
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -122,7 +86,9 @@ class _EncryptionScreenState extends State<EncryptionScreen> {
                     );
                   }
                   if (!authenticated) return;
-                  await encryptDataAndLogin();
+                  await encryptDataAndLogin(
+                    widget.authorizationCredentials,
+                  );
                   Modular.to.navigate(Routes.home.getModule());
                 },
                 child: const Text(
