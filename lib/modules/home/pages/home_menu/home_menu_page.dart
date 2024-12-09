@@ -1,7 +1,5 @@
 import 'package:animated_text_kit/animated_text_kit.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_modular/flutter_modular.dart';
@@ -12,14 +10,9 @@ import 'package:flutterchain/flutterchain_lib/services/chains/near_blockchain_se
 import 'package:near_social_mobile/config/constants.dart';
 import 'package:near_social_mobile/config/theme.dart';
 import 'package:near_social_mobile/modules/home/pages/home_menu/widgets/home_menu_list_tile.dart';
-import 'package:near_social_mobile/modules/home/vms/notifications/notifications_controller.dart';
-import 'package:near_social_mobile/modules/home/vms/posts/posts_controller.dart';
 import 'package:near_social_mobile/modules/home/vms/users/user_list_controller.dart';
 import 'package:near_social_mobile/modules/vms/core/auth_controller.dart';
-import 'package:near_social_mobile/modules/vms/core/filter_controller.dart';
 import 'package:near_social_mobile/routes/routes.dart';
-import 'package:near_social_mobile/services/notification_subscription_service.dart';
-import 'package:near_social_mobile/shared_widgets/custom_button.dart';
 import 'package:near_social_mobile/shared_widgets/near_network_image.dart';
 import 'package:near_social_mobile/shared_widgets/spinner_loading_indicator.dart';
 
@@ -255,61 +248,12 @@ class _HomeMenuPageState extends State<HomeMenuPage> {
                 ),
                 SizedBox(height: 15.h),
                 HomeMenuListTile(
-                  title: "Logout",
-                  tile: const Icon(Icons.logout),
-                  onTap: () async {
+                  tile: const Icon(Icons.feed),
+                  title: "Smart Posts",
+                  onTap: () {
                     HapticFeedback.lightImpact();
-                    showDialog(
-                      context: context,
-                      builder: (context) => AlertDialog(
-                        title: const Text(
-                          "Are you sure you want to logout?",
-                          textAlign: TextAlign.center,
-                        ),
-                        actionsAlignment: MainAxisAlignment.spaceEvenly,
-                        actions: [
-                          CustomButton(
-                            primary: true,
-                            onPressed: () {
-                              Modular.to.pop(true);
-                            },
-                            child: const Text(
-                              "Yes",
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                          CustomButton(
-                            onPressed: () {
-                              Modular.to.pop(false);
-                            },
-                            child: const Text(
-                              "No",
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ).then(
-                      (value) async {
-                        if (value != null && value) {
-                          final authController = Modular.get<AuthController>();
-                          if (!kIsWeb) {
-                            Modular.get<NotificationSubscriptionService>()
-                                .unsubscribeFromNotifications(
-                                    authController.state.accountId);
-                          }
-                          authController.logout();
-                          await FirebaseAuth.instance.signOut();
-                          Modular.get<NotificationsController>().clear();
-                          Modular.get<FilterController>().clear();
-                          Modular.get<PostsController>().clear();
-                          Modular.to.navigate("/");
-                        }
-                      },
+                    Modular.to.pushNamed(
+                      ".${Routes.home.smartPostsPage}",
                     );
                   },
                 ),

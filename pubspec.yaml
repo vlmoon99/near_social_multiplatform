@@ -56,6 +56,7 @@ dependencies:
   flutter_modular: 6.3.0
   flutter_screenutil: 5.9.0
   flutter_secure_storage: 9.0.0
+  flutter_staggered_grid_view: ^0.7.0
   flutter_svg: 2.0.10+1
   flutterchain:
     git:
@@ -69,7 +70,7 @@ dependencies:
   local_auth: 2.2.0
   mockito: 5.4.4
   near_wallet_selector:
-    git: 
+    git:
       url: https://github.com/ArturLevchuk/near_wallet_selector.git
   photo_view: 0.15.0
   pointycastle: ^3.9.1
