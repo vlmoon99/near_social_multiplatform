@@ -1,13 +1,20 @@
 import 'dart:math';
 
 import 'package:animated_text_kit/animated_text_kit.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:near_social_mobile/config/constants.dart';
 import 'package:near_social_mobile/config/theme.dart';
 import 'package:near_social_mobile/modules/auth/pages/start_page/widgets/auth_body.dart';
 import 'package:near_social_mobile/modules/auth/pages/start_page/widgets/login_body.dart';
+import 'package:near_social_mobile/modules/auth/pages/utils/encrypt_data_and_login.dart';
+import 'package:near_social_mobile/modules/vms/core/models/authorization_credentials.dart';
+import 'package:near_social_mobile/routes/routes.dart';
 import 'package:near_social_mobile/utils/checkAuthenticationOnDevice.dart';
+import 'package:near_wallet_selector/near_wallet_selector.dart';
 
 class StartSplashPage extends StatefulWidget {
   const StartSplashPage({super.key});
@@ -23,6 +30,8 @@ class _StartSplashPageState extends State<StartSplashPage>
   late Animation<double> _fadeAnimation;
 
   final ValueNotifier<bool?> localyAuthenticated = ValueNotifier(false);
+  final NearWalletSelectorWidgetController _nearWalletSelectorWidgetController =
+      NearWalletSelectorWidgetController();
 
   // Future<void> showAcceptAppPolicy() async {
   //   return showDialog(
@@ -206,13 +215,36 @@ class _StartSplashPageState extends State<StartSplashPage>
                                       localyAuthenticated.value = authenticated;
                                     },
                                   )
-                                : const LoginBody(),
+                                : LoginBody(
+                                    nearWalletSelectorWidgetController:
+                                        _nearWalletSelectorWidgetController,
+                                  ),
                           )
                         : const SizedBox.shrink(),
                   );
                 },
               ),
             ),
+            if (!kIsWeb)
+              Align(
+                alignment: Alignment.bottomCenter,
+                child: NearWalletSelectorWidget(
+                  controller: _nearWalletSelectorWidgetController,
+                  network: "mainnet",
+                  contractId: "social.near",
+                  redirectLink: appLink,
+                  onAccountFound: (account) async {
+                    if (account == null) {
+                      return;
+                    }
+                    await encryptDataAndLogin(AuthorizationCredentials(
+                      account.accountId,
+                      account.privateKey,
+                    ));
+                    Modular.to.navigate(Routes.home.getModule());
+                  },
+                ),
+              ),
           ],
         ),
       ),

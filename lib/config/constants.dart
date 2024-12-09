@@ -36,3 +36,6 @@ class EnterpriseVariables {
   static const accountForCollectingServiceFee =
       "3c826b466f4127b15506070b557f2c213a35acf2e42ca838f263194b8fe27ee0";
 }
+
+
+const String appLink = "nearsocialmultiplatform://redirect.to.app";

@@ -45,5 +45,7 @@ Future<void> encryptDataAndLogin(
       }
     },
   );
-  NearWalletSelector().clearCredentials();
+  if (kIsWeb) {
+    NearWalletSelector().clearCredentials();
+  }
 }
