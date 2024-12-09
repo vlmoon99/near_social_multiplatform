@@ -15,7 +15,6 @@ import 'config/setup.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await initOfApp();
   final app = EasyLocalization(
     supportedLocales: const [
       Locale('en'),
@@ -31,9 +30,11 @@ void main() async {
 
   // for debug purposes don't catch exceptions
   if (kDebugMode) {
+    await initOfApp();
     runApp(app);
   } else {
     runZonedGuarded(() async {
+      await initOfApp();
       FlutterError.onError = (FlutterErrorDetails details) {
         final catcher = Modular.get<Catcher>();
         catcher.exceptionsHandler.add(AppExceptions(
