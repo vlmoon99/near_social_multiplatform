@@ -26,12 +26,14 @@ class PostCard extends StatelessWidget {
     this.postsOfAccountId,
     this.allowToNavigateToPostAuthorPage = true,
     this.allowToNavigateToReposterAuthorPage = true,
+    this.maxContentHeight = 200,
   });
   final Post post;
   final PostsViewMode postsViewMode;
   final String? postsOfAccountId;
   final bool allowToNavigateToPostAuthorPage;
   final bool allowToNavigateToReposterAuthorPage;
+  final double maxContentHeight;
 
   @override
   Widget build(BuildContext context) {
@@ -79,6 +81,7 @@ class PostCard extends StatelessWidget {
                 padding: REdgeInsets.all(10.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Align(
                       alignment: Alignment.centerRight,
@@ -164,7 +167,7 @@ class PostCard extends StatelessWidget {
                                     Text(
                                       currentPost.authorInfo.name,
                                       overflow: TextOverflow.ellipsis,
-                                      maxLines: 2,
+                                      maxLines: 1,
                                       style: const TextStyle(
                                         fontWeight: FontWeight.bold,
                                       ),
@@ -191,7 +194,7 @@ class PostCard extends StatelessWidget {
                     SizedBox(height: 10.h),
                     ConstrainedBox(
                       constraints: BoxConstraints(
-                        maxHeight: 200.h,
+                        maxHeight: maxContentHeight.h,
                       ),
                       child: ScrollConfiguration(
                         behavior: NoScrollbarScrollBehavior(),

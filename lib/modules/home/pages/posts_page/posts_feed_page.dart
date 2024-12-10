@@ -4,6 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:near_social_mobile/config/theme.dart';
 import 'package:near_social_mobile/modules/home/pages/posts_page/widgets/create_post_dialog_body.dart';
 import 'package:near_social_mobile/modules/home/pages/posts_page/widgets/post_card.dart';
 import 'package:near_social_mobile/modules/home/vms/posts/posts_controller.dart';
@@ -118,38 +121,74 @@ class _PostsFeedPageState extends State<PostsFeedPage> {
                   filters: filterController.state,
                 );
               },
-              child: ListView.builder(
-                controller: _scrollController,
-                padding: const EdgeInsets.symmetric(horizontal: 15).r,
-                itemBuilder: (context, index) {
-                  //checking if posts enought ot scroll. if not -> load more posts
-                  if (index == 0) {
-                    WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
-                      if (_scrollController.position.maxScrollExtent == 0 &&
-                          postsState.status == PostLoadingStatus.loaded) {
-                        postsController.loadMorePosts(
-                            postsViewMode: PostsViewMode.main,
-                            filters: filterController.state);
-                      }
-                    });
-                  }
+              child: Builder(
+                builder: (context) {
+                  if (MediaQuery.sizeOf(context).width > 600) {
+                    return MasonryGridView.count(
+                      controller: _scrollController,
+                      crossAxisCount: 3, // Number of columns
+                      mainAxisSpacing: 10,
+                      crossAxisSpacing: 10,
+                      padding: const EdgeInsets.symmetric(horizontal: 15).r,
+                      itemBuilder: (context, index) {
+                        //checking if posts enought ot scroll. if not -> load more posts
+                        if (index == 0) {
+                          WidgetsBinding.instance
+                              .addPostFrameCallback((timeStamp) {
+                            if (_scrollController.position.maxScrollExtent ==
+                                    0 &&
+                                postsState.status == PostLoadingStatus.loaded) {
+                              postsController.loadMorePosts(
+                                  postsViewMode: PostsViewMode.main,
+                                  filters: filterController.state);
+                            }
+                          });
+                        }
+                        return PostCard(
+                          post: posts[index],
+                          postsViewMode: PostsViewMode.main,
+                        );
+                      },
+                      itemCount: posts.length,
+                    );
+                  } else {
+                    return ListView.builder(
+                      controller: _scrollController,
+                      padding: const EdgeInsets.symmetric(horizontal: 15).r,
+                      itemBuilder: (context, index) {
+                        //checking if posts enought ot scroll. if not -> load more posts
+                        if (index == 0) {
+                          WidgetsBinding.instance
+                              .addPostFrameCallback((timeStamp) {
+                            if (_scrollController.position.maxScrollExtent ==
+                                    0 &&
+                                postsState.status == PostLoadingStatus.loaded) {
+                              postsController.loadMorePosts(
+                                  postsViewMode: PostsViewMode.main,
+                                  filters: filterController.state);
+                            }
+                          });
+                        }
 
-                  final post = posts[index];
-                  return Column(
-                    children: [
-                      PostCard(
-                        post: post,
-                        postsViewMode: PostsViewMode.main,
-                      ),
-                      if (postsController.state.status ==
-                              PostLoadingStatus.loadingMorePosts &&
-                          index == postsState.posts.length - 1) ...[
-                        const Center(child: SpinnerLoadingIndicator()),
-                      ]
-                    ],
-                  );
+                        final post = posts[index];
+                        return Column(
+                          children: [
+                            PostCard(
+                              post: post,
+                              postsViewMode: PostsViewMode.main,
+                            ),
+                            if (postsController.state.status ==
+                                    PostLoadingStatus.loadingMorePosts &&
+                                index == postsState.posts.length - 1) ...[
+                              const Center(child: SpinnerLoadingIndicator()),
+                            ]
+                          ],
+                        );
+                      },
+                      itemCount: posts.length,
+                    );
+                  }
                 },
-                itemCount: posts.length,
               ),
             );
           }
@@ -170,7 +209,11 @@ class _PostsFeedPageState extends State<PostsFeedPage> {
             },
           );
         },
-        child: const Icon(Icons.post_add),
+        child: SvgPicture.asset(
+          "assets/media/icons/feather-icon.svg",
+          height: 24,
+          color: NEARColors.white,
+        ),
       ),
     );
   }
