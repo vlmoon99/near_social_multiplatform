@@ -2,7 +2,6 @@ import 'dart:math';
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:encrypt/encrypt.dart';
-import 'package:near_social_mobile/exceptions/exceptions.dart';
 
 class CryptoUtils {
   static Uint8List generateCryptographicKey([int keyLength = 32]) {
@@ -14,10 +13,7 @@ class CryptoUtils {
         key[i] = random.nextInt(256);
       }
     } catch (err) {
-      throw AppExceptions(
-        messageForUser: "Failed to generate cryptographic key",
-        messageForDev: err.toString(),
-      );
+      throw Exception("Failed to generate cryptographic key");
     }
     return key;
   }
@@ -27,10 +23,7 @@ class CryptoUtils {
     try {
       key = Uint8List.fromList(base64.decode(keyBase64));
     } catch (err) {
-      throw AppExceptions(
-        messageForUser: "Failed to decode cryptographic key",
-        messageForDev: err.toString(),
-      );
+      throw Exception("Failed to decode cryptographic key");
     }
     return key;
   }
@@ -40,10 +33,7 @@ class CryptoUtils {
     try {
       base64Key = base64.encode(key);
     } catch (err) {
-      throw AppExceptions(
-        messageForUser: "Failed to encode cryptographic key",
-        messageForDev: err.toString(),
-      );
+      throw Exception("Failed to encode cryptographic key");
     }
     return base64Key;
   }
@@ -60,10 +50,7 @@ class CryptoUtils {
       final encrypted = Encrypted.fromBase64(data);
       decryptedData = encrypter.decrypt(encrypted, iv: iv);
     } catch (err) {
-      throw AppExceptions(
-        messageForUser: "Failed to decrypt data",
-        messageForDev: err.toString(),
-      );
+      throw Exception("Failed to decrypt data");
     }
     return decryptedData;
   }
@@ -79,10 +66,7 @@ class CryptoUtils {
       final encrypter = Encrypter(AES(key, mode: AESMode.gcm));
       encryptedData = encrypter.encrypt(data, iv: iv).base64;
     } catch (err) {
-      throw AppExceptions(
-        messageForUser: "Failed to encrypt data",
-        messageForDev: err.toString(),
-      );
+      throw Exception("Failed to encrypt data");
     }
     return encryptedData;
   }

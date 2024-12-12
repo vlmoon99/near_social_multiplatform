@@ -72,7 +72,7 @@ class _MoreActionsForPostButtonState extends State<MoreActionsForPostButton> {
                       Modular.to.pop(context);
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
-                          content: Text("Url of post coppied to clipboard"),
+                          content: Text("Url of post copied to clipboard"),
                         ),
                       );
                     },
@@ -143,7 +143,7 @@ class _MoreActionsForPostButtonState extends State<MoreActionsForPostButton> {
                         ).then(
                           (value) {
                             if (value != null && value) {
-                              Modular.to.pop(context);
+                              Modular.to.pop();
                             }
                           },
                         );
@@ -211,7 +211,7 @@ class _MoreActionsForPostButtonState extends State<MoreActionsForPostButton> {
                         ).then(
                           (value) {
                             if (value != null && value) {
-                              Modular.to.pop(context);
+                              Modular.to.pop();
                             }
                           },
                         );

@@ -9,6 +9,7 @@ import 'package:near_social_mobile/modules/home/apis/models/post.dart';
 import 'package:near_social_mobile/modules/home/apis/near_social.dart';
 import 'package:near_social_mobile/modules/home/vms/posts/posts_controller.dart';
 import 'package:near_social_mobile/modules/vms/core/auth_controller.dart';
+import 'package:near_social_mobile/modules/vms/core/models/auth_info.dart';
 import 'package:near_social_mobile/shared_widgets/custom_button.dart';
 
 class CreatePostDialog extends StatefulWidget {
@@ -232,33 +233,45 @@ class _CreatePostDialogState extends State<CreatePostDialog> {
                       );
 
                       if (postBody.text == "" && postBody.mediaLink == null) {
-                        throw AppExceptions(
-                          messageForUser: "Empty text and mediaLink",
-                          messageForDev: "Empty text and mediaLink",
-                        );
+                        throw Exception("Empty text and mediaLink");
                       }
-                      nearSocialApi
-                          .createPost(
-                        accountId: accountId,
-                        publicKey: publicKey,
-                        privateKey: privateKey,
-                        postBody: PostBody(
-                          text: _textEditingController.text,
-                          mediaLink: cidOfMedia,
-                        ),
-                      )
-                          .then((_) {
-                        Future.delayed(const Duration(seconds: 10), () {
-                          Modular.get<PostsController>()
-                              .loadPosts(postsViewMode: PostsViewMode.main);
+                      try {
+                        if (await authController.getActivationStatus() !=
+                            AccountActivationStatus.activated) {
+                          throw AccountNotActivatedException();
+                        }
+
+                        nearSocialApi
+                            .createPost(
+                          accountId: accountId,
+                          publicKey: publicKey,
+                          privateKey: privateKey,
+                          postBody: PostBody(
+                            text: _textEditingController.text,
+                            mediaLink: cidOfMedia,
+                          ),
+                        )
+                            .then((_) {
+                          Future.delayed(const Duration(seconds: 10), () {
+                            Modular.get<PostsController>()
+                                .loadPosts(postsViewMode: PostsViewMode.main);
+                          });
                         });
-                      });
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text("Your post will be added soon."),
-                        ),
-                      );
-                      Modular.to.pop();
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text("Your post will be added soon."),
+                          ),
+                        );
+                        Modular.to.pop();
+                      } catch (err) {
+                        if (err
+                            .toString()
+                            .contains('Not enough storage balance')) {
+                          throw NotEnoughStorageBalanceException();
+                        } else {
+                          rethrow;
+                        }
+                      }
                     },
                     child: const Text(
                       "Send",

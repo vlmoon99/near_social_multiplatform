@@ -3,7 +3,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutterchain/flutterchain_lib/constants/core/blockchain_response.dart';
 import 'package:flutterchain/flutterchain_lib/models/chains/near/mintbase_category_nft.dart';
 import 'package:flutterchain/flutterchain_lib/services/chains/near_blockchain_service.dart';
-import 'package:near_social_mobile/exceptions/exceptions.dart';
 import 'package:near_social_mobile/modules/home/apis/models/nft.dart';
 import 'package:near_social_mobile/modules/home/apis/near_social.dart';
 import 'package:rxdart/rxdart.dart';
@@ -116,40 +115,30 @@ class MintbaseController {
     required String nftId,
     required String receiverAccountId,
   }) async {
-    try {
-      final response = await nearBlockChainService.transferNFT(
-        accountId: accountId,
-        publicKey: publicKey,
-        privateKey: privateKey,
-        nftCollectionContract: nftCollectionContract,
-        tokenIds: [
-          [nftId, receiverAccountId]
-        ],
-      );
-      if (response.status != BlockchainResponses.success) {
-        throw AppExceptions(
-          messageForUser: "Failed to transfer NFT. ${response.data["error"]}",
-          messageForDev: response.data["error"].toString(),
-        );
-      }
-      _streamController.add(
-        state.copyWith(
-          nftList: List.of(state.nftList)
-            ..removeWhere(
-              (nft) {
-                return nft.tokenId == nftId &&
-                    nft.contractId == nftCollectionContract;
-              },
-            ),
-        ),
-      );
-      return response.data["txHash"];
-    } on AppExceptions catch (_) {
-      rethrow;
-    } catch (err) {
-      throw AppExceptions(
-          messageForUser: err.toString(), messageForDev: err.toString());
+    final response = await nearBlockChainService.transferNFT(
+      accountId: accountId,
+      publicKey: publicKey,
+      privateKey: privateKey,
+      nftCollectionContract: nftCollectionContract,
+      tokenIds: [
+        [nftId, receiverAccountId]
+      ],
+    );
+    if (response.status != BlockchainResponses.success) {
+      throw Exception("Failed to transfer NFT. ${response.data["error"]}");
     }
+    _streamController.add(
+      state.copyWith(
+        nftList: List.of(state.nftList)
+          ..removeWhere(
+            (nft) {
+              return nft.tokenId == nftId &&
+                  nft.contractId == nftCollectionContract;
+            },
+          ),
+      ),
+    );
+    return response.data["txHash"];
   }
 
   Future<String> createCollection({
@@ -169,11 +158,7 @@ class MintbaseController {
     );
 
     if (response.status != BlockchainResponses.success) {
-      throw AppExceptions(
-        messageForUser:
-            "Failed to create collection. ${response.data["error"]}",
-        messageForDev: response.data["error"].toString(),
-      );
+      throw Exception("Failed to create collection. ${response.data["error"]}");
     }
 
     _streamController.add(
@@ -207,9 +192,8 @@ class MintbaseController {
     );
 
     if (response.status != BlockchainResponses.success) {
-      throw AppExceptions(
-        messageForUser: "Failed to remove minter. ${response.data["error"]}",
-        messageForDev: response.data["error"].toString(),
+      throw Exception(
+        "Failed to remove minter. ${response.data["error"]}",
       );
     }
 
@@ -249,10 +233,7 @@ class MintbaseController {
     );
 
     if (response.status != BlockchainResponses.success) {
-      throw AppExceptions(
-        messageForUser: "Failed to add minter. ${response.data["error"]}",
-        messageForDev: response.data["error"].toString(),
-      );
+      throw Exception("Failed to add minter. ${response.data["error"]}");
     }
 
     final collectionIndex = state.ownCollections.indexWhere(
@@ -290,11 +271,8 @@ class MintbaseController {
     );
 
     if (response.status != BlockchainResponses.success) {
-      throw AppExceptions(
-        messageForUser:
-            "Failed to transfer collection. ${response.data["error"]}",
-        messageForDev: response.data["error"].toString(),
-      );
+      throw Exception(
+          "Failed to transfer collection. ${response.data["error"]}");
     }
 
     _streamController.add(
@@ -323,46 +301,34 @@ class MintbaseController {
     required CategoryNFT category,
     required int numToMint,
   }) async {
-    try {
-      final response = await nearBlockChainService.mintNFT(
-        owner_id: accountId,
-        accountId: accountId,
-        publicKey: publicKey,
-        privateKey: privateKey,
-        nftCollectionContract: nftCollectionContract,
-        title: title,
-        description: description,
-        media: media,
-        split_between: splitBetween,
-        split_owners: splitOwners,
-        tags: tagsList,
-        category: category,
-        num_to_mint: numToMint,
-      );
+    final response = await nearBlockChainService.mintNFT(
+      owner_id: accountId,
+      accountId: accountId,
+      publicKey: publicKey,
+      privateKey: privateKey,
+      nftCollectionContract: nftCollectionContract,
+      title: title,
+      description: description,
+      media: media,
+      split_between: splitBetween,
+      split_owners: splitOwners,
+      tags: tagsList,
+      category: category,
+      num_to_mint: numToMint,
+    );
 
-      if (response.status != BlockchainResponses.success) {
-        throw AppExceptions(
-          messageForUser: "Failed to mint NFT. ${response.data["error"]}",
-          messageForDev: response.data["error"].toString(),
-        );
-      }
-
-      Future.delayed(
-        const Duration(seconds: 3),
-        () {
-          updateNftList(accountId);
-        },
-      );
-
-      return response.data["txHash"];
-    } on AppExceptions catch (_) {
-      rethrow;
-    } catch (err) {
-      throw AppExceptions(
-        messageForUser: err.toString(),
-        messageForDev: err.toString(),
-      );
+    if (response.status != BlockchainResponses.success) {
+      throw Exception("Failed to mint NFT. ${response.data["error"]}");
     }
+
+    Future.delayed(
+      const Duration(seconds: 3),
+      () {
+        updateNftList(accountId);
+      },
+    );
+
+    return response.data["txHash"];
   }
 
   Future<String> copyNft({
@@ -373,39 +339,27 @@ class MintbaseController {
     required String nftTitle,
     required int count,
   }) async {
-    try {
-      final response = await nearBlockChainService.multiplyNFT(
-        nameNFTCollection: nftCollectionContract,
-        nameNFT: nftTitle,
-        accountId: accountId,
-        publicKey: publicKey,
-        privateKey: privateKey,
-        numToMint: count,
-      );
+    final response = await nearBlockChainService.multiplyNFT(
+      nameNFTCollection: nftCollectionContract,
+      nameNFT: nftTitle,
+      accountId: accountId,
+      publicKey: publicKey,
+      privateKey: privateKey,
+      numToMint: count,
+    );
 
-      if (response.status != BlockchainResponses.success) {
-        throw AppExceptions(
-          messageForUser: "Failed to copy NFT. ${response.data["error"]}",
-          messageForDev: response.data["error"].toString(),
-        );
-      }
-
-      Future.delayed(
-        const Duration(seconds: 3),
-        () {
-          updateNftList(accountId);
-        },
-      );
-
-      return response.data["txHash"];
-    } on AppExceptions catch (_) {
-      rethrow;
-    } catch (err) {
-      throw AppExceptions(
-        messageForUser: err.toString(),
-        messageForDev: err.toString(),
-      );
+    if (response.status != BlockchainResponses.success) {
+      throw Exception("Failed to copy NFT. ${response.data["error"]}");
     }
+
+    Future.delayed(
+      const Duration(seconds: 3),
+      () {
+        updateNftList(accountId);
+      },
+    );
+
+    return response.data["txHash"];
   }
 }
 

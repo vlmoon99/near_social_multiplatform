@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutter_modular/flutter_modular.dart';
-import 'package:near_social_mobile/exceptions/exceptions.dart';
 import 'package:near_social_mobile/shared_widgets/custom_button.dart';
 import 'package:near_social_mobile/shared_widgets/image_full_screen_page.dart';
 import 'package:near_social_mobile/shared_widgets/near_network_image.dart';
@@ -73,10 +72,7 @@ class RawTextToContentFormatter extends StatelessWidget {
     } else if (await canLaunchUrl(url)) {
       await launchUrl(url);
     } else {
-      throw AppExceptions(
-        messageForUser: 'Could not launch $url',
-        messageForDev: 'Could not launch $url',
-      );
+      throw Exception('Could not launch $url');
     }
   }
 

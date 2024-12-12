@@ -104,7 +104,7 @@ class _MoreActionsForCommentButtonState
                         ).then(
                           (value) {
                             if (value != null && value) {
-                              Modular.to.pop(context);
+                              Modular.to.pop();
                             }
                           },
                         );

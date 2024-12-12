@@ -2,6 +2,7 @@ import 'package:equatable/equatable.dart';
 import 'package:near_social_mobile/modules/home/apis/models/private_key_info.dart';
 
 enum AuthInfoStatus { unauthenticated, authenticated }
+enum AccountActivationStatus { undefined, notActivated, activated }
 
 class AuthInfo extends Equatable {
   final String accountId;
@@ -9,6 +10,7 @@ class AuthInfo extends Equatable {
   final String secretKey;
   final String privateKey;
   final AuthInfoStatus status;
+  final AccountActivationStatus accountActivationStatus;
   final Map<String, PrivateKeyInfo> additionalStoredKeys;
 
   const AuthInfo({
@@ -18,6 +20,7 @@ class AuthInfo extends Equatable {
     this.privateKey = "",
     this.status = AuthInfoStatus.unauthenticated,
     this.additionalStoredKeys = const {},
+    this.accountActivationStatus = AccountActivationStatus.undefined,
   });
 
   AuthInfo copyWith({
@@ -27,6 +30,7 @@ class AuthInfo extends Equatable {
     String? privateKey,
     AuthInfoStatus? status,
     Map<String, PrivateKeyInfo>? additionalStoredKeys,
+    AccountActivationStatus? accountActivationStatus,
   }) {
     return AuthInfo(
       accountId: accountId ?? this.accountId,
@@ -35,6 +39,8 @@ class AuthInfo extends Equatable {
       privateKey: privateKey ?? this.privateKey,
       status: status ?? this.status,
       additionalStoredKeys: additionalStoredKeys ?? this.additionalStoredKeys,
+      accountActivationStatus:
+          accountActivationStatus ?? this.accountActivationStatus,
     );
   }
 
@@ -46,6 +52,7 @@ class AuthInfo extends Equatable {
         privateKey,
         status,
         additionalStoredKeys,
+        accountActivationStatus,
       ];
 
   @override

@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:near_social_mobile/modules/core_module.dart';
-import 'package:near_social_mobile/modules/home/apis/near_social.dart';
 import 'package:near_social_mobile/modules/home/pages/chat/user_chats_page.dart';
 import 'package:near_social_mobile/modules/home/pages/home_menu/home_menu_page.dart';
 import 'package:near_social_mobile/modules/home/pages/home_menu/subpages/mint_manager/mintbase_module.dart';
@@ -35,7 +34,6 @@ class HomeModule extends Module {
 
   @override
   void binds(Injector i) {
-    i.add(NearSocialApi.new);
     i.addSingleton(PostsController.new);
     i.addSingleton(NearWidgetsController.new);
     i.addSingleton(UserListController.new);

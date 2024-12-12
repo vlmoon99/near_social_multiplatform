@@ -4,7 +4,10 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutterchain/flutterchain_lib/network/chains/near_rpc_client.dart';
 import 'package:flutterchain/flutterchain_lib/services/chains/near_blockchain_service.dart';
 import 'package:near_social_mobile/config/constants.dart';
+import 'package:near_social_mobile/modules/home/apis/near_social.dart';
+import 'package:near_social_mobile/modules/vms/core/auth_controller.dart';
 import 'package:near_social_mobile/network/near_custom_client.dart';
+import 'package:near_social_mobile/services/notification_subscription_service.dart';
 
 class CoreModule extends Module {
   @override
@@ -24,6 +27,8 @@ class CoreModule extends Module {
         ),
       ),
     );
+    i.add(NearSocialApi.new);
+    i.addLazySingleton(AuthController.new);
+    i.addLazySingleton(NotificationSubscriptionService.new);
   }
 }
-

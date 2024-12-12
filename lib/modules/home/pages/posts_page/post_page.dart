@@ -4,7 +4,6 @@ import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:near_social_mobile/config/constants.dart';
 import 'package:near_social_mobile/config/theme.dart';
-import 'package:near_social_mobile/exceptions/exceptions.dart';
 import 'package:near_social_mobile/modules/home/pages/posts_page/widgets/comment_card.dart';
 import 'package:near_social_mobile/modules/home/pages/posts_page/widgets/create_comment_dialog_body.dart';
 import 'package:near_social_mobile/modules/home/pages/posts_page/widgets/more_actions_for_post_button.dart';
@@ -121,7 +120,7 @@ class _PostPageState extends State<PostPage> {
                   element.authorInfo.accountId == widget.accountId);
               return ListView(
                 padding: REdgeInsets.all(15),
-                physics: const RangeMaintainingScrollPhysics(), 
+                physics: const RangeMaintainingScrollPhysics(),
                 children: [
                   InkWell(
                     borderRadius: BorderRadius.circular(10).r,
@@ -271,27 +270,18 @@ class _PostPageState extends State<PostPage> {
                         ),
                         onPressed: () async {
                           HapticFeedback.lightImpact();
-                          final String accountId =
-                              authController.state.accountId;
-                          final String publicKey =
-                              authController.state.publicKey;
-                          final String privateKey =
-                              authController.state.privateKey;
                           try {
                             await postsController.likePost(
                               post: post,
-                              accountId: accountId,
-                              publicKey: publicKey,
-                              privateKey: privateKey,
                               postsViewMode: widget.postsViewMode,
                               postsOfAccountId: widget.postsOfAccountId,
                             );
                           } catch (err) {
-                            final exc = AppExceptions(
-                              messageForUser: "Failed to like post",
-                              messageForDev: err.toString(),
-                            );
-                            throw exc;
+                            if (err is Exception) {
+                              throw Exception("Failed to like post");
+                            } else {
+                              rethrow;
+                            }
                           }
                         },
                       ),
@@ -308,10 +298,6 @@ class _PostPageState extends State<PostPage> {
                           HapticFeedback.lightImpact();
                           final String accountId =
                               authController.state.accountId;
-                          final String publicKey =
-                              authController.state.publicKey;
-                          final String privateKey =
-                              authController.state.privateKey;
                           if (post.repostList.any(
                               (element) => element.accountId == accountId)) {
                             return;
@@ -362,18 +348,15 @@ class _PostPageState extends State<PostPage> {
                               try {
                                 await postsController.repostPost(
                                   post: post,
-                                  accountId: accountId,
-                                  publicKey: publicKey,
-                                  privateKey: privateKey,
                                   postsViewMode: widget.postsViewMode,
                                   postsOfAccountId: widget.postsOfAccountId,
                                 );
                               } catch (err) {
-                                final exc = AppExceptions(
-                                  messageForUser: "Failed to like post",
-                                  messageForDev: err.toString(),
-                                );
-                                throw exc;
+                                if (err is Exception) {
+                                  throw Exception("Failed to repost post");
+                                } else {
+                                  rethrow;
+                                }
                               }
                             },
                           );

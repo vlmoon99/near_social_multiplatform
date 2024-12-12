@@ -1,4 +1,4 @@
-// ignore_for_file: overridden_fields
+// ignore_for_file: overridden_fields, library_private_types_in_public_api
 
 class Routes {
   static final _Auth auth = _Auth();

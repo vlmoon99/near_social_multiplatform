@@ -1,12 +1,10 @@
 import 'dart:async';
-import 'dart:developer';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:near_social_mobile/exceptions/exceptions.dart';
 import 'package:near_social_mobile/formatters/qr_formatter.dart';
 import 'package:near_social_mobile/modules/auth/pages/utils/encrypt_data_and_login.dart';
 import 'package:near_social_mobile/routes/routes.dart';
@@ -59,18 +57,17 @@ class _QRReaderScreenState extends State<QRReaderScreen> {
           QRFormatter.convertURLToAuthorizationCredentials(code);
       await encryptDataAndLogin(authorizationCredentials);
       Modular.to.navigate(Routes.home.getModule());
-    } on AppExceptions catch (err) {
-      log(err.messageForDev);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(err.messageForUser),
-          shape: const RoundedRectangleBorder(
-            borderRadius: BorderRadius.vertical(top: Radius.circular(15)),
-          ),
-        ),
-      );
     } catch (err) {
-      log(err.toString());
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(err.toString()),
+            shape: const RoundedRectangleBorder(
+              borderRadius: BorderRadius.vertical(top: Radius.circular(15)),
+            ),
+          ),
+        );
+      }
     }
   }
 

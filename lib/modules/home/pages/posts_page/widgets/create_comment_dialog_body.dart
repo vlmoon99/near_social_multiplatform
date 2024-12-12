@@ -9,6 +9,7 @@ import 'package:near_social_mobile/modules/home/apis/models/post.dart';
 import 'package:near_social_mobile/modules/home/apis/near_social.dart';
 import 'package:near_social_mobile/modules/home/vms/posts/posts_controller.dart';
 import 'package:near_social_mobile/modules/vms/core/auth_controller.dart';
+import 'package:near_social_mobile/modules/vms/core/models/auth_info.dart';
 import 'package:near_social_mobile/shared_widgets/custom_button.dart';
 
 class CreateCommentDialog extends StatefulWidget {
@@ -250,40 +251,50 @@ class _CreateCommentDialogState extends State<CreateCommentDialog> {
                       );
 
                       if (postBody.text == "" && postBody.mediaLink == null) {
-                        throw AppExceptions(
-                          messageForUser: "Empty text and mediaLink",
-                          messageForDev: "Empty text and mediaLink",
-                        );
+                        throw Exception("Empty text and mediaLink");
                       }
 
-                      nearSocialApi
-                          .comentThePost(
-                        accountIdOfPost: widget.post.authorInfo.accountId,
-                        blockHeight: widget.post.blockHeight,
-                        accountId: accountId,
-                        publicKey: publicKey,
-                        privateKey: privateKey,
-                        postBody: postBody,
-                      )
-                          .then(
-                        (_) {
-                          //we have to wait a little to update comments
-                          Future.delayed(const Duration(seconds: 10), () {
-                            Modular.get<PostsController>().updateCommentsOfPost(
-                              accountId: widget.post.authorInfo.accountId,
-                              blockHeight: widget.post.blockHeight,
-                              postsViewMode: widget.postsViewMode,
-                              postsOfAccountId: widget.postsOfAccountId,
-                            );
-                          });
-                        },
-                      );
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text("Your comment will be added soon"),
-                        ),
-                      );
-                      Modular.to.pop();
+                      try {
+                        if (await authController.getActivationStatus() !=
+                            AccountActivationStatus.activated) {
+                          throw AccountNotActivatedException();
+                        }
+                        nearSocialApi
+                            .commentThePost(
+                          accountIdOfPost: widget.post.authorInfo.accountId,
+                          blockHeight: widget.post.blockHeight,
+                          accountId: accountId,
+                          publicKey: publicKey,
+                          privateKey: privateKey,
+                          postBody: postBody,
+                        )
+                            .then(
+                          (_) {
+                            //we have to wait a little to update comments
+                            Future.delayed(const Duration(seconds: 10), () {
+                              Modular.get<PostsController>()
+                                  .updateCommentsOfPost(
+                                accountId: widget.post.authorInfo.accountId,
+                                blockHeight: widget.post.blockHeight,
+                                postsViewMode: widget.postsViewMode,
+                                postsOfAccountId: widget.postsOfAccountId,
+                              );
+                            });
+                          },
+                        );
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text("Your comment will be added soon"),
+                          ),
+                        );
+                        Modular.to.pop();
+                      } catch (err) {
+                        if (err is Exception) {
+                          throw Exception("Failed to like comment");
+                        } else {
+                          rethrow;
+                        }
+                      }
                     },
                     child: const Text(
                       "Send",

@@ -1,4 +1,3 @@
-import 'package:near_social_mobile/exceptions/exceptions.dart';
 import 'package:near_social_mobile/modules/vms/core/models/authorization_credentials.dart';
 
 class QRFormatter {
@@ -14,11 +13,7 @@ class QRFormatter {
         secretKeyStartIndex == -1 ||
         accountIdEndIndex == -1 ||
         secretKeyEndIndex == -1) {
-      throw AppExceptions(
-        messageForUser: "Invalid QR code format",
-        messageForDev:
-            "Invalid QR code format $accountIdStartIndex, $secretKeyStartIndex, $accountIdEndIndex, $secretKeyEndIndex",
-      );
+      throw Exception("Invalid QR code format");
     }
 
     final accountId = url.substring(accountIdStartIndex + 2, accountIdEndIndex);

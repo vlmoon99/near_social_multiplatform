@@ -12,6 +12,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:near_social_mobile/config/constants.dart';
 import 'package:near_social_mobile/config/theme.dart';
+import 'package:near_social_mobile/exceptions/exceptions.dart';
 import 'package:near_social_mobile/modules/home/apis/near_social.dart';
 import 'package:near_social_mobile/modules/home/pages/chat/chat_page.dart';
 import 'package:near_social_mobile/modules/home/pages/people/widgets/donation_dialog.dart';
@@ -21,6 +22,7 @@ import 'package:near_social_mobile/modules/home/vms/posts/posts_controller.dart'
 import 'package:near_social_mobile/modules/home/vms/users/user_list_controller.dart';
 import 'package:near_social_mobile/modules/vms/core/auth_controller.dart';
 import 'package:near_social_mobile/modules/vms/core/filter_controller.dart';
+import 'package:near_social_mobile/modules/vms/core/models/auth_info.dart';
 import 'package:near_social_mobile/shared_widgets/custom_button.dart';
 import 'package:near_social_mobile/shared_widgets/custom_refresh_indicator.dart';
 import 'package:near_social_mobile/shared_widgets/expandable_wiget.dart';
@@ -385,27 +387,41 @@ class UserPageMainInfo extends StatelessWidget {
                             ),
                           CustomButton(
                             primary: true,
-                            onPressed: () {
+                            onPressed: () async {
                               HapticFeedback.lightImpact();
                               ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(
                                       content: Text("Poking user...")));
-                              Modular.get<NearSocialApi>()
-                                  .pokeAccount(
-                                accountIdToPoke: accountIdOfUser,
-                                accountId: authController.state.accountId,
-                                publicKey: authController.state.publicKey,
-                                privateKey: authController.state.privateKey,
-                              )
-                                  .then((_) {
-                                ScaffoldMessenger.of(context)
-                                    .hideCurrentSnackBar();
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text("Poked @$accountIdOfUser!"),
-                                  ),
-                                );
-                              });
+                              try {
+                                if (await authController
+                                        .getActivationStatus() !=
+                                    AccountActivationStatus.activated) {
+                                  throw AccountNotActivatedException();
+                                }
+                                await Modular.get<NearSocialApi>()
+                                    .pokeAccount(
+                                  accountIdToPoke: accountIdOfUser,
+                                  accountId: authController.state.accountId,
+                                  publicKey: authController.state.publicKey,
+                                  privateKey: authController.state.privateKey,
+                                )
+                                    .then((_) {
+                                  ScaffoldMessenger.of(context)
+                                      .hideCurrentSnackBar();
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text("Poked @$accountIdOfUser!"),
+                                    ),
+                                  );
+                                });
+                              } catch (err) {
+                                if (err is Exception) {
+                                  throw Exception(
+                                      "Failed to poke $accountIdOfUser");
+                                } else {
+                                  rethrow;
+                                }
+                              }
                             },
                             child: const Text(
                               "👈 Poke",
@@ -414,105 +430,106 @@ class UserPageMainInfo extends StatelessWidget {
                               ),
                             ),
                           ),
-                          RPadding(
-                            padding: const EdgeInsets.only(left: 10),
-                            child: CustomButton(
-                              primary: true,
-                              onPressed: () async {
-                                final uid =
-                                    FirebaseAuth.instance.currentUser!.uid;
+                          //TODO: handle chat
+                          // RPadding(
+                          //   padding: const EdgeInsets.only(left: 10),
+                          //   child: CustomButton(
+                          //     primary: true,
+                          //     onPressed: () async {
+                          //       final uid =
+                          //           FirebaseAuth.instance.currentUser!.uid;
 
-                                print("uid $uid");
+                          //       print("uid $uid");
 
-                                try {
-                                  final userDoc = await FirebaseFirestore
-                                      .instance
-                                      .collection('users')
-                                      .doc(accountIdOfUser)
-                                      .get();
+                          //       try {
+                          //         final userDoc = await FirebaseFirestore
+                          //             .instance
+                          //             .collection('users')
+                          //             .doc(accountIdOfUser)
+                          //             .get();
 
-                                  if (userDoc.exists) {
-                                    final userData = {
-                                      "id": userDoc.id,
-                                      "imageUrl": userDoc.data()!['imageUrl'],
-                                      "firstName": userDoc.data()!['firstName'],
-                                      "lastName": userDoc.data()!['lastName'],
-                                      "role": userDoc.data()!['role'],
-                                      "metadata": userDoc.data()!['metadata'],
-                                    };
+                          //         if (userDoc.exists) {
+                          //           final userData = {
+                          //             "id": userDoc.id,
+                          //             "imageUrl": userDoc.data()!['imageUrl'],
+                          //             "firstName": userDoc.data()!['firstName'],
+                          //             "lastName": userDoc.data()!['lastName'],
+                          //             "role": userDoc.data()!['role'],
+                          //             "metadata": userDoc.data()!['metadata'],
+                          //           };
 
-                                    final otherUser =
-                                        types.User.fromJson(userData);
+                          //           final otherUser =
+                          //               types.User.fromJson(userData);
 
-                                    final currentUserDocReq =
-                                        await FirebaseFirestore.instance
-                                            .collection('users')
-                                            .doc(Modular.get<AuthController>()
-                                                .state
-                                                .accountId)
-                                            .get();
+                          //           final currentUserDocReq =
+                          //               await FirebaseFirestore.instance
+                          //                   .collection('users')
+                          //                   .doc(Modular.get<AuthController>()
+                          //                       .state
+                          //                       .accountId)
+                          //                   .get();
 
-                                    final currentUserDoc = {
-                                      "id": currentUserDocReq.id,
-                                      "imageUrl":
-                                          currentUserDocReq.data()!['imageUrl'],
-                                      "firstName": currentUserDocReq
-                                          .data()!['firstName'],
-                                      "lastName":
-                                          currentUserDocReq.data()!['lastName'],
-                                      "role": currentUserDocReq.data()!['role'],
-                                      "metadata":
-                                          currentUserDocReq.data()!['metadata'],
-                                    };
+                          //           final currentUserDoc = {
+                          //             "id": currentUserDocReq.id,
+                          //             "imageUrl":
+                          //                 currentUserDocReq.data()!['imageUrl'],
+                          //             "firstName": currentUserDocReq
+                          //                 .data()!['firstName'],
+                          //             "lastName":
+                          //                 currentUserDocReq.data()!['lastName'],
+                          //             "role": currentUserDocReq.data()!['role'],
+                          //             "metadata":
+                          //                 currentUserDocReq.data()!['metadata'],
+                          //           };
 
-                                    final currentUser =
-                                        types.User.fromJson(currentUserDoc);
+                          //           final currentUser =
+                          //               types.User.fromJson(currentUserDoc);
 
-                                    final room =
-                                        await Modular.get<NearSocialApi>()
-                                            .createChatRoom(
-                                      false,
-                                      currentUser,
-                                      otherUser,
-                                      metadata: {"isSecure": false},
-                                    );
+                          //           final room =
+                          //               await Modular.get<NearSocialApi>()
+                          //                   .createChatRoom(
+                          //             false,
+                          //             currentUser,
+                          //             otherUser,
+                          //             metadata: {"isSecure": false},
+                          //           );
 
-                                    if (room != null) {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (ctx) => ChatPage(
-                                            isSecure: false,
-                                            room: room,
-                                            currentUser: currentUser,
-                                            otherUser: otherUser,
-                                          ),
-                                        ),
-                                      );
-                                      print(
-                                          'Chat room created successfully with user: $room');
-                                    }
-                                  } else {
-                                    print('No user found with the given ID');
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text(
-                                            "AccountId ${user.generalAccountInfo.accountId} not found isnide chat system , he must to use Near Social Multiplatform gateway for chating"),
-                                      ),
-                                    );
-                                  }
-                                } catch (e) {
-                                  print('Error creating room: $e');
-                                }
-                              },
-                              child: const Text(
-                                "Chat",
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          ),
+                          //           if (room != null) {
+                          //             Navigator.push(
+                          //               context,
+                          //               MaterialPageRoute(
+                          //                 builder: (ctx) => ChatPage(
+                          //                   isSecure: false,
+                          //                   room: room,
+                          //                   currentUser: currentUser,
+                          //                   otherUser: otherUser,
+                          //                 ),
+                          //               ),
+                          //             );
+                          //             print(
+                          //                 'Chat room created successfully with user: $room');
+                          //           }
+                          //         } else {
+                          //           print('No user found with the given ID');
+                          //           ScaffoldMessenger.of(context).showSnackBar(
+                          //             SnackBar(
+                          //               content: Text(
+                          //                   "AccountId ${user.generalAccountInfo.accountId} not found isnide chat system , he must to use Near Social Multiplatform gateway for chating"),
+                          //             ),
+                          //           );
+                          //         }
+                          //       } catch (e) {
+                          //         print('Error creating room: $e');
+                          //       }
+                          //     },
+                          //     child: const Text(
+                          //       "Chat",
+                          //       style: TextStyle(
+                          //         fontWeight: FontWeight.bold,
+                          //       ),
+                          //     ),
+                          //   ),
+                          // ),
                         ],
                       ),
                       SizedBox(height: 5.h),
@@ -655,13 +672,18 @@ class UserPageMainInfo extends StatelessWidget {
             CustomButton(
               primary: true,
               onPressed: () async {
-                userListController.unfollowAccount(
-                  accountIdToUnfollow: accountIdOfUser,
-                  accountId: authController.state.accountId,
-                  publicKey: authController.state.publicKey,
-                  privateKey: authController.state.privateKey,
-                );
                 Modular.to.pop();
+                try {
+                  await userListController.unfollowAccount(
+                    accountIdToUnfollow: accountIdOfUser,
+                  );
+                } catch (err) {
+                  if (err is Exception) {
+                    throw Exception("Failed to unfollow $accountIdOfUser");
+                  } else {
+                    rethrow;
+                  }
+                }
               },
               child: const Text(
                 "Yes",
@@ -692,7 +714,6 @@ class UserPageMainInfo extends StatelessWidget {
   ) {
     final UserListController userListController =
         Modular.get<UserListController>();
-    final AuthController authController = Modular.get<AuthController>();
     return showDialog(
       context: context,
       builder: (context) {
@@ -704,13 +725,18 @@ class UserPageMainInfo extends StatelessWidget {
             CustomButton(
               primary: true,
               onPressed: () async {
-                userListController.followAccount(
-                  accountIdToFollow: accountIdOfUser,
-                  accountId: authController.state.accountId,
-                  publicKey: authController.state.publicKey,
-                  privateKey: authController.state.privateKey,
-                );
                 Modular.to.pop();
+                try {
+                  await userListController.followAccount(
+                    accountIdToFollow: accountIdOfUser,
+                  );
+                } catch (err) {
+                  if (err is Exception) {
+                    throw Exception("Failed to follow $accountIdOfUser");
+                  } else {
+                    rethrow;
+                  }
+                }
               },
               child: const Text(
                 "Yes",

@@ -4,9 +4,9 @@ import 'package:near_social_mobile/modules/home/apis/near_social.dart';
 import 'package:rxdart/rxdart.dart';
 
 class NearWidgetsController {
-  final NearSocialApi nearSocialApi;
+  final NearSocialApi _nearSocialApi;
 
-  NearWidgetsController({required this.nearSocialApi});
+  NearWidgetsController(this._nearSocialApi);
 
   final BehaviorSubject<NearWidgets> _streamController =
       BehaviorSubject.seeded(const NearWidgets());
@@ -17,7 +17,7 @@ class NearWidgetsController {
   Future<void> getNearWidgets() async {
     _streamController.add(state.copyWith(status: NearWidgetStatus.loading));
     try {
-      final nearWidgets = await nearSocialApi.getWidgetsList();
+      final nearWidgets = await _nearSocialApi.getWidgetsList();
       _streamController.add(
         NearWidgets(
           status: NearWidgetStatus.loaded,
