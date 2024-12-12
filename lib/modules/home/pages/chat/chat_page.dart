@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:cloud_functions/cloud_functions.dart';
+// import 'package:cloud_functions/cloud_functions.dart';
 import 'package:collection/collection.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -155,24 +155,24 @@ class _ChatPageState extends State<ChatPage> {
   //   }
   // }
 
-  // Future<void> deleteRoom(String roomId, String uuid, bool isSecure) async {
-  //   try {
-  //     final HttpsCallable callable =
-  //         FirebaseFunctions.instance.httpsCallable('deleteRoom');
+  Future<void> deleteRoom(String roomId, String uuid, bool isSecure) async {
+    try {
+      // final HttpsCallable callable =
+      //     FirebaseFunctions.instance.httpsCallable('deleteRoom');
 
-  //     final response = await callable.call(<String, dynamic>{
-  //       'roomId': roomId,
-  //       'uuid': uuid,
-  //       'isSecure': isSecure,
-  //     });
+      // final response = await callable.call(<String, dynamic>{
+      //   'roomId': roomId,
+      //   'uuid': uuid,
+      //   'isSecure': isSecure,
+      // });
 
-  //     if (response.data['success'] == true) {
-  //       print('Room deleted successfully: ${response.data['message']}');
-  //     }
-  //   } catch (e) {
-  //     print('Failed to delete room: $e');
-  //   }
-  // }
+      // if (response.data['success'] == true) {
+      //   print('Room deleted successfully: ${response.data['message']}');
+      // }
+    } catch (e) {
+      print('Failed to delete room: $e');
+    }
+  }
 
   // Future<void> sendMessage(types.PartialText data, types.Room room) async {
   //   final listOfPubKeys = (room.metadata?['encryptionKeys'] as List<dynamic>?)
