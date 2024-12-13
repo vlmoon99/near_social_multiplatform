@@ -31,9 +31,11 @@ async function verifySignature(signature, publicKeyStr) {
 
 Deno.serve(async (req) => {
 
-  const { signature, publicKeyStr, uuid, accountId } = await req.json();
+  const body = (await req.json());
 
-  console.log('await req.json():', (await req.json()));
+  console.log('body', body);
+
+  const { signature, publicKeyStr, uuid, accountId } = body;
 
   console.log('signature:', signature);
   console.log('Received publicKeyStr:', publicKeyStr);

@@ -83,6 +83,19 @@ class AuthController extends Disposable {
       //   }
       // }
 
+      // String signedMessagedForVerification = (await _nearBlockChainService
+      //         .jsRunner
+      //         .callJS("window.signMessageForVerification('$secretKey')"))
+      //     .toString();
+
+      // print("signedMessagedForVerification  " + signedMessagedForVerification);
+
+      verifyTransaction(
+        signature: 'signedMessagedForVerification',
+        publicKeyStr: base58PubKey,
+        uuid: 'no_uuid',
+        accountId: accountId,
+      );
       _streamController.add(state.copyWith(
         accountId: accountId,
         publicKey: publicKey,
@@ -139,7 +152,7 @@ class AuthController extends Disposable {
       );
       final data = response.data;
 
-      print('Unexpected error: $data');
+      print('Data: $data');
 
       return response.data['success'] == true;
     } catch (e) {
@@ -166,12 +179,12 @@ class AuthController extends Disposable {
   //   String base58EncodedPublicKey = (await _nearBlockChainService.jsVMService
   //       .callJS("window.fromSecretToNearAPIJSPublicKey('$secretKey')"));
 
-  //   String signedMessagedForVerification = (await _nearBlockChainService
-  //           .jsVMService
-  //           .callJS("window.signMessageForVerification('$secretKey')"))
-  //       .toString();
+  // String signedMessagedForVerification = (await _nearBlockChainService
+  //         .jsVMService
+  //         .callJS("window.signMessageForVerification('$secretKey')"))
+  //     .toString();
 
-  //   print("signedMessagedForVerification  " + signedMessagedForVerification);
+  // print("signedMessagedForVerification  " + signedMessagedForVerification);
 
   //   verifyTransaction(
   //     signature: signedMessagedForVerification,
