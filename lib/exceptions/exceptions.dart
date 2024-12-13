@@ -1,67 +1,97 @@
-import 'dart:developer';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:near_social_mobile/shared_widgets/custom_button.dart';
-import 'package:rxdart/rxdart.dart';
-
-class AppExceptions extends Equatable {
-  final String messageForUser;
-  final String messageForDev;
-  const AppExceptions({
-    required this.messageForUser,
-    required this.messageForDev,
-  });
-
-  @override
-  String toString() => "messageForDev$messageForDev";
-
-  @override
-  List<Object?> get props => [messageForUser, messageForDev];
-}
+import 'package:near_social_mobile/shared_widgets/storage_controll_dialogs.dart';
 
 class Catcher {
-  bool dialogIsOpen = false;
-  Catcher() {
-    exceptionsHandler.listen((value) {
-      log("exceptionsHandler catch the exception --> ${value.toString()}");
-      showDialogForError(value);
-    });
-  }
+  Catcher._();
+  static final _instance = Catcher._();
+  factory Catcher() => _instance;
+  AppExceptionAbstract? _lastException;
+  bool _isShowing = false;
 
-  final exceptionsHandler = BehaviorSubject<AppExceptions>();
-
-  void showDialogForError(AppExceptions exception) {
-    if (dialogIsOpen) {
+  void showDialogForError(dynamic exception) {
+    if (exception.toString().contains("Invalid statusCode") ||
+        exception.toString().contains("No host")) {
       return;
     }
-    dialogIsOpen = true;
+    late final AppExceptionAbstract exceptionToShow;
+    if (exception is! AppExceptionAbstract) {
+      exceptionToShow = AppException(exception.toString());
+    } else {
+      exceptionToShow = exception;
+    }
+    if (_lastException == exception && _isShowing) {
+      return;
+    }
+    _isShowing = true;
     showDialog(
-      builder: (context) => AlertDialog(
-        title: const Text('Error!'),
-        actionsAlignment: MainAxisAlignment.center,
-        content: Text(exception.messageForUser),
-        actions: [
-          CustomButton(
-            primary: true,
-            onPressed: () {
-              Navigator.pop(context);
-            },
-            child: const Text(
-              'OK',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-              ),
+      builder: (context) {
+        return exceptionToShow.dialogWidget(context);
+      },
+      context: Modular.routerDelegate.navigatorKey.currentContext!,
+    ).then((value) => _isShowing = false);
+  }
+}
+
+abstract class AppExceptionAbstract extends Equatable {
+  final String message;
+  const AppExceptionAbstract(this.message);
+
+  Widget dialogWidget(BuildContext context);
+
+  @override
+  String toString() {
+    return message;
+  }
+
+  @override
+  List<Object?> get props => [message];
+}
+
+class AppException extends AppExceptionAbstract {
+  const AppException(super.message);
+
+  @override
+  Widget dialogWidget(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Error!'),
+      actionsAlignment: MainAxisAlignment.center,
+      content: Text(message),
+      actions: [
+        CustomButton(
+          primary: true,
+          onPressed: () {
+            Navigator.pop(context);
+          },
+          child: const Text(
+            'OK',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
             ),
           ),
-        ],
-      ),
-      context: Modular.routerDelegate.navigatorKey.currentContext!,
-    ).then(
-      (_) {
-        dialogIsOpen = false;
-      },
+        ),
+      ],
     );
+  }
+}
+
+class NotEnoughStorageBalanceException extends AppExceptionAbstract {
+  const NotEnoughStorageBalanceException()
+      : super('Not enough storage balance');
+
+  @override
+  Widget dialogWidget(BuildContext context) {
+    return BuyStorageDialog();
+  }
+}
+
+class AccountNotActivatedException extends AppExceptionAbstract {
+  const AccountNotActivatedException() : super('Account not activated');
+
+  @override
+  Widget dialogWidget(BuildContext context) {
+    return ActivateAccountDialog();
   }
 }

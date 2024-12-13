@@ -1,6 +1,7 @@
 import 'dart:developer';
 
 import 'package:equatable/equatable.dart';
+import 'package:near_social_mobile/exceptions/exceptions.dart';
 import 'package:near_social_mobile/modules/home/apis/models/comment.dart';
 import 'package:near_social_mobile/modules/home/apis/models/general_account_info.dart';
 import 'package:near_social_mobile/modules/home/apis/models/like.dart';
@@ -8,14 +9,17 @@ import 'package:near_social_mobile/modules/home/apis/models/post.dart';
 import 'package:near_social_mobile/modules/home/apis/models/reposter.dart';
 import 'package:near_social_mobile/modules/home/apis/models/reposter_info.dart';
 import 'package:near_social_mobile/modules/home/apis/near_social.dart';
+import 'package:near_social_mobile/modules/vms/core/auth_controller.dart';
 import 'package:near_social_mobile/modules/vms/core/filter_controller.dart';
+import 'package:near_social_mobile/modules/vms/core/models/auth_info.dart';
 import 'package:near_social_mobile/modules/vms/core/models/filters.dart';
 import 'package:near_social_mobile/utils/future_queue.dart';
 import 'package:rxdart/rxdart.dart';
 
 class PostsController {
-  final NearSocialApi nearSocialApi;
-  PostsController(this.nearSocialApi);
+  final NearSocialApi _nearSocialApi;
+  final AuthController _authController;
+  PostsController(this._nearSocialApi, this._authController);
 
   final BehaviorSubject<Posts> _streamController =
       BehaviorSubject.seeded(const Posts());
@@ -40,7 +44,7 @@ class PostsController {
         );
       }
 
-      final List<Post> posts = await nearSocialApi.getPosts(
+      final List<Post> posts = await _nearSocialApi.getPosts(
         targetAccounts: postsOfAccountId == null ? null : [postsOfAccountId],
         limit: 10,
       );
@@ -128,19 +132,19 @@ class PostsController {
       return;
     }
 
-    final postBody = await nearSocialApi.getPostContent(
+    final postBody = await _nearSocialApi.getPostContent(
       accountId: accountInfo.accountId,
       blockHeight: blockHeight,
     );
 
-    final data = await nearSocialApi.getDateOfBlockHeight(
+    final data = await _nearSocialApi.getDateOfBlockHeight(
       blockHeight: blockHeight,
     );
 
-    final likeList = await nearSocialApi.getLikesOfPost(
+    final likeList = await _nearSocialApi.getLikesOfPost(
         accountId: accountInfo.accountId, blockHeight: blockHeight);
 
-    final repostList = await nearSocialApi.getRepostsOfPost(
+    final repostList = await _nearSocialApi.getRepostsOfPost(
         accountId: accountInfo.accountId, blockHeight: blockHeight);
 
     _streamController.add(
@@ -207,7 +211,7 @@ class PostsController {
           chosenPosts.lastIndexWhere((element) => element.reposterInfo == null);
       final lastBlockHeightIndexOfReposts =
           chosenPosts.lastIndexWhere((element) => element.reposterInfo != null);
-      final posts = await nearSocialApi.getPosts(
+      final posts = await _nearSocialApi.getPosts(
         lastBlockHeightIndexOfPosts: lastBlockHeightIndexOfPosts == -1
             ? null
             : chosenPosts.elementAt(lastBlockHeightIndexOfPosts).blockHeight,
@@ -322,7 +326,7 @@ class PostsController {
           }
       }
 
-      final commentsOfPost = await nearSocialApi.getCommentsOfPost(
+      final commentsOfPost = await _nearSocialApi.getCommentsOfPost(
         accountId: accountId,
         blockHeight: blockHeight,
       );
@@ -385,7 +389,7 @@ class PostsController {
     final int indexOfPost =
         _getIndexOfPost(post, postsViewMode, postsOfAccountId);
 
-    final newCommentsOfPost = await nearSocialApi.getCommentsOfPost(
+    final newCommentsOfPost = await _nearSocialApi.getCommentsOfPost(
       accountId: accountId,
       blockHeight: blockHeight,
     );
@@ -460,16 +464,16 @@ class PostsController {
         }
     }
 
-    final CommentBody commentBody = await nearSocialApi.getCommentContent(
+    final CommentBody commentBody = await _nearSocialApi.getCommentContent(
       accountId: comment.authorInfo.accountId,
       blockHeight: comment.blockHeight,
     );
 
-    final DateTime date = await nearSocialApi.getDateOfBlockHeight(
+    final DateTime date = await _nearSocialApi.getDateOfBlockHeight(
       blockHeight: comment.blockHeight,
     );
 
-    final List<Like> likes = await nearSocialApi.getLikesOfComment(
+    final List<Like> likes = await _nearSocialApi.getLikesOfComment(
       accountId: comment.authorInfo.accountId,
       blockHeight: comment.blockHeight,
     );
@@ -513,7 +517,7 @@ class PostsController {
     try {
       final FiltersUtil filtersUtil =
           FiltersUtil(filters: filters ?? const Filters());
-      final newPosts = await nearSocialApi.getPosts(
+      final newPosts = await _nearSocialApi.getPosts(
         targetAccounts: [postsOfAccountId],
         limit: 10,
       );
@@ -576,14 +580,14 @@ class PostsController {
     late final DateTime actualDateOfPost;
     if (post.reposterInfo != null) {
       actualReposterInfo = post.reposterInfo!.copyWith(
-        accountInfo: await nearSocialApi.getGeneralAccountInfo(
+        accountInfo: await _nearSocialApi.getGeneralAccountInfo(
             accountId: post.reposterInfo!.accountInfo.accountId),
       );
-      actualDateOfPost = await nearSocialApi.getDateOfBlockHeight(
+      actualDateOfPost = await _nearSocialApi.getDateOfBlockHeight(
         blockHeight: post.reposterInfo!.blockHeight,
       );
     } else {
-      actualDateOfPost = await nearSocialApi.getDateOfBlockHeight(
+      actualDateOfPost = await _nearSocialApi.getDateOfBlockHeight(
           blockHeight: post.blockHeight);
     }
 
@@ -613,18 +617,18 @@ class PostsController {
       return;
     }
 
-    final actualPostBody = await nearSocialApi.getPostContent(
+    final actualPostBody = await _nearSocialApi.getPostContent(
       accountId: post.authorInfo.accountId,
       blockHeight: post.blockHeight,
     );
 
-    final actualAuthorInfo = await nearSocialApi.getGeneralAccountInfo(
+    final actualAuthorInfo = await _nearSocialApi.getGeneralAccountInfo(
         accountId: post.authorInfo.accountId);
 
-    final actualLikeList = await nearSocialApi.getLikesOfPost(
+    final actualLikeList = await _nearSocialApi.getLikesOfPost(
         accountId: post.authorInfo.accountId, blockHeight: post.blockHeight);
 
-    final actualRepostsOfPostList = await nearSocialApi.getRepostsOfPost(
+    final actualRepostsOfPostList = await _nearSocialApi.getRepostsOfPost(
         accountId: post.authorInfo.accountId, blockHeight: post.blockHeight);
 
     _updateDataDueToPostsViewMode(
@@ -643,18 +647,22 @@ class PostsController {
 
   Future<void> likePost({
     required Post post,
-    required String accountId,
-    required String publicKey,
-    required String privateKey,
     required PostsViewMode postsViewMode,
     String? postsOfAccountId,
   }) async {
+    final accountId = _authController.state.accountId;
+    final publicKey = _authController.state.publicKey;
+    final privateKey = _authController.state.privateKey;
+    if ((await _authController.getActivationStatus()) !=
+        AccountActivationStatus.activated) {
+      throw AccountNotActivatedException();
+    }
     final isLiked =
         post.likeList.any((element) => element.accountId == accountId);
     try {
       if (isLiked) {
         await _futureQueue.addToQueue(
-          () => nearSocialApi.unlikePost(
+          () => _nearSocialApi.unlikePost(
             accountIdOfPost: post.authorInfo.accountId,
             accountId: accountId,
             blockHeight: post.blockHeight,
@@ -671,7 +679,7 @@ class PostsController {
         );
       } else {
         await _futureQueue.addToQueue(
-          () => nearSocialApi.likePost(
+          () => _nearSocialApi.likePost(
             accountIdOfPost: post.authorInfo.accountId,
             accountId: accountId,
             blockHeight: post.blockHeight,
@@ -709,19 +717,27 @@ class PostsController {
           postsOfAccountId: postsOfAccountId,
         );
       }
-      rethrow;
+      if (err.toString().contains('Not enough storage balance')) {
+        throw NotEnoughStorageBalanceException();
+      } else {
+        rethrow;
+      }
     }
   }
 
   Future<void> likeComment({
     required Post post,
     required Comment comment,
-    required String accountId,
-    required String publicKey,
-    required String privateKey,
     required PostsViewMode postsViewMode,
     String? postsOfAccountId,
   }) async {
+    final accountId = _authController.state.accountId;
+    final publicKey = _authController.state.publicKey;
+    final privateKey = _authController.state.privateKey;
+    if ((await _authController.getActivationStatus()) !=
+        AccountActivationStatus.activated) {
+      throw AccountNotActivatedException();
+    }
     final indexOfPost = _getIndexOfPost(post, postsViewMode, postsOfAccountId);
     final indexOfComment = post.commentList!.indexWhere(
       (element) =>
@@ -752,7 +768,7 @@ class PostsController {
     try {
       if (isLiked) {
         await _futureQueue.addToQueue(
-          () => nearSocialApi.unlikeComment(
+          () => _nearSocialApi.unlikeComment(
             accountIdOfPost: comment.authorInfo.accountId,
             accountId: accountId,
             blockHeight: comment.blockHeight,
@@ -773,7 +789,7 @@ class PostsController {
         );
       } else {
         await _futureQueue.addToQueue(
-          () => nearSocialApi.likeComment(
+          () => _nearSocialApi.likeComment(
             accountIdOfPost: comment.authorInfo.accountId,
             accountId: accountId,
             blockHeight: comment.blockHeight,
@@ -793,21 +809,29 @@ class PostsController {
         );
       }
     } catch (err) {
-      rethrow;
+      if (err.toString().contains('Not enough storage balance')) {
+        throw NotEnoughStorageBalanceException();
+      } else {
+        rethrow;
+      }
     }
   }
 
   Future<void> repostPost({
     required Post post,
-    required String accountId,
-    required String publicKey,
-    required String privateKey,
     required PostsViewMode postsViewMode,
     String? postsOfAccountId,
   }) async {
+    final accountId = _authController.state.accountId;
+    final publicKey = _authController.state.publicKey;
+    final privateKey = _authController.state.privateKey;
+    if ((await _authController.getActivationStatus()) !=
+        AccountActivationStatus.activated) {
+      throw AccountNotActivatedException();
+    }
     try {
       await _futureQueue.addToQueue(
-        () => nearSocialApi.repostPost(
+        () => _nearSocialApi.repostPost(
           accountIdOfPost: post.authorInfo.accountId,
           accountId: accountId,
           blockHeight: post.blockHeight,
@@ -826,7 +850,11 @@ class PostsController {
         postsOfAccountId: postsOfAccountId,
       );
     } catch (err) {
-      rethrow;
+      if (err.toString().contains('Not enough storage balance')) {
+        throw NotEnoughStorageBalanceException();
+      } else {
+        rethrow;
+      }
     }
   }
 

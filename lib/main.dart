@@ -14,7 +14,6 @@ import 'package:near_social_mobile/modules/app_module.dart';
 import 'config/setup.dart';
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
   final app = EasyLocalization(
     supportedLocales: const [
       Locale('en'),
@@ -30,17 +29,16 @@ void main() async {
 
   // for debug purposes don't catch exceptions
   if (kDebugMode) {
+    WidgetsFlutterBinding.ensureInitialized();
     await initOfApp();
     runApp(app);
   } else {
     runZonedGuarded(() async {
+      WidgetsFlutterBinding.ensureInitialized();
       await initOfApp();
       FlutterError.onError = (FlutterErrorDetails details) {
-        final catcher = Modular.get<Catcher>();
-        catcher.exceptionsHandler.add(AppExceptions(
-          messageForUser: "Something went wrong. Please try again later.",
-          messageForDev: details.exception.toString(),
-        ));
+        final catcher = Catcher();
+        catcher.showDialogForError(details.exception);
       };
 
       SystemChrome.setPreferredOrientations([
@@ -50,15 +48,8 @@ void main() async {
         runApp(app);
       });
     }, (error, stack) {
-      final catcher = Modular.get<Catcher>();
-      catcher.exceptionsHandler.add(
-        error is AppExceptions
-            ? error
-            : AppExceptions(
-                messageForUser: 'Something went wrong. Please try again later.',
-                messageForDev: error.toString(),
-              ),
-      );
+      final catcher = Catcher();
+      catcher.showDialogForError(error);
     });
   }
 }

@@ -1,9 +1,7 @@
 import 'package:bos_gateway_viewer/bos_gateway_viewer.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:near_social_mobile/exceptions/exceptions.dart';
 import 'package:near_social_mobile/modules/home/apis/models/private_key_info.dart';
 import 'package:near_social_mobile/shared_widgets/custom_button.dart';
 
@@ -94,12 +92,7 @@ class NearWidget extends StatelessWidget {
               ),
               onError: (errorMessage) {
                 if (!kIsWeb && !errorMessage.contains("TypeError")) {
-                  Modular.get<Catcher>().exceptionsHandler.add(
-                        AppExceptions(
-                          messageForUser: errorMessage,
-                          messageForDev: errorMessage,
-                        ),
-                      );
+                  throw Exception(errorMessage);
                 }
               },
             ),

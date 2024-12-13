@@ -5,7 +5,6 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutterchain/flutterchain_lib/models/chains/near/mintbase_category_nft.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:near_social_mobile/config/theme.dart';
-import 'package:near_social_mobile/exceptions/exceptions.dart';
 import 'package:near_social_mobile/modules/home/pages/home_menu/subpages/mint_manager/widgets/mint_nft_dialog.dart';
 import 'package:near_social_mobile/shared_widgets/custom_button.dart';
 
@@ -429,10 +428,7 @@ class _MintNftPageState extends State<MintNftPage> {
                           }
 
                           if (nftMediaData == null) {
-                            throw AppExceptions(
-                              messageForUser: "Please select an image",
-                              messageForDev: "nftMediaData is null",
-                            );
+                            throw Exception("Please select an image");
                           }
 
                           Map<String, int>? splitOwners;
@@ -445,11 +441,8 @@ class _MintNftPageState extends State<MintNftPage> {
                             );
                             if (splitOwners.values.reduce((a, b) => a + b) >
                                 100) {
-                              throw AppExceptions(
-                                messageForUser:
-                                    "Split between owners can't be more than 100%",
-                                messageForDev: "splitOwners $splitOwners",
-                              );
+                              throw Exception(
+                                  "Split between owners can't be more than 100%");
                             }
                           }
 
@@ -461,11 +454,8 @@ class _MintNftPageState extends State<MintNftPage> {
                             );
                             if (splitBetween.values.reduce((a, b) => a + b) >
                                 50) {
-                              throw AppExceptions(
-                                messageForUser:
-                                    "Split between royalties can't be more than 50%",
-                                messageForDev: "splitBetween $splitBetween",
-                              );
+                              throw Exception(
+                                  "Split between royalties can't be more than 50%");
                             }
                           }
                           List<String>? tagsList;

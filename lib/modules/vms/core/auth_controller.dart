@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
@@ -12,7 +13,6 @@ import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutterchain/flutterchain_lib/services/chains/near_blockchain_service.dart';
 import 'package:near_social_mobile/config/constants.dart';
-import 'package:near_social_mobile/exceptions/exceptions.dart';
 import 'package:near_social_mobile/modules/home/apis/models/private_key_info.dart';
 import 'package:near_social_mobile/services/crypto_storage_service.dart';
 import 'package:rxdart/rxdart.dart';
@@ -20,19 +20,21 @@ import 'package:rxdart/rxdart.dart';
 import 'models/auth_info.dart';
 
 class AuthController extends Disposable {
-  final NearBlockChainService nearBlockChainService;
-  final FlutterSecureStorage secureStorage;
-  late final CryptoStorageService cryptoStorageService;
+  final NearBlockChainService _nearBlockChainService;
+  final FlutterSecureStorage _secureStorage;
+  final NearSocialApi _nearSocialApi;
+
+  late final CryptoStorageService _cryptoStorageService;
 
   final BehaviorSubject<AuthInfo> _streamController =
       BehaviorSubject.seeded(const AuthInfo());
 
-  AuthController(this.nearBlockChainService, this.secureStorage)
-      : cryptoStorageService =
-            CryptoStorageService(secureStorage: secureStorage);
+  AuthController(
+      this._nearBlockChainService, this._secureStorage, this._nearSocialApi)
+      : _cryptoStorageService =
+            CryptoStorageService(secureStorage: _secureStorage);
 
   Stream<AuthInfo> get stream => _streamController.stream.distinct();
-
   AuthInfo get state => _streamController.value;
 
   Future<void> login({
@@ -45,16 +47,16 @@ class AuthController extends Disposable {
         secretKey: secretKey,
       ));
 
-      final privateKey = await nearBlockChainService
+      final privateKey = await _nearBlockChainService
           .getPrivateKeyFromSecretKeyFromNearApiJSFormat(
         secretKey.split(":").last,
       );
-      final publicKey = await nearBlockChainService
+      final publicKey = await _nearBlockChainService
           .getPublicKeyFromSecretKeyFromNearApiJSFormat(
         secretKey.split(":").last,
       );
 
-      final base58PubKey = await nearBlockChainService
+      final base58PubKey = await _nearBlockChainService
           .getBase58PubKeyFromHexValue(hexEncodedPubKey: publicKey);
 
       final additionalStoredKeys = {
@@ -71,14 +73,14 @@ class AuthController extends Disposable {
         ...await _getAdditionalAccessKeys()
       };
 
-      //TODO: implement for mobile
-      if (kIsWeb) {
-        try {
-          authenticateUser(accountId, secretKey);
-        } catch (e) {
-          print("Error while auth uesr using firebase");
-        }
-      }
+      //TODO: implement for new web version and mobile
+      // if (kIsWeb) {
+      //   try {
+      //     authenticateUser(accountId, secretKey);
+      //   } catch (e) {
+      //     print("Error while auth uesr using firebase");
+      //   }
+      // }
 
       _streamController.add(state.copyWith(
         accountId: accountId,
@@ -90,6 +92,25 @@ class AuthController extends Disposable {
       ));
     } catch (err) {
       rethrow;
+    }
+  }
+
+  Future<AccountActivationStatus> getActivationStatus() async {
+    try {
+      if (state.accountActivationStatus != AccountActivationStatus.activated) {
+        final activationStatus =
+            await _nearSocialApi.getUserStorageInfo(state.accountId);
+        final status = (activationStatus.usedBytes != null &&
+                activationStatus.usedBytes != null)
+            ? AccountActivationStatus.activated
+            : AccountActivationStatus.notActivated;
+        _streamController.add(state.copyWith(accountActivationStatus: status));
+        return status;
+      } else {
+        return state.accountActivationStatus;
+      }
+    } catch (err) {
+      return getActivationStatus();
     }
   }
 
@@ -122,86 +143,83 @@ class AuthController extends Disposable {
     }
   }
 
-  Future<UserCredential?> authenticateUser(
-      String accountId, String secretKey) async {
-    final FirebaseAuth auth = FirebaseAuth.instance;
-    final userCredential = await auth.signInAnonymously();
+  // Future<UserCredential?> authenticateUser(
+  //     String accountId, String secretKey) async {
+  //   final FirebaseAuth auth = FirebaseAuth.instance;
+  //   final userCredential = await auth.signInAnonymously();
 
-    print("secretKey  :::  " + secretKey);
-    final privateKey = await nearBlockChainService
-        .getPrivateKeyFromSecretKeyFromNearApiJSFormat(
-      secretKey.split(":").last,
-    );
-    final publicKey = await nearBlockChainService
-        .getPublicKeyFromSecretKeyFromNearApiJSFormat(
-      secretKey.split(":").last,
-    );
+  //   print("secretKey  :::  " + secretKey);
+  //   final privateKey = await _nearBlockChainService
+  //       .getPrivateKeyFromSecretKeyFromNearApiJSFormat(
+  //     secretKey.split(":").last,
+  //   );
+  //   final publicKey = await _nearBlockChainService
+  //       .getPublicKeyFromSecretKeyFromNearApiJSFormat(
+  //     secretKey.split(":").last,
+  //   );
 
-    String base58EncodedPublicKey = (await nearBlockChainService.jsVMService
-        .callJS("window.fromSecretToNearAPIJSPublicKey('$secretKey')"));
+  //   String base58EncodedPublicKey = (await _nearBlockChainService.jsVMService
+  //       .callJS("window.fromSecretToNearAPIJSPublicKey('$secretKey')"));
 
-    String signedMessagedForVerification = (await nearBlockChainService
-            .jsVMService
-            .callJS("window.signMessageForVerification('$secretKey')"))
-        .toString();
+  //   String signedMessagedForVerification = (await _nearBlockChainService
+  //           .jsVMService
+  //           .callJS("window.signMessageForVerification('$secretKey')"))
+  //       .toString();
 
-    print("signedMessagedForVerification  " + signedMessagedForVerification);
+  //   print("signedMessagedForVerification  " + signedMessagedForVerification);
 
-    verifyTransaction(
-      signature: signedMessagedForVerification,
-      publicKeyStr: base58EncodedPublicKey,
-      uuid: FirebaseAuth.instance.currentUser!.uid,
-      accountId: accountId,
-    ).then((resVerefication) async {
-      final DocumentSnapshot res = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(accountId)
-          .get();
+  //   verifyTransaction(
+  //     signature: signedMessagedForVerification,
+  //     publicKeyStr: base58EncodedPublicKey,
+  //     uuid: FirebaseAuth.instance.currentUser!.uid,
+  //     accountId: accountId,
+  //   ).then((resVerefication) async {
+  //     final DocumentSnapshot res = await FirebaseFirestore.instance
+  //         .collection('users')
+  //         .doc(accountId)
+  //         .get();
 
-      if (res.exists) {
-        print('User data: ${res.data()}');
-      } else {
-        print('No user found with ID: $accountId');
-      }
+  //     if (res.exists) {
+  //       print('User data: ${res.data()}');
+  //     } else {
+  //       print('No user found with ID: $accountId');
+  //     }
 
-      if (resVerefication && !res.exists) {
-        final accountInfo = await NearSocialApi(
-                nearBlockChainService: NearBlockChainService.defaultInstance())
-            .getGeneralAccountInfo(accountId: accountId);
-        print("accountInfo  " + accountInfo.toString());
+  //     if (resVerefication && !res.exists) {
+  //       final accountInfo = await NearSocialApi(
+  //               _nearBlockChainService: NearBlockChainService.defaultInstance())
+  //           .getGeneralAccountInfo(accountId: accountId);
+  //       print("accountInfo  " + accountInfo.toString());
 
-        FirebaseChatCore.instance.createUserInFirestore(
-          types.User(
-            firstName: accountInfo.name,
-            id: accountInfo.accountId,
-            imageUrl: accountInfo.profileImageLink,
-            lastName: "No data exist",
-            role: types.Role.user,
-          ),
-        );
-        print("resVerefication  " + resVerefication.toString());
-      }
-    });
+  //       FirebaseChatCore.instance.createUserInFirestore(
+  //         types.User(
+  //           firstName: accountInfo.name,
+  //           id: accountInfo.accountId,
+  //           imageUrl: accountInfo.profileImageLink,
+  //           lastName: "No data exist",
+  //           role: types.Role.user,
+  //         ),
+  //       );
+  //       print("resVerefication  " + resVerefication.toString());
+  //     }
+  //   });
 
-    try {
-      return userCredential;
-    } catch (e) {
-      print('Authentication error: $e');
-      return null;
-    }
-  }
+  //   try {
+  //     return userCredential;
+  //   } catch (e) {
+  //     print('Authentication error: $e');
+  //     return null;
+  //   }
+  // }
 
   Future<void> logout() async {
     try {
       await FirebaseAuth.instance.signOut();
-      await secureStorage.delete(key: StorageKeys.authInfo);
-      await secureStorage.delete(key: StorageKeys.additionalCryptographicKeys);
+      await _secureStorage.delete(key: StorageKeys.authInfo);
+      await _secureStorage.delete(key: StorageKeys.additionalCryptographicKeys);
       _streamController.add(const AuthInfo());
     } catch (err) {
-      throw AppExceptions(
-        messageForUser: "Failed to logout",
-        messageForDev: err.toString(),
-      );
+      throw Exception("Failed to logout");
     }
   }
 
@@ -214,18 +232,13 @@ class AuthController extends Disposable {
         additionalStoredKeys: Map.of(state.additionalStoredKeys)
           ..putIfAbsent(accessKeyName, () => privateKeyInfo),
       );
-      await cryptoStorageService.write(
+      await _cryptoStorageService.write(
         storageKey: StorageKeys.additionalCryptographicKeys,
         data: jsonEncode(newState.additionalStoredKeys),
       );
       _streamController.add(newState);
     } catch (err) {
-      final appException = AppExceptions(
-        messageForUser: "Failed to add key",
-        messageForDev: err.toString(),
-      );
-
-      throw appException;
+      throw Exception("Failed to add key");
     }
   }
 
@@ -235,23 +248,19 @@ class AuthController extends Disposable {
         additionalStoredKeys: Map.of(state.additionalStoredKeys)
           ..remove(accessKeyName),
       );
-      await cryptoStorageService.write(
+      await _cryptoStorageService.write(
         storageKey: StorageKeys.additionalCryptographicKeys,
         data: jsonEncode(newState.additionalStoredKeys),
       );
       _streamController.add(newState);
     } catch (err) {
-      final appException = AppExceptions(
-        messageForUser: "Failed to remove key",
-        messageForDev: err.toString(),
-      );
-      throw appException;
+      throw Exception("Failed to remove key");
     }
   }
 
   Future<Map<String, PrivateKeyInfo>> _getAdditionalAccessKeys() async {
     try {
-      final encodedData = await cryptoStorageService.read(
+      final encodedData = await _cryptoStorageService.read(
         storageKey: StorageKeys.additionalCryptographicKeys,
       );
       final decodedData = jsonDecode(encodedData) as Map<String, dynamic>?;

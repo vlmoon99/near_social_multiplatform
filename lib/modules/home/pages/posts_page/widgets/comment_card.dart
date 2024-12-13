@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:near_social_mobile/config/constants.dart';
+import 'package:near_social_mobile/exceptions/exceptions.dart';
 import 'package:near_social_mobile/modules/home/apis/models/comment.dart';
 import 'package:near_social_mobile/modules/home/apis/models/post.dart';
 import 'package:near_social_mobile/modules/home/pages/posts_page/widgets/create_comment_dialog_body.dart';
@@ -197,15 +198,20 @@ class CommentCard extends StatelessWidget {
                   ),
                   onPressed: () async {
                     HapticFeedback.lightImpact();
-                    await Modular.get<PostsController>().likeComment(
-                      post: post,
-                      comment: comment,
-                      accountId: authController.state.accountId,
-                      publicKey: authController.state.publicKey,
-                      privateKey: authController.state.privateKey,
-                      postsViewMode: postsViewMode,
-                      postsOfAccountId: postsOfAccountId,
-                    );
+                    try {
+                      await Modular.get<PostsController>().likeComment(
+                        post: post,
+                        comment: comment,
+                        postsViewMode: postsViewMode,
+                        postsOfAccountId: postsOfAccountId,
+                      );
+                    } catch (err) {
+                      if (err is Exception) {
+                        throw Exception("Failed to like comment");
+                      } else {
+                        rethrow;
+                      }
+                    }
                   },
                 ),
                 if (post.authorInfo.accountId != authController.state.accountId)

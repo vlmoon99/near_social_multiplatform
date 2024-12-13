@@ -9,12 +9,16 @@ import 'package:flutterchain/flutterchain_lib/models/chains/near/near_account_in
 import 'package:flutterchain/flutterchain_lib/services/chains/near_blockchain_service.dart';
 import 'package:near_social_mobile/config/constants.dart';
 import 'package:near_social_mobile/config/theme.dart';
+import 'package:near_social_mobile/modules/home/apis/models/user_storage_info.dart';
+import 'package:near_social_mobile/modules/home/apis/near_social.dart';
 import 'package:near_social_mobile/modules/home/pages/home_menu/widgets/home_menu_list_tile.dart';
 import 'package:near_social_mobile/modules/home/vms/users/user_list_controller.dart';
 import 'package:near_social_mobile/modules/vms/core/auth_controller.dart';
 import 'package:near_social_mobile/routes/routes.dart';
+import 'package:near_social_mobile/shared_widgets/custom_button.dart';
 import 'package:near_social_mobile/shared_widgets/near_network_image.dart';
 import 'package:near_social_mobile/shared_widgets/spinner_loading_indicator.dart';
+import 'package:near_social_mobile/shared_widgets/storage_controll_dialogs.dart';
 
 class HomeMenuPage extends StatefulWidget {
   const HomeMenuPage({super.key});
@@ -182,6 +186,57 @@ class _HomeMenuPageState extends State<HomeMenuPage> {
                               );
                             },
                           ),
+                          SizedBox(height: 5.h),
+                          FutureBuilder<UserStorageInfo>(
+                            future: Modular.get<NearSocialApi>()
+                                .getUserStorageInfo(
+                                    authController.state.accountId),
+                            builder: (context, snapshot) {
+                              return Row(
+                                children: [
+                                  const Text(
+                                    "Storage space: ",
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  SizedBox(width: 5.h),
+                                  if (snapshot.connectionState !=
+                                      ConnectionState.done) ...[
+                                    AnimatedTextKit(
+                                      animatedTexts: [
+                                        FadeAnimatedText('Loading...'),
+                                      ],
+                                      isRepeatingAnimation: true,
+                                      repeatForever: true,
+                                    )
+                                  ] else ...[
+                                    Text(
+                                      "${((snapshot.data?.availableBytes ?? 0) / 1000).toStringAsFixed(2)} kb",
+                                    ),
+                                    // SizedBox(width: 10.w),
+                                    Spacer(),
+                                    SizedBox(
+                                      height: 30.h,
+                                      child: CustomButton(
+                                        onPressed: () {
+                                          HapticFeedback.lightImpact();
+                                          showDialog(
+                                            context: context,
+                                            builder: (context) {
+                                              return WithdrawStorageDialog();
+                                            },
+                                          );
+                                        },
+                                        child: Text("Withdraw"),
+                                      ),
+                                    ),
+                                  ]
+                                ],
+                              );
+                            },
+                          ),
                         ],
                       ),
                     ),
@@ -235,26 +290,25 @@ class _HomeMenuPageState extends State<HomeMenuPage> {
                     );
                   },
                 ),
-                SizedBox(height: 15.h),
-                HomeMenuListTile(
-                  tile: const Icon(Icons.message),
-                  title: "Chats",
-                  onTap: () {
-                    HapticFeedback.lightImpact();
-                    Modular.to.pushNamed(
-                      ".${Routes.home.chatsPage}",
-                    );
-                  },
-                ),
+                //TODO: handle chat
+                // SizedBox(height: 15.h),
+                // HomeMenuListTile(
+                //   tile: const Icon(Icons.message),
+                //   title: "Chats",
+                //   onTap: () {
+                //     HapticFeedback.lightImpact();
+                //     Modular.to.pushNamed(
+                //       ".${Routes.home.chatsPage}",
+                //     );
+                //   },
+                // ),
                 SizedBox(height: 15.h),
                 HomeMenuListTile(
                   tile: const Icon(Icons.feed),
                   title: "Smart Posts",
                   onTap: () {
                     HapticFeedback.lightImpact();
-                    Modular.to.pushNamed(
-                      ".${Routes.home.smartPostsPage}",
-                    );
+                    Modular.to.pushNamed(".${Routes.home.smartPostsPage}");
                   },
                 ),
               ],

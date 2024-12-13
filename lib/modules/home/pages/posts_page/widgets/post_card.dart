@@ -4,7 +4,6 @@ import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:near_social_mobile/config/constants.dart';
 import 'package:near_social_mobile/config/theme.dart';
-import 'package:near_social_mobile/exceptions/exceptions.dart';
 import 'package:near_social_mobile/modules/home/apis/models/post.dart';
 import 'package:near_social_mobile/modules/home/pages/posts_page/widgets/more_actions_for_post_button.dart';
 import 'package:near_social_mobile/modules/home/pages/posts_page/widgets/raw_text_to_content_formatter.dart';
@@ -234,27 +233,18 @@ class PostCard extends StatelessWidget {
                           ),
                           onPressed: () async {
                             HapticFeedback.lightImpact();
-                            final String accountId =
-                                authController.state.accountId;
-                            final String publicKey =
-                                authController.state.publicKey;
-                            final String privateKey =
-                                authController.state.privateKey;
                             try {
                               await postsController.likePost(
                                 post: currentPost,
-                                accountId: accountId,
-                                publicKey: publicKey,
-                                privateKey: privateKey,
                                 postsViewMode: postsViewMode,
                                 postsOfAccountId: postsOfAccountId,
                               );
                             } catch (err) {
-                              final exc = AppExceptions(
-                                messageForUser: "Failed to like post",
-                                messageForDev: err.toString(),
-                              );
-                              throw exc;
+                              if (err is Exception) {
+                                throw Exception("Failed to like post");
+                              } else {
+                                rethrow;
+                              }
                             }
                           },
                           count: currentPost.likeList.length,
@@ -272,10 +262,6 @@ class PostCard extends StatelessWidget {
                             HapticFeedback.lightImpact();
                             final String accountId =
                                 authController.state.accountId;
-                            final String publicKey =
-                                authController.state.publicKey;
-                            final String privateKey =
-                                authController.state.privateKey;
                             if (currentPost.repostList.any(
                                 (element) => element.accountId == accountId)) {
                               return;
@@ -327,18 +313,15 @@ class PostCard extends StatelessWidget {
                                 try {
                                   await postsController.repostPost(
                                     post: currentPost,
-                                    accountId: accountId,
-                                    publicKey: publicKey,
-                                    privateKey: privateKey,
                                     postsViewMode: postsViewMode,
                                     postsOfAccountId: postsOfAccountId,
                                   );
                                 } catch (err) {
-                                  final exc = AppExceptions(
-                                    messageForUser: "Failed to repost post",
-                                    messageForDev: err.toString(),
-                                  );
-                                  throw exc;
+                                  if (err is Exception) {
+                                    throw Exception("Failed to repost post");
+                                  } else {
+                                    rethrow;
+                                  }
                                 }
                               },
                             );

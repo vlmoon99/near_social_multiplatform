@@ -1,15 +1,17 @@
+import 'package:near_social_mobile/exceptions/exceptions.dart';
 import 'package:near_social_mobile/modules/home/apis/models/follower.dart';
 import 'package:near_social_mobile/modules/home/apis/models/general_account_info.dart';
 import 'package:near_social_mobile/modules/home/apis/near_social.dart';
 import 'package:near_social_mobile/modules/home/vms/users/models/user_list_state.dart';
+import 'package:near_social_mobile/modules/vms/core/auth_controller.dart';
+import 'package:near_social_mobile/modules/vms/core/models/auth_info.dart';
 import 'package:rxdart/rxdart.dart';
 
 class UserListController {
-  final NearSocialApi nearSocialApi;
+  final NearSocialApi _nearSocialApi;
+  final AuthController _authController;
 
-  UserListController({
-    required this.nearSocialApi,
-  });
+  UserListController(this._nearSocialApi, this._authController);
 
   final BehaviorSubject<UsersList> _streamController =
       BehaviorSubject.seeded(UsersList());
@@ -24,7 +26,7 @@ class UserListController {
     _streamController.add(state.copyWith(loadingState: UserListState.loading));
     try {
       final generalAccountInfoOfUsers =
-          await nearSocialApi.getNearSocialAccountList();
+          await _nearSocialApi.getNearSocialAccountList();
       final Map<String, FullUserInfo> users = {};
       for (var generalAccountInfo in generalAccountInfoOfUsers) {
         users.putIfAbsent(generalAccountInfo.accountId, () {
@@ -66,7 +68,7 @@ class UserListController {
     if (state.activeUsers.containsKey(accountId)) {
       return;
     }
-    
+
     if (state.cachedUsers.containsKey(accountId)) {
       _streamController.add(
         state.copyWith(
@@ -81,8 +83,8 @@ class UserListController {
       state.copyWith(
         activeUsers: Map.of(state.activeUsers)
           ..[accountId] = FullUserInfo(
-            generalAccountInfo:
-                await nearSocialApi.getGeneralAccountInfo(accountId: accountId),
+            generalAccountInfo: await _nearSocialApi.getGeneralAccountInfo(
+                accountId: accountId),
           ),
       ),
     );
@@ -91,11 +93,11 @@ class UserListController {
   Future<void> loadAdditionalMetadata({required String accountId}) async {
     try {
       final List<Follower> followings =
-          await nearSocialApi.getFollowingsOfAccount(accountId: accountId);
+          await _nearSocialApi.getFollowingsOfAccount(accountId: accountId);
       final List<Follower> followers =
-          await nearSocialApi.getFollowersOfAccount(accountId: accountId);
+          await _nearSocialApi.getFollowersOfAccount(accountId: accountId);
       final List<String> userTags =
-          await nearSocialApi.getUserTagsOfAccount(accountId: accountId);
+          await _nearSocialApi.getUserTagsOfAccount(accountId: accountId);
 
       _streamController.add(
         state.copyWith(
@@ -114,10 +116,14 @@ class UserListController {
 
   Future<void> followAccount({
     required String accountIdToFollow,
-    required String accountId,
-    required String publicKey,
-    required String privateKey,
   }) async {
+    final accountId = _authController.state.accountId;
+    final publicKey = _authController.state.publicKey;
+    final privateKey = _authController.state.privateKey;
+    if ((await _authController.getActivationStatus()) !=
+        AccountActivationStatus.activated) {
+      throw AccountNotActivatedException();
+    }
     try {
       _streamController.add(
         state.copyWith(
@@ -130,7 +136,7 @@ class UserListController {
             ),
         ),
       );
-      await nearSocialApi.followAccount(
+      await _nearSocialApi.followAccount(
         accountIdToFollow: accountIdToFollow,
         accountId: accountId,
         publicKey: publicKey,
@@ -148,16 +154,24 @@ class UserListController {
             ),
         ),
       );
-      rethrow;
+      if (err.toString().contains('Not enough storage balance')) {
+        throw NotEnoughStorageBalanceException();
+      } else {
+        rethrow;
+      }
     }
   }
 
   Future<void> unfollowAccount({
     required String accountIdToUnfollow,
-    required String accountId,
-    required String publicKey,
-    required String privateKey,
   }) async {
+    final accountId = _authController.state.accountId;
+    final publicKey = _authController.state.publicKey;
+    final privateKey = _authController.state.privateKey;
+    if ((await _authController.getActivationStatus()) !=
+        AccountActivationStatus.activated) {
+      throw AccountNotActivatedException();
+    }
     try {
       _streamController.add(
         state.copyWith(
@@ -170,7 +184,7 @@ class UserListController {
             ),
         ),
       );
-      await nearSocialApi.unfollowAccount(
+      await _nearSocialApi.unfollowAccount(
         accountIdToUnfollow: accountIdToUnfollow,
         accountId: accountId,
         publicKey: publicKey,
@@ -188,20 +202,24 @@ class UserListController {
             ),
         ),
       );
-      rethrow;
+      if (err.toString().contains('Not enough storage balance')) {
+        throw NotEnoughStorageBalanceException();
+      } else {
+        rethrow;
+      }
     }
   }
 
   Future<void> reloadUserInfo({required String accountId}) async {
     try {
       final generalAccountInfo =
-          await nearSocialApi.getGeneralAccountInfo(accountId: accountId);
+          await _nearSocialApi.getGeneralAccountInfo(accountId: accountId);
       final List<Follower> followings =
-          await nearSocialApi.getFollowingsOfAccount(accountId: accountId);
+          await _nearSocialApi.getFollowingsOfAccount(accountId: accountId);
       final List<Follower> followers =
-          await nearSocialApi.getFollowersOfAccount(accountId: accountId);
+          await _nearSocialApi.getFollowersOfAccount(accountId: accountId);
       final List<String> userTags =
-          await nearSocialApi.getUserTagsOfAccount(accountId: accountId);
+          await _nearSocialApi.getUserTagsOfAccount(accountId: accountId);
       final user = state.activeUsers[accountId];
 
       _streamController.add(
@@ -228,7 +246,7 @@ class UserListController {
   Future<void> loadNftsOfAccount({required String accountId}) async {
     try {
       final nfts =
-          await nearSocialApi.getNftsOfAccount(accountIdOfUser: accountId);
+          await _nearSocialApi.getNftsOfAccount(accountIdOfUser: accountId);
       _streamController.add(
         state.copyWith(
           activeUsers: Map.of(state.activeUsers)
@@ -244,7 +262,7 @@ class UserListController {
 
   Future<void> loadWidgetsOfAccount({required String accountId}) async {
     try {
-      final widgetList = await nearSocialApi.getWidgetsList(
+      final widgetList = await _nearSocialApi.getWidgetsList(
         accountId: accountId,
       );
       _streamController.add(

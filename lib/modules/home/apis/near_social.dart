@@ -17,7 +17,6 @@ import 'package:flutterchain/flutterchain_lib/models/chains/near/near_account_in
 import 'package:flutterchain/flutterchain_lib/models/chains/near/near_blockchain_smart_contract_arguments.dart';
 import 'package:flutterchain/flutterchain_lib/services/chains/near_blockchain_service.dart';
 import 'package:near_social_mobile/config/constants.dart';
-import 'package:near_social_mobile/exceptions/exceptions.dart';
 import 'package:near_social_mobile/exceptions/near_social_api_exceptions.dart';
 import 'package:near_social_mobile/modules/home/apis/models/follower.dart';
 import 'package:near_social_mobile/modules/home/apis/models/general_account_info.dart';
@@ -30,6 +29,7 @@ import 'package:near_social_mobile/modules/home/apis/models/post.dart';
 import 'package:near_social_mobile/modules/home/apis/models/private_key_info.dart';
 import 'package:near_social_mobile/modules/home/apis/models/reposter.dart';
 import 'package:near_social_mobile/modules/home/apis/models/reposter_info.dart';
+import 'package:near_social_mobile/modules/home/apis/models/user_storage_info.dart';
 import 'package:near_social_mobile/network/dio_interceptors/retry_on_connection_changed_interceptor.dart';
 import 'package:near_social_mobile/utils/is_web_image_avaliable.dart';
 
@@ -40,8 +40,7 @@ class NearSocialApi {
   final Dio _dio = Dio();
   final NearBlockChainService nearBlockChainService;
 
-  NearSocialApi({required NearBlockChainService nearBlockChainService})
-      : nearBlockChainService = nearBlockChainService {
+  NearSocialApi({required this.nearBlockChainService}) {
     _dio.interceptors.addAll([
       RetryInterceptor(
         dio: _dio,
@@ -98,7 +97,6 @@ class NearSocialApi {
       await FirebaseFirestore.instance
           .collection('rooms/$roomId/messages')
           .add(messageMap);
-
     }
   }
 
@@ -326,7 +324,6 @@ class NearSocialApi {
         print("Unexpected error: $e");
       }
     }
-
   }
 
   types.Room transformRoomData(String roomId, Map<String, dynamic> roomData) {
@@ -1218,7 +1215,7 @@ class NearSocialApi {
     }
   }
 
-  Future<void> comentThePost({
+  Future<void> commentThePost({
     required String accountIdOfPost,
     required int blockHeight,
     required String accountId,
@@ -1999,12 +1996,8 @@ class NearSocialApi {
         double.parse(transactionFeeFor2Transactions);
 
     if (currentBalance < neededBalance) {
-      throw AppExceptions(
-        messageForUser:
-            "Not enough balance. You have $currentBalance NEAR, but you need $neededBalance NEAR.",
-        messageForDev:
-            "Not enough balance. You have $currentBalance NEAR, but you need $neededBalance NEAR.",
-      );
+      throw Exception(
+          "Not enough balance. You have $currentBalance NEAR, but you need $neededBalance NEAR.");
     }
 
     final txInfo = await nearBlockChainService.getTransactionInfo(
@@ -2034,13 +2027,8 @@ class NearSocialApi {
         nonce: newNonce,
         blockHash: txInfo.blockHash,
       );
-    } on AppExceptions catch (_) {
-      rethrow;
     } catch (err) {
-      throw AppExceptions(
-        messageForUser: "Failed to send transfer.",
-        messageForDev: "Error while sending transfer: ${err.toString()}",
-      );
+      throw Exception("Failed to send transfer.");
     }
 
     return txHash;
@@ -2115,10 +2103,8 @@ class NearSocialApi {
               null) {
         throw IncorrectNonceException(data: mainTransfer.data);
       } else {
-        throw AppExceptions(
-          messageForUser: "Failed to send transfer.",
-          messageForDev:
-              "Error while sending transfer: ${mainTransfer.data.toString()}",
+        throw Exception(
+          "Failed to send transfer.",
         );
       }
     }
@@ -2131,5 +2117,68 @@ class NearSocialApi {
     }
 
     return mainTransfer.data["txHash"];
+  }
+
+  Future<UserStorageInfo> getUserStorageInfo(String accountId) async {
+    final userStorageInfoRaw = (await nearBlockChainService.callViewMethod(
+      contractId: "social.near",
+      method: "get_account_storage",
+      args: {"account_id": accountId},
+    ))
+        .data;
+
+    final userStorageInfo = userStorageInfoRaw["response"];
+
+    return UserStorageInfo(
+      availableBytes: userStorageInfo?["available_bytes"],
+      usedBytes: userStorageInfo?["used_bytes"],
+    );
+  }
+
+  Future<void> depositToStorage({
+    required String accountId,
+    required String publicKey,
+    required String privateKey,
+    required String amount,
+  }) async {
+    final response = await nearBlockChainService.callSmartContractFunction(
+      NearBlockChainSmartContractArguments(
+        accountId: accountId,
+        publicKey: publicKey,
+        privateKey: privateKey,
+        toAddress: "social.near",
+        args: {"account_id": accountId},
+        method: "storage_deposit",
+        transferAmount: NearFormatter.nearToYoctoNear(amount),
+      ),
+    );
+
+    if (response.status != "success" || response.data["error"] != null) {
+      throw Exception(
+          response.data["error"] ?? "Failed to call smart contract");
+    }
+  }
+
+  Future<void> withdrawFromStorage({
+    required String accountId,
+    required String publicKey,
+    required String privateKey,
+  }) async {
+    final response = await nearBlockChainService.callSmartContractFunction(
+      NearBlockChainSmartContractArguments(
+        accountId: accountId,
+        publicKey: publicKey,
+        privateKey: privateKey,
+        toAddress: "social.near",
+        args: {},
+        method: "storage_withdraw",
+        transferAmount: "1",
+      ),
+    );
+
+    if (response.status != "success" || response.data["error"] != null) {
+      throw Exception(
+          response.data["error"] ?? "Failed to call smart contract");
+    }
   }
 }

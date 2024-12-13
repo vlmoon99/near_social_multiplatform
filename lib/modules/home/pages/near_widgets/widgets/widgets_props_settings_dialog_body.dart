@@ -61,27 +61,27 @@ class _WidgetsPropsSettingsDialogBodyState
               ),
             ),
           ),
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            child: DropdownButton<PrivateKeyInfo>(
-              value: selectedKey,
-              onChanged: (newKey) {
-                if (newKey == null) return;
-                setState(() {
-                  selectedKey = newKey;
-                });
-              },
-              items: authController.state.additionalStoredKeys.entries
-                  .map((keyInfo) {
-                return DropdownMenuItem<PrivateKeyInfo>(
-                  alignment: Alignment.center,
-                  value: keyInfo.value,
-                  child: Text(
-                    keyInfo.key,
-                  ),
-                );
-              }).toList(),
-            ),
+          DropdownButton<PrivateKeyInfo>(
+            isExpanded: true,
+            value: selectedKey,
+            onChanged: (newKey) {
+              if (newKey == null) return;
+              setState(() {
+                selectedKey = newKey;
+              });
+            },
+            items: authController.state.additionalStoredKeys.entries
+                .map((keyInfo) {
+              return DropdownMenuItem<PrivateKeyInfo>(
+                alignment: Alignment.centerLeft,
+                value: keyInfo.value,
+                child: Text(
+                  keyInfo.key,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              );
+            }).toList(),
           ),
           if (selectedKey.privateKeyTypeInfo.type ==
               PrivateKeyType.FunctionCall) ...[

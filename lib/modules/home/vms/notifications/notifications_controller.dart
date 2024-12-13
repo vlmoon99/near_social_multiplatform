@@ -5,9 +5,9 @@ import 'package:rxdart/rxdart.dart' hide Notification;
 import '../../apis/near_social.dart';
 
 class NotificationsController {
-  final NearSocialApi nearSocialApi;
+  final NearSocialApi _nearSocialApi;
 
-  NotificationsController({required this.nearSocialApi});
+  NotificationsController(this._nearSocialApi);
 
   final BehaviorSubject<Notifications> _streamController =
       BehaviorSubject.seeded(const Notifications());
@@ -25,7 +25,7 @@ class NotificationsController {
         _streamController
             .add(state.copyWith(status: NotificationsLoadingState.loading));
       }
-      final notifications = await nearSocialApi.getNotificationsOfAccount(
+      final notifications = await _nearSocialApi.getNotificationsOfAccount(
         accountId: accountId,
         from: from,
       );
@@ -48,7 +48,7 @@ class NotificationsController {
   Future<List<Notification>> loadMoreNotifications(
       {required String accountId}) async {
     try {
-      final notifications = await nearSocialApi.getNotificationsOfAccount(
+      final notifications = await _nearSocialApi.getNotificationsOfAccount(
         accountId: accountId,
         from: state.notifications.isNotEmpty
             ? state.notifications.last.blockHeight

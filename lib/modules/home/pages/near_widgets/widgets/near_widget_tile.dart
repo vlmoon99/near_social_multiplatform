@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:near_social_mobile/config/constants.dart';
+import 'package:near_social_mobile/exceptions/exceptions.dart';
 import 'package:near_social_mobile/modules/home/apis/models/near_widget_info.dart';
+import 'package:near_social_mobile/modules/vms/core/auth_controller.dart';
+import 'package:near_social_mobile/modules/vms/core/models/auth_info.dart';
 import 'package:near_social_mobile/shared_widgets/custom_button.dart';
 import 'package:near_social_mobile/shared_widgets/near_network_image.dart';
 import 'package:near_social_mobile/utils/near_widget_opener_interface.dart';
@@ -87,8 +91,13 @@ class _NearWidgetTileState extends State<NearWidgetTile> {
                       height: 30.h,
                       child: CustomButton(
                         primary: true,
-                        onPressed: () {
+                        onPressed: () async {
                           HapticFeedback.lightImpact();
+                          if (await Modular.get<AuthController>()
+                                  .getActivationStatus() !=
+                              AccountActivationStatus.activated) {
+                            throw AccountNotActivatedException();
+                          }
                           openNearWidget(
                             widgetPath: widget.nearWidget.widgetPath,
                           );

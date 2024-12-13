@@ -5,7 +5,6 @@ import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:near_social_mobile/config/theme.dart';
-import 'package:near_social_mobile/exceptions/exceptions.dart';
 import 'package:near_social_mobile/modules/home/pages/posts_page/widgets/post_card.dart';
 import 'package:near_social_mobile/modules/home/vms/posts/posts_controller.dart';
 
@@ -137,9 +136,8 @@ class _SmartPostsPageState extends State<SmartPostsPage> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          throw const AppExceptions(
-            messageForUser: "Feature in development",
-            messageForDev: "Feature in development",
+          throw Exception(
+            "Feature in development",
           );
         },
         child: SvgPicture.asset(

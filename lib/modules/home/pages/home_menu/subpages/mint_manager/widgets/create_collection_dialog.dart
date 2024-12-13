@@ -4,7 +4,6 @@ import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutterchain/flutterchain_lib/models/chains/near/near_account_info_request.dart';
 import 'package:flutterchain/flutterchain_lib/services/chains/near_blockchain_service.dart';
-import 'package:near_social_mobile/exceptions/exceptions.dart';
 import 'package:near_social_mobile/modules/home/apis/models/private_key_info.dart';
 import 'package:near_social_mobile/utils/show_confirm_action_dialog.dart';
 import 'package:near_social_mobile/utils/show_success_dialog.dart';
@@ -219,11 +218,8 @@ class _CreateMintbaseCollectionDialogState
                                 .getWalletBalance(NearAccountInfoRequest(
                                     accountId: authController.state.accountId));
                             if (!(double.parse(currentBalance) > 3.7)) {
-                              throw AppExceptions(
-                                messageForUser:
-                                    "Not enough balance. You have $currentBalance NEAR, but you need 3.7 NEAR.",
-                                messageForDev:
-                                    "Not enough balance. You have $currentBalance NEAR, but you need 3.7 NEAR.",
+                              throw Exception(
+                                "Not enough balance. You have $currentBalance NEAR, but you need 3.7 NEAR.",
                               );
                             }
 
