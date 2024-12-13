@@ -8,6 +8,11 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts"
 import bs58 from "bs58";
 import nearApi from "near-api-js";
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
+
 
 async function verifySignature(signature, publicKeyStr) {
   try {
@@ -44,13 +49,13 @@ Deno.serve(async (req) => {
 
       return new Response(
         JSON.stringify({ success: true }),
-        { headers: { "Content-Type": "application/json" } },
+        { ...corsHeaders, headers: { "Content-Type": "application/json" } },
       )
   } else {
       console.log('isVerified:', isVerified);
       return new Response(
         JSON.stringify({ success: false }),
-        { headers: { "Content-Type": "application/json" } },
+        { ...corsHeaders, headers: { "Content-Type": "application/json" } },
       )
     
   }
@@ -61,7 +66,7 @@ Deno.serve(async (req) => {
 
   return new Response(
     JSON.stringify("Hello world"),
-    { headers: { "Content-Type": "application/json" } },
+    { ...corsHeaders, headers: { "Content-Type": "application/json" } },
   )
 })
 
@@ -70,9 +75,15 @@ Deno.serve(async (req) => {
   1. Run `supabase start` (see: https://supabase.com/docs/reference/cli/supabase-start)
   2. Make an HTTP request:
 
-  curl -i --location --request POST 'http://127.0.0.1:54321/functions/v1/verifyAccount' \
-    --header 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0' \
+  curl -i --location --request POST 'https://82e3-178-54-185-162.ngrok-free.app/functions/v1/verifyAccount' \
     --header 'Content-Type: application/json' \
     --data '{"name":"Functions"}'
 
+  curl -i --location --request POST 'http://localhost:54321/functions/v1/verifyAccount' \
+    --header 'Content-Type: application/json' \
+    --data '{"name":"Functions"}'
+
+
+  flutter run -d chrome --web-browser-flag "--disable-web-security"
 */
+

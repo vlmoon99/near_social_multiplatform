@@ -124,13 +124,19 @@ class AuthController extends Disposable {
     // final FirebaseFunctions functions = FirebaseFunctions.instance;
 
     try {
-      final response = await Supabase.instance.client.functions
-          .invoke('verifyAccount', body: <String, dynamic>{
-        'signature': signature,
-        'publicKeyStr': publicKeyStr,
-        'uuid': uuid,
-        'accountId': accountId,
-      });
+      final response = await Supabase.instance.client.functions.invoke(
+        'verifyAccount',
+        headers: {
+          "Accept": "application/json",
+          "Access-Control-Allow-Origin": "*",
+        },
+        body: <String, dynamic>{
+          'signature': signature,
+          'publicKeyStr': publicKeyStr,
+          'uuid': uuid,
+          'accountId': accountId,
+        },
+      );
       final data = response.data;
 
       print('Unexpected error: $data');
