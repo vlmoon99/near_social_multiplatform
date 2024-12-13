@@ -4,7 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_firebase_chat_core/flutter_firebase_chat_core.dart';
 import 'package:near_social_mobile/modules/home/apis/near_social.dart';
-import 'package:cloud_functions/cloud_functions.dart';
+// import 'package:cloud_functions/cloud_functions.dart';
 
 import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
 
@@ -16,6 +16,7 @@ import 'package:near_social_mobile/config/constants.dart';
 import 'package:near_social_mobile/modules/home/apis/models/private_key_info.dart';
 import 'package:near_social_mobile/services/crypto_storage_service.dart';
 import 'package:rxdart/rxdart.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'models/auth_info.dart';
 
@@ -120,23 +121,27 @@ class AuthController extends Disposable {
     required String uuid,
     required String accountId,
   }) async {
-    final FirebaseFunctions functions = FirebaseFunctions.instance;
+    // final FirebaseFunctions functions = FirebaseFunctions.instance;
 
     try {
-      HttpsCallable callable =
-          functions.httpsCallable('verifySignedTransaction');
+      final response = await Supabase.instance.client.functions.invoke(
+        'verifyAccount',
+        headers: {
+          "Accept": "application/json",
+          "Access-Control-Allow-Origin": "*",
+        },
+        body: <String, dynamic>{
+          'signature': signature,
+          'publicKeyStr': publicKeyStr,
+          'uuid': uuid,
+          'accountId': accountId,
+        },
+      );
+      final data = response.data;
 
-      final response = await callable.call(<String, dynamic>{
-        'signature': signature,
-        'publicKeyStr': publicKeyStr,
-        'uuid': uuid,
-        'accountId': accountId,
-      });
+      print('Unexpected error: $data');
 
       return response.data['success'] == true;
-    } on FirebaseFunctionsException catch (e) {
-      print('Firebase Functions Exception: ${e.message}');
-      return false;
     } catch (e) {
       print('Unexpected error: $e');
       return false;
