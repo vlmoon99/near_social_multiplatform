@@ -1,11 +1,12 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_modular/flutter_modular.dart';
-import 'package:near_social_mobile/modules/home/apis/near_social.dart';
-import 'package:near_social_mobile/modules/home/pages/chat/chat_page.dart';
-import 'package:near_social_mobile/modules/vms/core/auth_controller.dart';
-import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
+import 'package:flutter_svg/svg.dart';
+import 'package:near_social_mobile/config/constants.dart';
+import 'package:near_social_mobile/config/theme.dart';
+import 'package:rxdart/rxdart.dart';
 
+import 'package:flutter_svg/flutter_svg.dart';
+
+//Pages //
 class UserChatsPage extends StatefulWidget {
   const UserChatsPage({super.key});
 
@@ -14,152 +15,338 @@ class UserChatsPage extends StatefulWidget {
 }
 
 class _UserChatsPageState extends State<UserChatsPage> {
-  types.Room transformRoomData(String roomId, Map<String, dynamic> roomData) {
-    return types.Room(
-      createdAt: (roomData['createdAt'] as Timestamp?)?.millisecondsSinceEpoch,
-      id: roomId,
-      imageUrl: roomData['imageUrl'] as String?,
-      lastMessages: (roomData['lastMessages'] as List<dynamic>?)
-          ?.map((message) => types.Message.fromJson(message))
-          .toList(),
-      metadata: roomData['metadata'] as Map<String, dynamic>?,
-      name: roomData['name'] as String?,
-      type: roomData['type'] != null
-          ? types.RoomType.values.firstWhere(
-              (type) => type.toString() == 'RoomType.${roomData['type']}')
-          : null,
-      updatedAt:
-          (roomData['updatedAt'] as Timestamp?)?.millisecondsSinceEpoch ?? 0,
-      users: (roomData['users'] as List<dynamic>?)
-              ?.map((user) => types.User.fromJson(user))
-              .toList() ??
-          <types.User>[],
-    );
-  }
+  final BehaviorSubject<UserChatPageState> pageStateStream =
+      BehaviorSubject<UserChatPageState>()
+        ..add(
+          UserChatPageState(isSearching: false),
+        );
 
-  String getChatTitle(List<String> accountIds, bool isSecure) {
-    String participants = accountIds.join(', ');
+  final TextEditingController searchController = TextEditingController();
 
-    String securityLabel = isSecure ? "(Secure)" : "(Public)";
+  List<Chat> chats = [
+    Chat(
+      name: "John Doe",
+      imagePath: "assets/john_doe.jpg",
+      isPublic: true,
+    ),
+    Chat(
+      name: "Jane Smith",
+      imagePath: "assets/jane_smith.jpg",
+      isPublic: false,
+    ),
+    Chat(
+      name: "Robert Brown",
+      imagePath: "assets/robert_brown.jpg",
+      isPublic: true,
+    ),
+    Chat(
+      name: "Emily Davis",
+      imagePath: "assets/emily_davis.jpg",
+      isPublic: false,
+    ),
+  ];
 
-    return "$participants $securityLabel";
+  List<User> users = [
+    User(
+      name: "Vladyslav Mykolaienko",
+      accountId: "vlmoon.near",
+      photo: "John Doe",
+    ),
+    User(
+      name: "Illie Polosuhin",
+      accountId: "root.near",
+      photo: "John Doe",
+    ),
+    User(
+      name: "Vlad Frolov",
+      accountId: "frol.near",
+      photo: "John Doe",
+    ),
+  ];
+
+  @override
+  void dispose() {
+    pageStateStream.close();
+    searchController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final currentUserAccountId = Modular.get<AuthController>().state.accountId;
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('User Chats'),
-      ),
-      body: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance
-            .collection('rooms')
-            .where('userIds', arrayContains: currentUserAccountId)
-            .snapshots(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (snapshot.hasError) {
-            setState(() {});
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-            return const Center(child: Text('No chat rooms found.'));
-          }
-
-          final rooms = snapshot.data!.docs.map((doc) {
-            return transformRoomData(
-                doc.id, doc.data() as Map<String, dynamic>);
-          }).toList();
-
-          final titles = snapshot.data!.docs.map((doc) {
-            return ((doc.data() as Map<String, dynamic>)['userIds']
-                    as List<dynamic>)
-                .toList()
-                .map((val) => val.toString())
-                .toList();
-          }).toList();
-
-          return ListView.builder(
-            itemCount: rooms.length,
-            itemBuilder: (context, index) {
-              final room = rooms[index];
-              final userIds = titles[index];
-              final isSecure = room.metadata?['isSecure'] != null
-                  ? room.metadata!['isSecure'] as bool
-                  : false;
-
-              return ListTile(
-                title: Text(
-                  getChatTitle(
-                    userIds,
-                    isSecure,
-                  ),
-                ),
-                subtitle: Text(
-                    'Last updated: ${DateTime.fromMillisecondsSinceEpoch(room.updatedAt ?? 0)}'),
-                onTap: () async {
-                  try {
-                    final users = <types.User>[];
-
-                    for (String accountId in userIds) {
-                      final userDoc = await FirebaseFirestore.instance
-                          .collection('users')
-                          .doc(accountId)
-                          .get();
-
-                      final userData = {
-                        "id": userDoc.id,
-                        "imageUrl": userDoc.data()!['imageUrl'],
-                        "firstName": userDoc.data()!['firstName'],
-                        "lastName": userDoc.data()!['lastName'],
-                        "role": userDoc.data()!['role'],
-                        "metadata": userDoc.data()!['metadata'],
-                      };
-
-                      final otherUser = types.User.fromJson(userData);
-
-                      users.add(otherUser);
-                    }
-
-                    final currentUser = users
-                        .firstWhere((user) => user.id == currentUserAccountId);
-                    final otherUser = users
-                        .firstWhere((user) => user.id != currentUserAccountId);
-
-                    final room =
-                        await Modular.get<NearSocialApi>().createChatRoom(
-                      isSecure,
-                      users[0],
-                      users[1],
-                      metadata: {"isSecure": isSecure},
-                    );
-
-                    if (room != null) {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (ctx) => ChatPage(
-                            isSecure: isSecure,
-                            room: room,
-                            currentUser: currentUser,
-                            otherUser: otherUser,
-                          ),
-                        ),
-                      );
-                      print('Chat room created successfully with user: $room');
-                    }
-                  } catch (e) {
-                    print('Error creating room: $e');
-                  }
-                },
-              );
+    return StreamBuilder<UserChatPageState>(
+      stream: pageStateStream,
+      builder: (context, snapshot) {
+        final state = snapshot.data ?? UserChatPageState(isSearching: false);
+        print("state ${state.toString()}");
+        return Scaffold(
+          appBar: PreferredSize(
+            preferredSize: Size.fromHeight(kToolbarHeight),
+            child: AnimatedSwitcher(
+              duration: Duration(milliseconds: 300),
+              transitionBuilder: (child, animation) {
+                return SlideTransition(
+                  position: Tween<Offset>(
+                    begin: Offset(0, -1),
+                    end: Offset(0, 0),
+                  ).animate(animation),
+                  child: FadeTransition(opacity: animation, child: child),
+                );
+              },
+              child: state.isSearching
+                  ? SearchAppBar(
+                      key: ValueKey('searchAppBar'),
+                      searchController: searchController,
+                      onCancel: () {
+                        searchController.clear();
+                        pageStateStream.add(state.copyWith(isSearching: false));
+                      },
+                    )
+                  : DefaultAppBar(
+                      key: ValueKey('defaultAppBar'),
+                      onSearchPressed: () {
+                        pageStateStream.add(state.copyWith(isSearching: true));
+                      },
+                    ),
+            ),
+          ),
+          body: AnimatedSwitcher(
+            duration: Duration(milliseconds: 300),
+            transitionBuilder: (child, animation) {
+              return FadeTransition(opacity: animation, child: child);
             },
-          );
-        },
+            child: state.isSearching
+                ? SearchBody(
+                    key: ValueKey('searchBody'),
+                    users: users,
+                    searchController: searchController,
+                  )
+                : ChatListBody(
+                    key: ValueKey('chatListBody'),
+                    chats: chats,
+                  ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+//Widgets
+
+class DefaultAppBar extends StatelessWidget {
+  final VoidCallback onSearchPressed;
+
+  const DefaultAppBar({super.key, required this.onSearchPressed});
+
+  @override
+  Widget build(BuildContext context) {
+    return AppBar(
+      backgroundColor: NEARColors.blue,
+      title: Row(
+        children: [
+          SvgPicture.asset(
+            NearAssets.logoIcon,
+            color: NEARColors.white,
+          ),
+          const SizedBox(width: 15),
+          Text(
+            'Near Social',
+            style: Theme.of(context)
+                .textTheme
+                .titleLarge
+                ?.copyWith(color: NEARColors.white),
+          ),
+        ],
+      ),
+      actions: [
+        IconButton(
+          onPressed: onSearchPressed,
+          icon: Icon(Icons.search),
+        ),
+      ],
+    );
+  }
+}
+
+class SearchAppBar extends StatelessWidget {
+  final TextEditingController searchController;
+  final VoidCallback onCancel;
+
+  const SearchAppBar({
+    super.key,
+    required this.searchController,
+    required this.onCancel,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return AppBar(
+      backgroundColor: NEARColors.blue,
+      leading: IconButton(
+        icon: Icon(Icons.arrow_back),
+        onPressed: onCancel,
+      ),
+      title: TextField(
+        controller: searchController,
+        autofocus: true,
+        decoration: InputDecoration(
+          hintText: 'Search users...',
+          border: InputBorder.none,
+          hintStyle: Theme.of(context)
+              .textTheme
+              .titleLarge
+              ?.copyWith(color: NEARColors.white),
+        ),
+        style: TextStyle(color: NEARColors.white),
       ),
     );
+  }
+}
+
+class UserChatPageState {
+  final bool isSearching;
+
+  UserChatPageState({required this.isSearching});
+
+  UserChatPageState copyWith({bool? isSearching}) {
+    return UserChatPageState(
+      isSearching: isSearching ?? this.isSearching,
+    );
+  }
+
+  @override
+  String toString() {
+    return 'UserChatPageState(isSearching: $isSearching)';
+  }
+}
+
+class ChatListBody extends StatelessWidget {
+  final List<Chat> chats;
+
+  const ChatListBody({super.key, required this.chats});
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView.builder(
+      itemCount: chats.length,
+      itemBuilder: (context, index) {
+        final chat = chats[index];
+        return ListTile(
+          onTap: () {},
+          leading: CircleAvatar(
+            backgroundImage: AssetImage(chat.imagePath),
+          ),
+          title: Text(
+            chat.name,
+            style: Theme.of(context)
+                .textTheme
+                .titleLarge
+                ?.copyWith(color: NEARColors.black),
+          ),
+          subtitle: Text(
+            "near addres",
+            style: Theme.of(context)
+                .textTheme
+                .titleMedium
+                ?.copyWith(color: NEARColors.black),
+          ),
+          trailing: Icon(
+            chat.isPublic ? Icons.lock_open : Icons.security,
+            color: chat.isPublic ? NEARColors.green : NEARColors.red,
+          ),
+        );
+      },
+    );
+  }
+}
+
+class SearchBody extends StatelessWidget {
+  final List<User> users;
+  final TextEditingController searchController;
+
+  const SearchBody(
+      {super.key, required this.users, required this.searchController});
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder(
+      valueListenable: searchController,
+      builder: (context, value, child) {
+        final searchText = searchController.text.toLowerCase();
+        final filteredChats = users
+            .where((chat) => chat.name.toLowerCase().contains(searchText))
+            .toList();
+
+        return ListView.builder(
+          itemCount: filteredChats.length,
+          itemBuilder: (context, index) {
+            final chat = filteredChats[index];
+            return ListTile(
+              leading: CircleAvatar(
+                backgroundImage: AssetImage(chat.photo),
+              ),
+              title: Text(
+                chat.name,
+                style: Theme.of(context)
+                    .textTheme
+                    .titleLarge
+                    ?.copyWith(color: NEARColors.black),
+              ),
+              subtitle: Text(
+                "near addres",
+                style: Theme.of(context)
+                    .textTheme
+                    .titleMedium
+                    ?.copyWith(color: NEARColors.black),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+}
+
+//Models
+
+class Chat {
+  final String name;
+  final String imagePath;
+  final bool isPublic;
+
+  Chat({required this.name, required this.imagePath, required this.isPublic});
+
+  Chat copyWith({String? name, String? imagePath, bool? isPublic}) {
+    return Chat(
+      name: name ?? this.name,
+      imagePath: imagePath ?? this.imagePath,
+      isPublic: isPublic ?? this.isPublic,
+    );
+  }
+
+  @override
+  String toString() {
+    return 'Chat(name: $name ,imagePath :$imagePath ,isPublic : $isPublic )';
+  }
+}
+
+class User {
+  final String name;
+  final String accountId;
+  final String photo;
+
+  User({required this.name, required this.accountId, required this.photo});
+
+  User copyWith({String? name, String? accountId, String? photo}) {
+    return User(
+      name: name ?? this.name,
+      accountId: accountId ?? this.accountId,
+      photo: photo ?? this.photo,
+    );
+  }
+
+  @override
+  String toString() {
+    return 'Chat(name: $name ,accountId :$accountId ,photo : $photo )';
   }
 }

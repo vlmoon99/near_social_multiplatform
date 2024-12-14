@@ -90,12 +90,15 @@ class AuthController extends Disposable {
 
       // print("signedMessagedForVerification  " + signedMessagedForVerification);
 
-      verifyTransaction(
-        signature: 'signedMessagedForVerification',
-        publicKeyStr: base58PubKey,
-        uuid: 'no_uuid',
-        accountId: accountId,
-      );
+      //TODO : add Verification
+
+      // final res = await verifyTransaction(
+      //   signature: 'signedMessagedForVerification',
+      //   publicKeyStr: base58PubKey,
+      //   uuid: 'no_uuid',
+      //   accountId: accountId,
+      // );
+
       _streamController.add(state.copyWith(
         accountId: accountId,
         publicKey: publicKey,

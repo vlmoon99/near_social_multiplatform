@@ -4,6 +4,7 @@
 
 // Setup type definitions for built-in Supabase Runtime APIs
 import "jsr:@supabase/functions-js/edge-runtime.d.ts"
+import { createClient } from 'jsr:@supabase/supabase-js@2'
 
 import bs58 from "bs58";
 import nearApi from "near-api-js";
@@ -29,18 +30,38 @@ async function verifySignature(signature, publicKeyStr) {
   }
 }
 
+
+async function connectToTheDBTest() {
+  try {
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      { global: { headers: { Authorization: "admin_key" } } }
+    )
+
+    const { data, error } = await supabase.from('Session').select('*')
+
+    if (error) {
+      throw error
+    }
+    
+    console.log('Sucsess  : {} ', data);
+
+  } catch (err) {
+
+    console.log('Error  : {} ', err);
+
+  }
+
+}
+
+
 Deno.serve(async (req) => {
 
   const body = (await req.json());
 
-  console.log('body', body);
-
   const { signature, publicKeyStr, uuid, accountId } = body;
 
-  console.log('signature:', signature);
-  console.log('Received publicKeyStr:', publicKeyStr);
-  console.log('Received uuid:', uuid);
-  console.log('Received accountId:', accountId);
 
   try {
   const isVerified = await verifySignature(signature, publicKeyStr);

@@ -10,6 +10,7 @@ import 'package:near_social_mobile/services/crypto_service.dart';
 import 'package:near_social_mobile/services/crypto_storage_service.dart';
 import 'package:near_social_mobile/services/notification_subscription_service.dart';
 import 'package:near_wallet_selector/near_wallet_selector.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 Future<void> encryptDataAndLogin(
     AuthorizationCredentials authorizationCredentials) async {
@@ -45,6 +46,12 @@ Future<void> encryptDataAndLogin(
       }
     },
   );
+
+  await Supabase.instance.client.auth.signInAnonymously();
+
+  UserResponse user = await Supabase.instance.client.auth.getUser();
+  print(user.user?.toJson().toString() ?? "no data");
+
   if (kIsWeb) {
     NearWalletSelector().clearCredentials();
   }

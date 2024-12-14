@@ -5,6 +5,7 @@ import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:near_social_mobile/config/constants.dart';
 import 'package:near_social_mobile/config/theme.dart';
+import 'package:near_social_mobile/modules/home/pages/chat/user_chats_page.dart';
 import 'package:near_social_mobile/modules/vms/core/auth_controller.dart';
 import 'package:near_social_mobile/modules/vms/core/models/auth_info.dart';
 import 'package:near_social_mobile/routes/routes.dart';
@@ -55,67 +56,69 @@ class _HomePageState extends State<HomePage> {
       stream: authController.stream,
       builder: (context, _) {
         return Scaffold(
-          appBar: AppBar(
-            title: SvgPicture.asset(NearAssets.logoIcon),
-            centerTitle: true,
-          ),
-          body: const RouterOutlet(),
-          bottomNavigationBar: NavigationListener(builder: (_, __) {
-            return BottomNavigationBar(
-              backgroundColor: NEARColors.black,
-              selectedItemColor: Theme.of(context).primaryColor,
-              unselectedItemColor: NEARColors.white,
-              type: BottomNavigationBarType.fixed,
-              currentIndex: currentIndex(Modular.to.path),
-              landscapeLayout: BottomNavigationBarLandscapeLayout.centered,
-              items: const [
-                BottomNavigationBarItem(
-                  backgroundColor: NEARColors.black,
-                  icon: Icon(Icons.feed),
-                  label: "Feed",
-                ),
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.widgets),
-                  label: "Widgets",
-                ),
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.people),
-                  label: "Users",
-                ),
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.notifications),
-                  label: "Alerts",
-                ),
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.menu),
-                  label: "Menu",
-                ),
-              ],
-              onTap: (value) {
-                HapticFeedback.lightImpact();
-                switch (value) {
-                  case 0:
-                    Modular.to.navigate(".${Routes.home.postsFeed}");
-                    break;
-                  case 1:
-                    Modular.to.navigate(".${Routes.home.widgetsListPage}");
-                    break;
-                  case 2:
-                    Modular.to.navigate(".${Routes.home.peopleListPage}");
-                    break;
-                  case 3:
-                    Modular.to.navigate(".${Routes.home.notificationsPage}");
-                    break;
-                  case 4:
-                    Modular.to.navigate(".${Routes.home.homeMenu}");
-                    break;
-                  default:
-                    Modular.to.navigate(".${Routes.home.postsFeed}");
-                    break;
-                }
-              },
-            );
-          }),
+          // appBar: AppBar(
+          //   title: SvgPicture.asset(NearAssets.logoIcon),
+          //   centerTitle: true,
+          // ),
+
+          body: UserChatsPage(),
+
+          // bottomNavigationBar: NavigationListener(builder: (_, __) {
+          //   return BottomNavigationBar(
+          //     backgroundColor: NEARColors.black,
+          //     selectedItemColor: Theme.of(context).primaryColor,
+          //     unselectedItemColor: NEARColors.white,
+          //     type: BottomNavigationBarType.fixed,
+          //     currentIndex: currentIndex(Modular.to.path),
+          //     landscapeLayout: BottomNavigationBarLandscapeLayout.centered,
+          //     items: const [
+          //       BottomNavigationBarItem(
+          //         backgroundColor: NEARColors.black,
+          //         icon: Icon(Icons.feed),
+          //         label: "Feed",
+          //       ),
+          //       BottomNavigationBarItem(
+          //         icon: Icon(Icons.widgets),
+          //         label: "Widgets",
+          //       ),
+          //       BottomNavigationBarItem(
+          //         icon: Icon(Icons.people),
+          //         label: "Users",
+          //       ),
+          //       BottomNavigationBarItem(
+          //         icon: Icon(Icons.notifications),
+          //         label: "Alerts",
+          //       ),
+          //       BottomNavigationBarItem(
+          //         icon: Icon(Icons.menu),
+          //         label: "Menu",
+          //       ),
+          //     ],
+          //     onTap: (value) {
+          //       HapticFeedback.lightImpact();
+          //       switch (value) {
+          //         case 0:
+          //           Modular.to.navigate(".${Routes.home.postsFeed}");
+          //           break;
+          //         case 1:
+          //           Modular.to.navigate(".${Routes.home.widgetsListPage}");
+          //           break;
+          //         case 2:
+          //           Modular.to.navigate(".${Routes.home.peopleListPage}");
+          //           break;
+          //         case 3:
+          //           Modular.to.navigate(".${Routes.home.notificationsPage}");
+          //           break;
+          //         case 4:
+          //           Modular.to.navigate(".${Routes.home.homeMenu}");
+          //           break;
+          //         default:
+          //           Modular.to.navigate(".${Routes.home.postsFeed}");
+          //           break;
+          //       }
+          //     },
+          //   );
+          // }),
         );
       },
     );
