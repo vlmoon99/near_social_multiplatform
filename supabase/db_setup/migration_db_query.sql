@@ -54,7 +54,7 @@ alter table "Session" enable row level security;
 -- Policies
 
 create policy "Users can create a profile."
-on "User" for insert
+on "Session" for insert
 to authenticated
 with check ( (select auth.uid()) = user_id );
 

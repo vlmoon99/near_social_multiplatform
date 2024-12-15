@@ -4,10 +4,15 @@
 
 // Setup type definitions for built-in Supabase Runtime APIs
 import "jsr:@supabase/functions-js/edge-runtime.d.ts"
-import { createClient } from 'jsr:@supabase/supabase-js@2'
 
 import bs58 from "bs58";
 import nearApi from "near-api-js";
+
+import { drizzle } from "drizzle-orm/postgres-js";
+import postgres from "postgres";
+import { session } from "../_shared/schema.ts";
+
+const connectionString = Deno.env.get("SUPABASE_DB_URL")!;
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -33,18 +38,7 @@ async function verifySignature(signature, publicKeyStr) {
 
 async function connectToTheDBTest() {
   try {
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      { global: { headers: { Authorization: "admin_key" } } }
-    )
 
-    const { data, error } = await supabase.from('Session').select('*')
-
-    if (error) {
-      throw error
-    }
-    
     console.log('Sucsess  : {} ', data);
 
   } catch (err) {
@@ -58,39 +52,63 @@ async function connectToTheDBTest() {
 
 Deno.serve(async (req) => {
 
-  const body = (await req.json());
+  // Connect to the database
+  const client = postgres(connectionString, { prepare: false });
+  const db = drizzle(client);
 
-  const { signature, publicKeyStr, uuid, accountId } = body;
+  // Generate random data for the session
+  const randomId = crypto.randomUUID();
+  const randomAccountId = crypto.randomUUID();
+  const isActive = Math.random() < 0.5; // Random boolean
 
+    // Insert the session into the database
+  const [newSession] = await db
+    .insert(session)
+    .values({
+      id: randomId,
+      accountId: randomAccountId,
+      isActive,
+    })
+  .returning();
 
-  try {
-  const isVerified = await verifySignature(signature, publicKeyStr);
-
-  if (isVerified) {
-      console.log('isVerified:', isVerified);
-      console.log(`Session created for uuid: ${uuid}, accountId: ${accountId}`);
-
-      return new Response(
-        JSON.stringify({ success: true }),
-        { ...corsHeaders, headers: { "Content-Type": "application/json" } },
-      )
-  } else {
-      console.log('isVerified:', isVerified);
-      return new Response(
-        JSON.stringify({ success: false }),
-        { ...corsHeaders, headers: { "Content-Type": "application/json" } },
-      )
-    
-  }
-
-  } catch (e) {
-    console.error('Error verifying transaction:', e);
-  }
-
+  // Return the inserted session as the response
   return new Response(
-    JSON.stringify("Hello world"),
-    { ...corsHeaders, headers: { "Content-Type": "application/json" } },
-  )
+    JSON.stringify(newSession),
+    { headers: { "Content-Type": "application/json" } },
+  );
+
+  // const body = (await req.json());
+
+  // const { signature, publicKeyStr, uuid, accountId } = body;
+
+
+  // try {
+  //   const isVerified = await verifySignature(signature, publicKeyStr);
+
+  //   if (isVerified) {
+  //     console.log('isVerified:', isVerified);
+
+  //     return new Response(
+  //       JSON.stringify({ success: true }),
+  //       { ...corsHeaders, headers: { "Content-Type": "application/json" } },
+  //     )
+  //   } else {
+  //     console.log('isVerified:', isVerified);
+  //     return new Response(
+  //       JSON.stringify({ success: false }),
+  //       { ...corsHeaders, headers: { "Content-Type": "application/json" } },
+  //     )
+
+  //   }
+
+  // } catch (e) {
+  //   console.error('Error verifying transaction:', e);
+  // }
+
+  // return new Response(
+  //   JSON.stringify("Hello world"),
+  //   { ...corsHeaders, headers: { "Content-Type": "application/json" } },
+  // )
 })
 
 /* To invoke locally:
