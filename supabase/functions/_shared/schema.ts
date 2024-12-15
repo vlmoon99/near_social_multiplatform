@@ -25,7 +25,7 @@ export const message = pgTable("Message", {
 });
 
 export const session = pgTable("Session", {
-  id: text("id").primaryKey(),
+  userId: text("user_id").primaryKey(),
   accountId: text("account_id").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   isActive: boolean("is_active").notNull(),

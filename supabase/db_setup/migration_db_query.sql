@@ -24,7 +24,7 @@ CREATE TABLE "Message" (
 );
 
 CREATE TABLE "Session" (
-    id TEXT PRIMARY KEY,
+    user_id TEXT PRIMARY KEY,
     account_id TEXT NOT NULL,            
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),  
     is_active BOOLEAN NOT NULL           
@@ -53,10 +53,12 @@ alter table "Session" enable row level security;
 
 -- Policies
 
-create policy "Users can create a profile."
-on "Session" for insert
+create policy "Enable users to view their own data only."
+on "public"."Session" 
+as RESTRICTIVE
+for SELECT
 to authenticated
-with check ( (select auth.uid()) = user_id );
-
-
+using (
+  (select auth.uid()) = user_id
+);
 

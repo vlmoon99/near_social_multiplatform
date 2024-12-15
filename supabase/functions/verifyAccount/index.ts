@@ -36,20 +36,6 @@ async function verifySignature(signature, publicKeyStr) {
 }
 
 
-async function connectToTheDBTest() {
-  try {
-
-    console.log('Sucsess  : {} ', data);
-
-  } catch (err) {
-
-    console.log('Error  : {} ', err);
-
-  }
-
-}
-
-
 Deno.serve(async (req) => {
 
   // Connect to the database
@@ -65,7 +51,7 @@ Deno.serve(async (req) => {
   const [newSession] = await db
     .insert(session)
     .values({
-      id: randomId,
+      userId: randomId,
       accountId: randomAccountId,
       isActive,
     })

@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Crpytography Gateway</title>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script>window.global = window;</script>
+    
+    <script type="module">
+        import { Buffer } from "buffer/";
+        import process from "process";
+    
+        window.Buffer = Buffer;
+        window.process = process;
+    </script>
+  </body>
+</html>
