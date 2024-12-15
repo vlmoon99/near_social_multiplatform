@@ -16,5 +16,19 @@
         window.Buffer = Buffer;
         window.process = process;
     </script>
+      <script type="module">
+        import initSync, { generate_keypair,encrypt_message,decrypt_message } from "./encryption_module/cryptography_project.js";
+        
+        window.generate_keypair = generate_keypair;
+    
+        window.encrypt_message = encrypt_message;
+    
+        window.decrypt_message = decrypt_message;
+    
+        initSync().then(() => {
+          console.log("Cryptography module was intied sucsessfully");
+        });
+      </script>
+    
   </body>
 </html>

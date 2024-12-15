@@ -1,0 +1,15 @@
+{
+  "name": "cryptography_project",
+  "type": "module",
+  "version": "0.1.0",
+  "files": [
+    "cryptography_project_bg.wasm",
+    "cryptography_project.js",
+    "cryptography_project.d.ts"
+  ],
+  "main": "cryptography_project.js",
+  "types": "cryptography_project.d.ts",
+  "sideEffects": [
+    "./snippets/*"
+  ]
+}

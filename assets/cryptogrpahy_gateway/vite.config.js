@@ -4,6 +4,7 @@ import { nodePolyfills } from "vite-plugin-node-polyfills";
 import WebWorkerPlugin from "vite-plugin-webworker-service";
 import topLevelAwait from "vite-plugin-top-level-await";
 import wasm from "vite-plugin-wasm";
+import { viteStaticCopy } from 'vite-plugin-static-copy'
 
 export default defineConfig({
   base: "./",
@@ -12,6 +13,14 @@ export default defineConfig({
     nodePolyfills(),
     wasm(),
     topLevelAwait(),
+    // viteStaticCopy({
+    //   targets: [
+    //     {
+    //       src: './encryption_module/cryptography_project_bg.wasm',
+    //       dest: ''
+    //     }
+    //   ]
+    // })
   ],
   build: {
     rollupOptions: {
