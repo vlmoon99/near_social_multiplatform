@@ -1,34 +1,16 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Crpytography Gateway</title>
-  </head>
-  <body>
-    <div id="app"></div>
-    <script>window.global = window;</script>
-    
-    <script type="module">
-        import { Buffer } from "buffer/";
-        import process from "process";
-    
-        window.Buffer = Buffer;
-        window.process = process;
-    </script>
-      <script type="module">
-        import initSync, { generate_keypair,encrypt_message,decrypt_message } from "./encryption_module/cryptography_project.js";
-        
-        window.generate_keypair = generate_keypair;
-    
-        window.encrypt_message = encrypt_message;
-    
-        window.decrypt_message = decrypt_message;
-    
-        initSync().then(() => {
-          console.log("Cryptography module was intied sucsessfully");
-        });
-      </script>
-    
-  </body>
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Crpytography Gateway</title>
+</head>
+
+<body>
+  <div id="app"></div>
+  <script>window.global = window;</script>
+  <script type="module" src="main.js"></script>
+</body>
+
 </html>

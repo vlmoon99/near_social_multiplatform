@@ -23,5 +23,11 @@
   },
   "author": "",
   "license": "ISC",
-  "description": ""
+  "description": "",
+  "dependencies": {
+    "bs58": "^6.0.0",
+    "buffer": "^6.0.3",
+    "core-js": "^3.39.0",
+    "near-api-js": "^5.0.1"
+  }
 }
