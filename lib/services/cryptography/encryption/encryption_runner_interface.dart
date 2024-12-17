@@ -1,4 +1,6 @@
 abstract class EncryptionRunner {
+  Future<String> signMessageForVerification(String privateKey);
+  Future<String> fromSecretToNearAPIJSPublicKey(String secretKey);
   Future<String> encryptMessage(String publicKeyPem, String message);
   Future<String> decryptMessage(
       String privateKeyPem, String encryptedMessageBase64);

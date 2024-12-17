@@ -36,4 +36,18 @@ class EncryptionWebviewJSRunner extends EncryptionRunner {
         privateKey: res['privateKey'].toString(),
         publicKey: res['publicKey'].toString());
   }
+
+  @override
+  Future<String> fromSecretToNearAPIJSPublicKey(String secretKey) async {
+    final rawFunction = "window.signMessageForVerification('$secretKey')";
+    final res = await jsVMService.callJS(rawFunction);
+    return res.toString();
+  }
+
+  @override
+  Future<String> signMessageForVerification(String privateKey) async {
+    final rawFunction = "window.fromSecretToNearAPIJSPublicKey('$privateKey')";
+    final res = await jsVMService.callJS(rawFunction);
+    return res.toString();
+  }
 }
