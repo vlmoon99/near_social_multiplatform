@@ -4,10 +4,6 @@ import 'package:flutterchain/flutterchain_lib/constants/core/webview_constants.d
 // ignore: depend_on_referenced_packages
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 
-// JsVMService getJsVM() {
-//   return WebviewJsVMService();
-// }
-
 class WebviewJsVMService {
   late HeadlessInAppWebView _headlessWebView;
   late InAppWebViewController _webViewMobileController;

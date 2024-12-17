@@ -1,4 +1,4 @@
-import initSync, { generate_keypair, encrypt_message, decrypt_message } from "./encryption_module/cryptography_project.js";
+import initSync, { generate_keypair, encrypt_message, decrypt_message, KeyPair } from "./encryption_module/cryptography_project.js";
 import process from "process";
 import bs58 from 'bs58'
 import * as nearAPI from "near-api-js";
@@ -23,7 +23,7 @@ function fromSecretToNearAPIJSPublicKey(secretKey) {
 // }
 
 function signMessageForVerification(privateKey) {
-    const { keyStores, KeyPair } = nearApi;
+    const { keyStores, KeyPair } = nearAPI;
     const keyPair = KeyPair.fromString(privateKey);
     const message = new Uint8Array([]);
     const signature = keyPair.sign(message);
@@ -31,12 +31,16 @@ function signMessageForVerification(privateKey) {
     return base58Signature;
 }
 
+function generateKeyPairProxy () {
+    let keys = generate_keypair();
+    return JSON.stringify({"private_key" : keys.private_key,"public_key" : keys.public_key});
+}
 
 window.signMessageForVerification = signMessageForVerification;
 
 window.fromSecretToNearAPIJSPublicKey = fromSecretToNearAPIJSPublicKey;
 
-window.generate_keypair = generate_keypair;
+window.generate_keypair = generateKeyPairProxy;
 
 window.encrypt_message = encrypt_message;
 

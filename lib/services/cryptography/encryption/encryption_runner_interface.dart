@@ -11,4 +11,9 @@ class KeyPair {
   final String privateKey;
 
   KeyPair({required this.publicKey, required this.privateKey});
+
+  @override
+  String toString() {
+    return "KeyPair(publicKey : $publicKey , privateKey : $privateKey)";
+  }
 }

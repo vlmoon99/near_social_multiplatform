@@ -1,6 +1,8 @@
 import 'package:flutterchain/flutterchain_lib/services/core/js_engines/core/webview_js_engine.dart';
 import 'package:near_social_mobile/services/cryptography/encryption/encryption_runner_interface.dart';
 
+EncryptionRunner getEncryptionRunner() => EncryptionWebviewJSRunner();
+
 class EncryptionWebviewJSRunner extends EncryptionRunner {
   final WebviewJsVMService jsVMService = WebviewJsVMService();
 
