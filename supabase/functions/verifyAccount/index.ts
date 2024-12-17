@@ -2,10 +2,10 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts"
 
 import bs58 from "bs58";
 import nearApi from "near-api-js";
-
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
-import { session } from "../_shared/schema.ts";
+import { user, session } from "../_shared/schema.ts";
+import { eq } from 'drizzle-orm';
 
 const connectionString = Deno.env.get("SUPABASE_DB_URL")!;
 
@@ -37,41 +37,99 @@ async function verifySignature(signature, publicKeyStr) {
 
 
 Deno.serve(async (req) => {
-  const body = (await req.json());
-
-  const { signature, publicKeyStr, uuid, accountId } = body;
-
   try {
+    const body = await req.json();
+    const { signature, publicKeyStr, uuid, accountId } = body;
+
     const isVerified = await verifySignature(signature, publicKeyStr);
 
-    if (isVerified) {
-      console.log('isVerified:', isVerified);
-      const client = postgres(connectionString, { prepare: false });
-      const db = drizzle(client);
-      const [newSession] = await db
+    if (!isVerified) {
+      return new Response(
+        JSON.stringify({ success: false, reason: "Signature verification failed." }),
+        { ...corsHeaders, headers: { "Content-Type": "application/json" } },
+      );
+    }
+
+    const client = postgres(connectionString, { prepare: false });
+    const db = drizzle(client);
+
+    const [existingUser] = await db
+      .select()
+      .from(user)
+      .where(eq(user.id, accountId));
+
+
+    if (existingUser) {
+      if (existingUser.is_banned) {
+        return new Response(
+          JSON.stringify({ success: false, reason: "User is banned." }),
+          { ...corsHeaders, headers: { "Content-Type": "application/json" } },
+        );
+      }
+    } else {
+      await db
+        .insert(user)
+        .values({
+          id: accountId,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        });
+    }
+
+
+    let newSession;
+
+    const existingSessions = await db
+      .select()
+      .from(session)
+      .where(eq(session.userId, uuid));
+
+    if (existingSessions.length > 0) {
+      await db
+        .update(session)
+        .set({
+          updatedAt: new Date(),
+          isActive: true,
+          accountId: accountId
+        })
+        .where(eq(session.userId, uuid));
+
+      const [updatedSession] = await db
+        .select()
+        .from(session)
+        .where(eq(session.userId, uuid));
+
+      newSession = updatedSession;
+    } else {
+      const [insertedSession] = await db
         .insert(session)
         .values({
           userId: uuid,
           accountId: accountId,
-          isActive : isVerified,
+          isActive: true,
+          createdAt: new Date(),
         })
         .returning();
 
-      return new Response(
-        JSON.stringify({ success: true }),
-        { ...corsHeaders, headers: { "Content-Type": "application/json" } },
-      )
-    } else {
-      console.log('isVerified:', isVerified);
-      return new Response(
-        JSON.stringify({ success: false }),
-        { ...corsHeaders, headers: { "Content-Type": "application/json" } },
-      )
+      newSession = insertedSession;
     }
+
+    return new Response(
+      JSON.stringify({ success: true, session: newSession }),
+      { ...corsHeaders, headers: { "Content-Type": "application/json" } },
+    );
+
   } catch (e) {
-    console.error('Error verifying transaction:', e);
+    console.error('Error processing request:', e);
+    return new Response(
+      JSON.stringify({ success: false, reason: "Internal server error." }),
+      { ...corsHeaders, headers: { "Content-Type": "application/json" } },
+      { status: 500 },
+    );
   }
-})
+
+});
+
 
 /* To invoke locally:
 

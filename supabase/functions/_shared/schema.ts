@@ -4,6 +4,7 @@ export const user = pgTable("User", {
   id: text("id").primaryKey(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  is_banned : boolean("is_banned").notNull(),
 });
 
 export const chat = pgTable("Chat", {
@@ -28,5 +29,6 @@ export const session = pgTable("Session", {
   userId: text("user_id").primaryKey(),
   accountId: text("account_id").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
   isActive: boolean("is_active").notNull(),
 });

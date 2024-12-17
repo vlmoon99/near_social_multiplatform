@@ -100,6 +100,10 @@ class AuthController extends Disposable {
 
       print("Verification process $res");
 
+      if (!res) {
+        throw Exception("Server authenticated error");
+      }
+
       _streamController.add(state.copyWith(
         accountId: accountId,
         publicKey: publicKey,

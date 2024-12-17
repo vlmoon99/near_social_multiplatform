@@ -3,7 +3,8 @@
 CREATE TABLE "User" (
     id TEXT PRIMARY KEY,
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    is_banned BOOLEAN NOT NULL           
 );
 
 CREATE TABLE "Chat" (
@@ -27,6 +28,7 @@ CREATE TABLE "Session" (
     user_id TEXT PRIMARY KEY,
     account_id TEXT NOT NULL,            
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),  
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
     is_active BOOLEAN NOT NULL           
 );
 
