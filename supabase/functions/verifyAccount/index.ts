@@ -1,8 +1,3 @@
-// Follow this setup guide to integrate the Deno language server with your editor:
-// https://deno.land/manual/getting_started/setup_your_environment
-// This enables autocomplete, go to definition, etc.
-
-// Setup type definitions for built-in Supabase Runtime APIs
 import "jsr:@supabase/functions-js/edge-runtime.d.ts"
 
 import bs58 from "bs58";
@@ -23,10 +18,15 @@ const corsHeaders = {
 async function verifySignature(signature, publicKeyStr) {
   try {
     const signatureBytes = bs58.decode(signature);
+    console.log('signatureBytes :', signatureBytes);
 
     const publicKey = nearApi.utils.PublicKey.from(publicKeyStr);
 
+    console.log('publicKey :', publicKey);
+
     const isVerified = publicKey.verify(new Uint8Array([]), signatureBytes);
+
+    console.log('isVerified :', isVerified);
 
     return isVerified;
   } catch (error) {
@@ -37,64 +37,40 @@ async function verifySignature(signature, publicKeyStr) {
 
 
 Deno.serve(async (req) => {
+  const body = (await req.json());
 
-  // Connect to the database
-  const client = postgres(connectionString, { prepare: false });
-  const db = drizzle(client);
+  const { signature, publicKeyStr, uuid, accountId } = body;
 
-  // Generate random data for the session
-  const randomId = crypto.randomUUID();
-  const randomAccountId = crypto.randomUUID();
-  const isActive = Math.random() < 0.5; // Random boolean
+  try {
+    const isVerified = await verifySignature(signature, publicKeyStr);
 
-    // Insert the session into the database
-  const [newSession] = await db
-    .insert(session)
-    .values({
-      userId: randomId,
-      accountId: randomAccountId,
-      isActive,
-    })
-  .returning();
+    if (isVerified) {
+      console.log('isVerified:', isVerified);
+      const client = postgres(connectionString, { prepare: false });
+      const db = drizzle(client);
+      const [newSession] = await db
+        .insert(session)
+        .values({
+          userId: uuid,
+          accountId: accountId,
+          isActive : isVerified,
+        })
+        .returning();
 
-  // Return the inserted session as the response
-  return new Response(
-    JSON.stringify(newSession),
-    { headers: { "Content-Type": "application/json" } },
-  );
-
-  // const body = (await req.json());
-
-  // const { signature, publicKeyStr, uuid, accountId } = body;
-
-
-  // try {
-  //   const isVerified = await verifySignature(signature, publicKeyStr);
-
-  //   if (isVerified) {
-  //     console.log('isVerified:', isVerified);
-
-  //     return new Response(
-  //       JSON.stringify({ success: true }),
-  //       { ...corsHeaders, headers: { "Content-Type": "application/json" } },
-  //     )
-  //   } else {
-  //     console.log('isVerified:', isVerified);
-  //     return new Response(
-  //       JSON.stringify({ success: false }),
-  //       { ...corsHeaders, headers: { "Content-Type": "application/json" } },
-  //     )
-
-  //   }
-
-  // } catch (e) {
-  //   console.error('Error verifying transaction:', e);
-  // }
-
-  // return new Response(
-  //   JSON.stringify("Hello world"),
-  //   { ...corsHeaders, headers: { "Content-Type": "application/json" } },
-  // )
+      return new Response(
+        JSON.stringify({ success: true }),
+        { ...corsHeaders, headers: { "Content-Type": "application/json" } },
+      )
+    } else {
+      console.log('isVerified:', isVerified);
+      return new Response(
+        JSON.stringify({ success: false }),
+        { ...corsHeaders, headers: { "Content-Type": "application/json" } },
+      )
+    }
+  } catch (e) {
+    console.error('Error verifying transaction:', e);
+  }
 })
 
 /* To invoke locally:
@@ -109,7 +85,6 @@ Deno.serve(async (req) => {
   curl -i --location --request POST 'http://localhost:54321/functions/v1/verifyAccount' \
     --header 'Content-Type: application/json' \
     --data '{"name":"Functions"}'
-
 
   flutter run -d chrome --web-browser-flag "--disable-web-security"
 */

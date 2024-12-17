@@ -32,20 +32,21 @@ class WebEncryptionRunner implements EncryptionRunner {
 
   @override
   Future<String> fromSecretToNearAPIJSPublicKey(String secretKey) {
-    return Future.value(_fromSecretToNearAPIJSPublicKey(secretKey.toJS));
+    return Future.value(_fromSecretToNearAPIJSPublicKey(secretKey.toJS).toDart);
   }
 
   @override
-  Future<String> signMessageForVerification(String privateKey) {
-    return Future.value(_signMessageForVerification(privateKey.toJS));
+  Future<String> signMessageForVerification(String secretKey) {
+    final secretKeyJs = secretKey.toJS;
+    return Future.value(_signMessageForVerification(secretKeyJs).toString());
   }
 }
 
-@JS('window.signMessageForVerification')
-external String _fromSecretToNearAPIJSPublicKey(JSString secretKey);
-
 @JS('window.fromSecretToNearAPIJSPublicKey')
-external String _signMessageForVerification(JSString privateKey);
+external JSString _fromSecretToNearAPIJSPublicKey(JSString secretKey);
+
+@JS('window.signMessageForVerification')
+external JSString _signMessageForVerification(JSString privateKey);
 
 @JS('window.generate_keypair')
 external String _generateKeyPair();

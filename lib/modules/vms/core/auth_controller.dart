@@ -15,6 +15,7 @@ import 'package:flutterchain/flutterchain_lib/services/chains/near_blockchain_se
 import 'package:near_social_mobile/config/constants.dart';
 import 'package:near_social_mobile/modules/home/apis/models/private_key_info.dart';
 import 'package:near_social_mobile/services/crypto_storage_service.dart';
+import 'package:near_social_mobile/services/cryptography/internal_cryptography_service.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -60,6 +61,11 @@ class AuthController extends Disposable {
       final base58PubKey = await _nearBlockChainService
           .getBase58PubKeyFromHexValue(hexEncodedPubKey: publicKey);
 
+      print("secretKey  $secretKey");
+      print("privateKey  $privateKey");
+      print("publicKey  $publicKey");
+      print("base58PubKey  $base58PubKey");
+
       final additionalStoredKeys = {
         "Near Social QR Functional Key": PrivateKeyInfo(
           publicKey: accountId,
@@ -74,30 +80,25 @@ class AuthController extends Disposable {
         ...await _getAdditionalAccessKeys()
       };
 
-      //TODO: implement for new web version and mobile
-      // if (kIsWeb) {
-      //   try {
-      //     authenticateUser(accountId, secretKey);
-      //   } catch (e) {
-      //     print("Error while auth uesr using firebase");
-      //   }
-      // }
+      String signedMessagedForVerification =
+          await Modular.get<InternalCryptographyService>()
+              .encryptionRunner
+              .signMessageForVerification(secretKey);
 
-      // String signedMessagedForVerification = (await _nearBlockChainService
-      //         .jsRunner
-      //         .callJS("window.signMessageForVerification('$secretKey')"))
-      //     .toString();
+      print("signedMessagedForVerification  $signedMessagedForVerification");
 
-      // print("signedMessagedForVerification  " + signedMessagedForVerification);
+      final uuid = Supabase.instance.client.auth.currentUser!.id;
 
-      //TODO : add Verification
+      print("uuid  $uuid");
 
-      // final res = await verifyTransaction(
-      //   signature: 'signedMessagedForVerification',
-      //   publicKeyStr: base58PubKey,
-      //   uuid: 'no_uuid',
-      //   accountId: accountId,
-      // );
+      final res = await verifyTransaction(
+        signature: signedMessagedForVerification,
+        publicKeyStr: base58PubKey,
+        uuid: uuid,
+        accountId: accountId,
+      );
+
+      print("Verification process $res");
 
       _streamController.add(state.copyWith(
         accountId: accountId,
@@ -137,8 +138,6 @@ class AuthController extends Disposable {
     required String uuid,
     required String accountId,
   }) async {
-    // final FirebaseFunctions functions = FirebaseFunctions.instance;
-
     try {
       final response = await Supabase.instance.client.functions.invoke(
         'verifyAccount',

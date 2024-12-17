@@ -31,6 +31,11 @@ Future<void> encryptDataAndLogin(
   await Modular.get<FlutterSecureStorage>()
       .write(key: StorageKeys.networkType, value: "mainnet");
 
+  await Supabase.instance.client.auth.signInAnonymously();
+
+  UserResponse user = await Supabase.instance.client.auth.getUser();
+  print(user.user?.toJson().toString() ?? "no data");
+
   final authController = Modular.get<AuthController>();
   await authController
       .login(
@@ -46,11 +51,6 @@ Future<void> encryptDataAndLogin(
       }
     },
   );
-
-  await Supabase.instance.client.auth.signInAnonymously();
-
-  UserResponse user = await Supabase.instance.client.auth.getUser();
-  print(user.user?.toJson().toString() ?? "no data");
 
   if (kIsWeb) {
     NearWalletSelector().clearCredentials();
