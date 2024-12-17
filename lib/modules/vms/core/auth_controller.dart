@@ -1,12 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/foundation.dart';
-import 'package:flutter_firebase_chat_core/flutter_firebase_chat_core.dart';
 import 'package:near_social_mobile/modules/home/apis/near_social.dart';
 // import 'package:cloud_functions/cloud_functions.dart';
-
-import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_modular/flutter_modular.dart';
@@ -61,11 +56,6 @@ class AuthController extends Disposable {
       final base58PubKey = await _nearBlockChainService
           .getBase58PubKeyFromHexValue(hexEncodedPubKey: publicKey);
 
-      print("secretKey  $secretKey");
-      print("privateKey  $privateKey");
-      print("publicKey  $publicKey");
-      print("base58PubKey  $base58PubKey");
-
       final additionalStoredKeys = {
         "Near Social QR Functional Key": PrivateKeyInfo(
           publicKey: accountId,
@@ -85,11 +75,7 @@ class AuthController extends Disposable {
               .encryptionRunner
               .signMessageForVerification(secretKey);
 
-      print("signedMessagedForVerification  $signedMessagedForVerification");
-
       final uuid = Supabase.instance.client.auth.currentUser!.id;
-
-      print("uuid  $uuid");
 
       final res = await verifyTransaction(
         signature: signedMessagedForVerification,
@@ -97,8 +83,6 @@ class AuthController extends Disposable {
         uuid: uuid,
         accountId: accountId,
       );
-
-      print("Verification process $res");
 
       if (!res) {
         throw Exception("Server authenticated error");
@@ -156,10 +140,6 @@ class AuthController extends Disposable {
           'accountId': accountId,
         },
       );
-      final data = response.data;
-
-      print('Data: $data');
-
       return response.data['success'] == true;
     } catch (e) {
       print('Unexpected error: $e');

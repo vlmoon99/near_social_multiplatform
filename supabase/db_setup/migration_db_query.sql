@@ -7,6 +7,14 @@ CREATE TABLE "User" (
     is_banned BOOLEAN NOT NULL           
 );
 
+CREATE TABLE "Session" (
+    user_id TEXT PRIMARY KEY,
+    account_id TEXT NOT NULL,            
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),  
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    is_active BOOLEAN NOT NULL           
+);
+
 CREATE TABLE "Chat" (
     id TEXT PRIMARY KEY,
     metadata JSONB NOT NULL,
@@ -24,13 +32,7 @@ CREATE TABLE "Message" (
     FOREIGN KEY (author_id) REFERENCES "User"(id) ON DELETE CASCADE
 );
 
-CREATE TABLE "Session" (
-    user_id TEXT PRIMARY KEY,
-    account_id TEXT NOT NULL,            
-    created_at TIMESTAMP NOT NULL DEFAULT NOW(),  
-    updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
-    is_active BOOLEAN NOT NULL           
-);
+
 
 -- Indexes
 
@@ -63,4 +65,10 @@ to authenticated
 using (
   (select auth.uid()) = user_id
 );
+
+
+create policy "Enable read for authenticated users only"
+on "public"."User" for select
+to authenticated
+using ( true );
 
