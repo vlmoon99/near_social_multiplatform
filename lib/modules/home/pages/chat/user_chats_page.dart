@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:near_social_mobile/config/constants.dart';
 import 'package:near_social_mobile/config/theme.dart';
 import 'package:rxdart/rxdart.dart';
 
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 //Pages //
 class UserChatsPage extends StatefulWidget {
@@ -117,7 +119,7 @@ class _UserChatsPageState extends State<UserChatsPage> {
             child: state.isSearching
                 ? SearchBody(
                     key: ValueKey('searchBody'),
-                    users: users,
+                    // users: users,
                     searchController: searchController,
                   )
                 : ChatListBody(
@@ -260,55 +262,382 @@ class ChatListBody extends StatelessWidget {
   }
 }
 
-class SearchBody extends StatelessWidget {
-  final List<User> users;
+class SearchBody extends StatefulWidget {
   final TextEditingController searchController;
 
-  const SearchBody(
-      {super.key, required this.users, required this.searchController});
+  const SearchBody({super.key, required this.searchController});
+
+  @override
+  _SearchBodyState createState() => _SearchBodyState();
+}
+
+class _SearchBodyState extends State<SearchBody> {
+  final _scrollController = ScrollController();
+  final List<Map<String, dynamic>> _users = [];
+
+  String? _lastUserId;
+  bool _hasMoreUsers = true;
+  bool _isLoading = false;
+  String _currentSearchText = '';
+
+  @override
+  void initState() {
+    super.initState();
+
+    // Initial load of users
+    _loadUsers();
+
+    // Add scroll listener for pagination
+    _scrollController.addListener(_onScroll);
+
+    // Add listener to search controller
+    widget.searchController.addListener(_onSearchTextChanged);
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.pixels ==
+        _scrollController.position.maxScrollExtent) {
+      _loadUsers();
+    }
+  }
+
+  void _onSearchTextChanged() {
+    final newSearchText = widget.searchController.text.toLowerCase();
+
+    // If search text has changed, reset pagination
+    if (newSearchText != _currentSearchText) {
+      setState(() {
+        _users.clear();
+        _lastUserId = null;
+        _hasMoreUsers = true;
+        _currentSearchText = newSearchText;
+      });
+      _loadUsers();
+    }
+  }
+
+  Future<void> _loadUsers() async {
+    // Prevent multiple simultaneous loads
+    if (_isLoading || !_hasMoreUsers) return;
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      PostgrestTransformBuilder<List<Map<String, dynamic>>> query;
+
+      if (_currentSearchText.isNotEmpty) {
+        query = Supabase.instance.client
+            .from('User')
+            .select('id')
+            .like('id', '%$_currentSearchText%')
+            .order('created_at', ascending: false)
+            .limit(50);
+      } else if (_currentSearchText.isNotEmpty && _lastUserId != null) {
+        query = Supabase.instance.client
+            .from('User')
+            .select('id')
+            .like('id', '%$_currentSearchText%')
+            .gt('id', _lastUserId!)
+            .order('created_at', ascending: false)
+            .limit(50);
+      } else {
+        query = Supabase.instance.client
+            .from('User')
+            .select('id')
+            .order('created_at', ascending: false)
+            .limit(50);
+      }
+
+      final response = await query;
+
+      setState(() {
+        _users.addAll(response);
+
+        if (response.length < 50) {
+          _hasMoreUsers = false;
+        } else if (response.isNotEmpty) {
+          _lastUserId = response.last['id'];
+        }
+
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+        _hasMoreUsers = false;
+      });
+      print('Error loading users: $e');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder(
-      valueListenable: searchController,
-      builder: (context, value, child) {
-        final searchText = searchController.text.toLowerCase();
-        final filteredChats = users
-            .where((chat) => chat.name.toLowerCase().contains(searchText))
+    final filteredUsers = _currentSearchText.isEmpty
+        ? _users
+        : _users
+            .where(
+                (user) => user['id'].toLowerCase().contains(_currentSearchText))
             .toList();
 
-        return ListView.builder(
-          itemCount: filteredChats.length,
-          itemBuilder: (context, index) {
-            final chat = filteredChats[index];
-            return ListTile(
-              leading: CircleAvatar(
-                backgroundImage: AssetImage(chat.photo),
-              ),
-              title: Text(
-                chat.name,
-                style: Theme.of(context)
-                    .textTheme
-                    .titleLarge
-                    ?.copyWith(color: NEARColors.black),
-              ),
-              subtitle: Text(
-                "near addres",
-                style: Theme.of(context)
-                    .textTheme
-                    .titleMedium
-                    ?.copyWith(color: NEARColors.black),
-              ),
-            );
+    return ListView.builder(
+      controller: _scrollController,
+      itemCount: filteredUsers.length + (_hasMoreUsers ? 1 : 0),
+      itemBuilder: (context, index) {
+        if (index == filteredUsers.length) {
+          return _isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : const SizedBox.shrink();
+        }
+
+        final user = filteredUsers[index];
+        return ListTile(
+          onTap: () {
+            showDialog(
+              context: context,
+              builder: (context) => const ChatTypeSelectionModal(),
+            ).then((result) {
+              if (result != null) {
+                print("result : $result");
+              }
+            });
           },
+          leading: CircleAvatar(
+            backgroundColor: NEARColors.aqua,
+            backgroundImage: user['photo'] != null
+                ? AssetImage(user['photo'])
+                : AssetImage(
+                    NearAssets.standartAvatar,
+                  ),
+          ),
+          title: Text(
+            user['name'] ?? 'Near User',
+            style: Theme.of(context)
+                .textTheme
+                .titleLarge
+                ?.copyWith(color: NEARColors.black),
+          ),
+          subtitle: Text(
+            user['id'],
+            style: Theme.of(context)
+                .textTheme
+                .titleMedium
+                ?.copyWith(color: NEARColors.black),
+          ),
         );
       },
     );
   }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    widget.searchController.removeListener(_onSearchTextChanged);
+    super.dispose();
+  }
+}
+
+class ChatTypeSelectionModal extends StatefulWidget {
+  const ChatTypeSelectionModal({super.key});
+
+  @override
+  _ChatTypeSelectionModalState createState() => _ChatTypeSelectionModalState();
+}
+
+class _ChatTypeSelectionModalState extends State<ChatTypeSelectionModal> {
+  int _currentStage = 0;
+  ChatType? _selectedChatType;
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16.r),
+      ),
+      child: Container(
+        padding: EdgeInsets.all(20.w),
+        decoration: BoxDecoration(
+          color: NEARColors.white,
+          borderRadius: BorderRadius.circular(16.r),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              _getCurrentTitle(),
+              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                    color: NEARColors.black,
+                    fontWeight: FontWeight.bold,
+                  ),
+              textAlign: TextAlign.center,
+            ),
+            SizedBox(height: 20.h),
+            _buildCurrentStageContent(),
+            SizedBox(height: 20.h),
+            _buildNavigationButtons(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _getCurrentTitle() {
+    switch (_currentStage) {
+      case 0:
+        return 'Choose Chat Type';
+      default:
+        return 'Create Chat';
+    }
+  }
+
+  Widget _buildCurrentStageContent() {
+    switch (_currentStage) {
+      case 0:
+        return _buildChatTypeSelection();
+      default:
+        return const SizedBox.shrink();
+    }
+  }
+
+  Widget _buildChatTypeSelection() {
+    return Wrap(
+      spacing: 10.w,
+      runSpacing: 10.h,
+      children: ChatType.values.map((type) {
+        return _buildSelectableCard(
+          title: type.label,
+          icon: type.icon,
+          isSelected: _selectedChatType == type,
+          onTap: () {
+            setState(() {
+              _selectedChatType = type;
+            });
+          },
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildSelectableCard({
+    required String title,
+    required IconData icon,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 100.w,
+        padding: EdgeInsets.symmetric(vertical: 15.h, horizontal: 10.w),
+        decoration: BoxDecoration(
+          color:
+              isSelected ? NEARColors.blue.withOpacity(0.2) : NEARColors.white,
+          border: Border.all(
+            color: isSelected ? NEARColors.blue : NEARColors.grey,
+            width: 2.w,
+          ),
+          borderRadius: BorderRadius.circular(12.r),
+        ),
+        child: Column(
+          children: [
+            Icon(
+              icon,
+              size: 40.sp,
+              color: isSelected ? NEARColors.blue : NEARColors.grey,
+            ),
+            SizedBox(height: 10.h),
+            Text(
+              title,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: isSelected ? NEARColors.blue : NEARColors.black,
+                    fontWeight:
+                        isSelected ? FontWeight.bold : FontWeight.normal,
+                  ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNavigationButtons() {
+    return Row(
+      mainAxisAlignment: _currentStage == 0
+          ? MainAxisAlignment.center
+          : MainAxisAlignment.spaceBetween,
+      children: [
+        if (_currentStage > 0)
+          ElevatedButton(
+            onPressed: () {
+              setState(() {
+                _currentStage--;
+              });
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: NEARColors.grey.withOpacity(0.2),
+            ),
+            child: Text(
+              'Back',
+              style: TextStyle(color: NEARColors.black),
+            ),
+          ),
+
+        // Next/Create button
+        ElevatedButton(
+          onPressed: _canProceed() ? _handleNextOrCreate : null,
+          child: Text(_currentStage == 1 ? 'Create Chat' : 'Next'),
+        ),
+      ],
+    );
+  }
+
+  bool _canProceed() {
+    switch (_currentStage) {
+      case 0:
+        return _selectedChatType != null;
+      default:
+        return false;
+    }
+  }
+
+  void _handleNextOrCreate() {
+    if (_currentStage == 0) {
+      Navigator.of(context).pop({
+        'chatType': _selectedChatType,
+      });
+    }
+  }
+}
+
+enum ChatType {
+  publicUserToUser(
+    label: 'Public',
+    icon: Icons.public,
+  ),
+  privateUserToUser(
+    label: 'Private',
+    icon: Icons.lock_outline,
+  ),
+  group(
+    label: 'Group',
+    icon: Icons.group,
+  ),
+  ai(
+    label: 'AI Chat',
+    icon: Icons.smart_toy_outlined,
+  );
+
+  final String label;
+  final IconData icon;
+
+  const ChatType({
+    required this.label,
+    required this.icon,
+  });
 }
 
 //Models
-
 class Chat {
   final String name;
   final String imagePath;
@@ -326,7 +655,7 @@ class Chat {
 
   @override
   String toString() {
-    return 'Chat(name: $name ,imagePath :$imagePath ,isPublic : $isPublic )';
+    return 'Chat(name: $name , imagePath :$imagePath , isPublic : $isPublic )';
   }
 }
 
@@ -347,6 +676,6 @@ class User {
 
   @override
   String toString() {
-    return 'Chat(name: $name ,accountId :$accountId ,photo : $photo )';
+    return 'Chat(name: $name , accountId :$accountId , photo : $photo )';
   }
 }
