@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:near_social_mobile/config/constants.dart';
@@ -7,6 +8,16 @@ import 'package:rxdart/rxdart.dart';
 
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+
+//VM's
+class UserChatsPageController {
+  final BehaviorSubject<UserChatPageState> pageStateStream =
+      BehaviorSubject<UserChatPageState>()
+        ..add(
+          UserChatPageState(isSearching: false),
+        );
+}
+//
 
 //Pages //
 class UserChatsPage extends StatefulWidget {
@@ -17,11 +28,11 @@ class UserChatsPage extends StatefulWidget {
 }
 
 class _UserChatsPageState extends State<UserChatsPage> {
-  final BehaviorSubject<UserChatPageState> pageStateStream =
-      BehaviorSubject<UserChatPageState>()
-        ..add(
-          UserChatPageState(isSearching: false),
-        );
+  // final BehaviorSubject<UserChatPageState> pageStateStream =
+  //     BehaviorSubject<UserChatPageState>()
+  //       ..add(
+  //         UserChatPageState(isSearching: false),
+  //       );
 
   final TextEditingController searchController = TextEditingController();
 
@@ -68,15 +79,18 @@ class _UserChatsPageState extends State<UserChatsPage> {
 
   @override
   void dispose() {
-    pageStateStream.close();
+    final pageController = Modular.get<UserChatsPageController>();
+    pageController.pageStateStream.close();
     searchController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final pageController = Modular.get<UserChatsPageController>();
+
     return StreamBuilder<UserChatPageState>(
-      stream: pageStateStream,
+      stream: pageController.pageStateStream,
       builder: (context, snapshot) {
         final state = snapshot.data ?? UserChatPageState(isSearching: false);
         print("state ${state.toString()}");
@@ -100,13 +114,21 @@ class _UserChatsPageState extends State<UserChatsPage> {
                       searchController: searchController,
                       onCancel: () {
                         searchController.clear();
-                        pageStateStream.add(state.copyWith(isSearching: false));
+                        final pageController =
+                            Modular.get<UserChatsPageController>();
+
+                        pageController.pageStateStream
+                            .add(state.copyWith(isSearching: false));
                       },
                     )
                   : DefaultAppBar(
                       key: ValueKey('defaultAppBar'),
                       onSearchPressed: () {
-                        pageStateStream.add(state.copyWith(isSearching: true));
+                        final pageController =
+                            Modular.get<UserChatsPageController>();
+
+                        pageController.pageStateStream
+                            .add(state.copyWith(isSearching: true));
                       },
                     ),
             ),
@@ -399,7 +421,29 @@ class _SearchBodyState extends State<SearchBody> {
               builder: (context) => const ChatTypeSelectionModal(),
             ).then((result) {
               if (result != null) {
-                print("result : $result");
+                final chatTypeCreation = result['chatType'] as ChatType;
+                switch (chatTypeCreation) {
+                  case ChatType.publicUserToUser:
+                    print("ChatType.publicUserToUser");
+                    break;
+                  case ChatType.privateUserToUser:
+                    print("ChatType.privateUserToUser");
+                    break;
+                  case ChatType.group:
+                    print("ChatType.group");
+                    break;
+                  case ChatType.ai:
+                    print("ChatType.ai");
+                    break;
+                  default:
+                    print("No deafult statement");
+                }
+                final pageController = Modular.get<UserChatsPageController>();
+                pageController.pageStateStream.add(
+                  pageController.pageStateStream.value.copyWith(
+                    isSearching: false,
+                  ),
+                );
               }
             });
           },
@@ -567,24 +611,11 @@ class _ChatTypeSelectionModalState extends State<ChatTypeSelectionModal> {
           ? MainAxisAlignment.center
           : MainAxisAlignment.spaceBetween,
       children: [
-        if (_currentStage > 0)
-          ElevatedButton(
-            onPressed: () {
-              setState(() {
-                _currentStage--;
-              });
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: NEARColors.grey.withOpacity(0.2),
-            ),
-            child: Text(
-              'Back',
-              style: TextStyle(color: NEARColors.black),
-            ),
-          ),
-
-        // Next/Create button
         ElevatedButton(
+          style: ElevatedButton.styleFrom(
+            minimumSize: Size(100.w, 50.h),
+            padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 12.h),
+          ),
           onPressed: _canProceed() ? _handleNextOrCreate : null,
           child: Text(_currentStage == 1 ? 'Create Chat' : 'Next'),
         ),
