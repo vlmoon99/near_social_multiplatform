@@ -6,6 +6,7 @@ import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import { user, session } from "../_shared/schema.ts";
 import { eq } from 'drizzle-orm';
+import { createClient } from 'jsr:@supabase/supabase-js@2'
 
 const connectionString = Deno.env.get("SUPABASE_DB_URL")!;
 
@@ -37,9 +38,32 @@ async function verifySignature(signature, publicKeyStr) {
 
 
 Deno.serve(async (req) => {
+
   try {
+
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+    )
+
+    const authHeader = req.headers.get('Authorization')!
+    const token = authHeader.replace('Bearer ', '')
+    const { data } = await supabaseClient.auth.getUser(token)
+    const supabaseUser = data.user
+
     const body = await req.json();
     const { signature, publicKeyStr, uuid, accountId } = body;
+
+    console.log("supabaseUser.id {}",supabaseUser.id)
+    console.log("uuid {}",uuid)
+    console.log("supabaseUser.id != uuid {}",supabaseUser.id != uuid)
+
+    if(supabaseUser.id != uuid){
+      return new Response(
+        JSON.stringify({ success: false, reason: "Fake user uid, pls re-install this app" }),
+        { ...corsHeaders, headers: { "Content-Type": "application/json" } },
+      );
+    }
 
     const isVerified = await verifySignature(signature, publicKeyStr);
 
