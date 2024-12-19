@@ -2,21 +2,207 @@ import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:intl/intl.dart';
 import 'package:near_social_mobile/config/constants.dart';
 import 'package:near_social_mobile/config/theme.dart';
+import 'package:near_social_mobile/modules/vms/core/auth_controller.dart';
 import 'package:rxdart/rxdart.dart';
 
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+// ignore: depend_on_referenced_packages
+import 'package:crypto/crypto.dart';
+
+import 'dart:convert';
+
 //VM's
 class UserChatsPageController {
+  // Public stream to manage page state
   final BehaviorSubject<UserChatPageState> pageStateStream =
       BehaviorSubject<UserChatPageState>()
         ..add(
           UserChatPageState(isSearching: false),
         );
+
+  // Public method to create a chat with clear inputs and outputs
+  Future<Map<String, dynamic>> createChat({
+    required ChatType chatType,
+    required String currentUserId,
+    required String otherUserId,
+  }) async {
+    try {
+      // Switch to the appropriate chat creation method
+      switch (chatType) {
+        case ChatType.publicUserToUser:
+          return await _createPublicUserToUserChat(currentUserId, otherUserId);
+
+        case ChatType.privateUserToUser:
+          return await _createPrivateUserToUserChat(currentUserId, otherUserId);
+
+        // case ChatType.ai:
+        //   return await _createAIChat(currentUserId);
+
+        default:
+          throw ArgumentError('Unsupported chat type');
+      }
+    } catch (e) {
+      return {
+        'result': 'error',
+        'operation_message': 'Failed to create chat: $e',
+      };
+    }
+  }
+
+  // Private method to generate a unique chat ID based on user IDs and chat type
+  Future<String> _generateChatHash(
+      String userId1, String userId2, String type) async {
+    final sortedIds = [userId1, userId2, type]..sort();
+
+    final bytes = utf8.encode(sortedIds.join('_'));
+    final digest = sha256.convert(bytes);
+    final chatId = digest.toString();
+
+    return chatId;
+  }
+
+  Future<Map<String, dynamic>> _createChatUsingEdgeFunction(
+      Map<String, dynamic> data) async {
+    try {
+      print(
+        "data to pass $data",
+      );
+      final response = await Supabase.instance.client.functions.invoke(
+        'chat_managing',
+        headers: {
+          "Accept": "application/json",
+          "Access-Control-Allow-Origin": "*",
+        },
+        body: data,
+      );
+      return response.data;
+    } catch (e) {
+      print('Unexpected error: $e');
+      return {
+        'result': 'error',
+        'operation_message': 'Unexpected error',
+      };
+    }
+  }
+
+  // Method to create a public user-to-user chat
+  Future<Map<String, dynamic>> _createPublicUserToUserChat(
+      String currentUserId, String otherUserId) async {
+    final chatId =
+        await _generateChatHash(currentUserId, otherUserId, 'public');
+
+    final metadata = {
+      'chat_type': 'public',
+      'participants': [currentUserId, otherUserId],
+    };
+
+    final data = {
+      'id': chatId,
+      'metadata': metadata,
+    };
+
+    try {
+      return _createChatUsingEdgeFunction(data);
+      // final response = await Supabase.instance.client
+      //     .from('Chat')
+      //     .upsert(data)
+      //     .select()
+      //     .single();
+
+      // return {
+      //   'result': 'ok',
+      //   'operation_message': 'Public chat created successfully.',
+      //   'chat_data': response,
+      // };
+    } catch (e) {
+      return {
+        'result': 'error',
+        'operation_message': 'Error creating public chat: $e',
+      };
+    }
+  }
+
+  // Method to create a private user-to-user chat
+  Future<Map<String, dynamic>> _createPrivateUserToUserChat(
+      String currentUserId, String otherUserId) async {
+    final chatId =
+        await _generateChatHash(currentUserId, otherUserId, 'private');
+
+    final metadata = {
+      'chat_type': 'private',
+      'participants': [currentUserId, otherUserId],
+      'isSecure': true,
+      'pub_keys': {},
+    };
+
+    final data = {
+      'id': chatId,
+      'metadata': metadata,
+    };
+
+    try {
+      return _createChatUsingEdgeFunction(data);
+
+      // final response = await Supabase.instance.client
+      //     .from('Chat')
+      //     .upsert({
+      //       'id': chatId,
+      //       'metadata': metadata,
+      //     })
+      //     .select()
+      //     .single();
+
+      // return {
+      //   'result': 'ok',
+      //   'operation_message': 'Private chat created successfully.',
+      //   'chat_data': response,
+      // };
+    } catch (e) {
+      return {
+        'result': 'error',
+        'operation_message': 'Error creating private chat: $e',
+      };
+    }
+  }
+
+  // Method to create an AI chat
+  Future<Map<String, dynamic>> _createAIChat(String userId) async {
+    final chatId = '${userId}_ai_${DateTime.now().millisecondsSinceEpoch}';
+
+    final metadata = {
+      'chat_type': 'ai',
+      'user_id': userId,
+    };
+
+    try {
+      final response = await Supabase.instance.client
+          .from('Chat')
+          .insert({
+            'id': chatId,
+            'metadata': metadata,
+          })
+          .select()
+          .single();
+
+      return {
+        'result': 'ok',
+        'operation_message': 'AI chat created successfully.',
+        'chat_data': response,
+      };
+    } catch (e) {
+      return {
+        'result': 'error',
+        'operation_message': 'Error creating AI chat: $e',
+      };
+    }
+  }
 }
+
 //
 
 //Pages //
@@ -28,12 +214,6 @@ class UserChatsPage extends StatefulWidget {
 }
 
 class _UserChatsPageState extends State<UserChatsPage> {
-  // final BehaviorSubject<UserChatPageState> pageStateStream =
-  //     BehaviorSubject<UserChatPageState>()
-  //       ..add(
-  //         UserChatPageState(isSearching: false),
-  //       );
-
   final TextEditingController searchController = TextEditingController();
 
   List<Chat> chats = [
@@ -146,7 +326,7 @@ class _UserChatsPageState extends State<UserChatsPage> {
                   )
                 : ChatListBody(
                     key: ValueKey('chatListBody'),
-                    chats: chats,
+                    // chats: chats,
                   ),
           ),
         );
@@ -244,43 +424,150 @@ class UserChatPageState {
   }
 }
 
-class ChatListBody extends StatelessWidget {
-  final List<Chat> chats;
+class ChatListBody extends StatefulWidget {
+  const ChatListBody({
+    super.key,
+  });
 
-  const ChatListBody({super.key, required this.chats});
+  @override
+  _ChatListBodyState createState() => _ChatListBodyState();
+}
+
+class _ChatListBodyState extends State<ChatListBody> {
+  final _scrollController = ScrollController();
+  final List<Map<String, dynamic>> _chats = [];
+
+  String? _lastChatId;
+  bool _hasMoreChats = true;
+  bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadChats();
+    _scrollController.addListener(_onScroll);
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.pixels ==
+        _scrollController.position.maxScrollExtent) {
+      _loadChats();
+    }
+  }
+
+  Future<void> _loadChats() async {
+    if (_isLoading || !_hasMoreChats) return;
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      PostgrestTransformBuilder<List<Map<String, dynamic>>> query;
+
+      if (_lastChatId != null) {
+        query = Supabase.instance.client
+            .from('Chat')
+            .select()
+            .gt('id', _lastChatId!)
+            .order('updated_at', ascending: false)
+            .limit(50);
+      } else {
+        query = Supabase.instance.client
+            .from('Chat')
+            .select()
+            .order('updated_at', ascending: false)
+            .limit(50);
+      }
+
+      final response = await query;
+
+      setState(() {
+        _chats.addAll(response);
+
+        if (response.length < 50) {
+          _hasMoreChats = false;
+        } else if (response.isNotEmpty) {
+          _lastChatId = response.last['id'];
+        }
+
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+        _hasMoreChats = false;
+      });
+      print('Error loading chats: $e');
+    }
+  }
+
+  String _getChatTitle(Map<String, dynamic> chat) {
+    final metadata = chat['metadata'] as Map<String, dynamic>;
+    final participants = List<String>.from(metadata['participants']);
+    final currentUserAccountId = Modular.get<AuthController>().state.accountId;
+
+    // Remove current user from participants to show other user's name
+    participants.remove(currentUserAccountId);
+
+    return participants.isNotEmpty ? participants.first : 'Chat';
+  }
 
   @override
   Widget build(BuildContext context) {
     return ListView.builder(
-      itemCount: chats.length,
+      controller: _scrollController,
+      itemCount: _chats.length + (_hasMoreChats ? 1 : 0),
       itemBuilder: (context, index) {
-        final chat = chats[index];
+        if (index == _chats.length) {
+          return _isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : const SizedBox.shrink();
+        }
+
+        final chat = _chats[index];
+        final metadata = chat['metadata'] as Map<String, dynamic>;
+
         return ListTile(
-          onTap: () {},
+          onTap: () {
+            print("chat $chat");
+          },
           leading: CircleAvatar(
-            backgroundImage: AssetImage(chat.imagePath),
+            backgroundColor: NEARColors.aqua,
+            child: Text(_getChatTitle(chat)[0].toUpperCase()),
           ),
           title: Text(
-            chat.name,
+            _getChatTitle(chat),
             style: Theme.of(context)
                 .textTheme
                 .titleLarge
                 ?.copyWith(color: NEARColors.black),
           ),
           subtitle: Text(
-            "near addres",
+            metadata['chat_type'] ?? 'Chat',
             style: Theme.of(context)
                 .textTheme
                 .titleMedium
                 ?.copyWith(color: NEARColors.black),
           ),
-          trailing: Icon(
-            chat.isPublic ? Icons.lock_open : Icons.security,
-            color: chat.isPublic ? NEARColors.green : NEARColors.red,
+          trailing: Text(
+            DateFormat('MMM d, y').format(
+              DateTime.parse(chat['updated_at']),
+            ),
+            style: Theme.of(context)
+                .textTheme
+                .bodySmall
+                ?.copyWith(color: NEARColors.grey),
           ),
         );
       },
     );
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
   }
 }
 
@@ -396,11 +683,13 @@ class _SearchBodyState extends State<SearchBody> {
 
   @override
   Widget build(BuildContext context) {
+    final currentUserAccountId = Modular.get<AuthController>().state.accountId;
     final filteredUsers = _currentSearchText.isEmpty
-        ? _users
+        ? _users.where((user) => user['id'] != currentUserAccountId).toList()
         : _users
             .where(
                 (user) => user['id'].toLowerCase().contains(_currentSearchText))
+            .where((user) => user['id'] != currentUserAccountId)
             .toList();
 
     return ListView.builder(
@@ -419,26 +708,40 @@ class _SearchBodyState extends State<SearchBody> {
             showDialog(
               context: context,
               builder: (context) => const ChatTypeSelectionModal(),
-            ).then((result) {
+            ).then((result) async {
               if (result != null) {
                 final chatTypeCreation = result['chatType'] as ChatType;
-                switch (chatTypeCreation) {
-                  case ChatType.publicUserToUser:
-                    print("ChatType.publicUserToUser");
-                    break;
-                  case ChatType.privateUserToUser:
-                    print("ChatType.privateUserToUser");
-                    break;
-                  case ChatType.group:
-                    print("ChatType.group");
-                    break;
-                  case ChatType.ai:
-                    print("ChatType.ai");
-                    break;
-                  default:
-                    print("No deafult statement");
-                }
+                final currentUserAccountID =
+                    Modular.get<AuthController>().state.accountId;
+
                 final pageController = Modular.get<UserChatsPageController>();
+
+                final res = await pageController.createChat(
+                  chatType: chatTypeCreation,
+                  currentUserId: currentUserAccountID,
+                  otherUserId: user['id'].toString(),
+                );
+
+                print("res $res");
+                if (res['result'] == 'ok') {
+                  showDialog(
+                    context: context,
+                    builder: (context) => ChatCreationResultModal(
+                      result: 'ok',
+                      operationMessage: 'Chat was created successfully.',
+                    ),
+                  );
+                } else {
+                  final operationResult = res['operation_message'];
+                  showDialog(
+                    context: context,
+                    builder: (context) => ChatCreationResultModal(
+                      result: 'error',
+                      operationMessage: operationResult,
+                    ),
+                  );
+                }
+
                 pageController.pageStateStream.add(
                   pageController.pageStateStream.value.copyWith(
                     isSearching: false,
@@ -479,6 +782,71 @@ class _SearchBodyState extends State<SearchBody> {
     _scrollController.dispose();
     widget.searchController.removeListener(_onSearchTextChanged);
     super.dispose();
+  }
+}
+
+class ChatCreationResultModal extends StatelessWidget {
+  final String result;
+  final String operationMessage;
+
+  const ChatCreationResultModal({
+    super.key,
+    required this.result,
+    required this.operationMessage,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16.r),
+      ),
+      child: Container(
+        padding: EdgeInsets.all(20.w),
+        decoration: BoxDecoration(
+          color: NEARColors.white,
+          borderRadius: BorderRadius.circular(16.r),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              _getTitle(),
+              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                    color: NEARColors.black,
+                    fontWeight: FontWeight.bold,
+                  ),
+              textAlign: TextAlign.center,
+            ),
+            SizedBox(height: 20.h),
+            Text(
+              operationMessage,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: NEARColors.black,
+                  ),
+              textAlign: TextAlign.center,
+            ),
+            SizedBox(height: 20.h),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                minimumSize: Size(100.w, 50.h),
+                padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 12.h),
+              ),
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text('Close'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _getTitle() {
+    if (result == 'ok') {
+      return 'Chat Created Successfully';
+    } else {
+      return 'Chat Creation Failed';
+    }
   }
 }
 
@@ -649,15 +1017,15 @@ enum ChatType {
   privateUserToUser(
     label: 'Private',
     icon: Icons.lock_outline,
-  ),
-  group(
-    label: 'Group',
-    icon: Icons.group,
-  ),
-  ai(
-    label: 'AI Chat',
-    icon: Icons.smart_toy_outlined,
   );
+  // group(
+  //   label: 'Group',
+  //   icon: Icons.group,
+  // ),
+  // ai(
+  //   label: 'AI Chat',
+  //   icon: Icons.smart_toy_outlined,
+  // )
 
   final String label;
   final IconData icon;

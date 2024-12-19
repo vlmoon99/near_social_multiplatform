@@ -84,6 +84,29 @@ class AuthController extends Disposable {
         accountId: accountId,
       );
 
+      // final dbRes1 = await Supabase.instance.client.rpc("has_active_session");
+
+      // print("dbRes1 $dbRes1");
+
+      // final dbRes2 = await Supabase.instance.client.rpc(
+      //   "is_user_participant_in_chat",
+      //   params: {
+      //     "chat_data": {
+      //       "id":
+      //           "21bf58783e2fca2828b9e5dcf27a0c8cf16a81c7ac3214d3d9e4e4209b127d9a",
+      //       "metadata": {
+      //         "chat_type": "public",
+      //         "participants": [
+      //           "bosmobile.near",
+      //           "flutterchain.near",
+      //         ],
+      //       },
+      //     }
+      //   },
+      // );
+
+      // print("dbRes2 $dbRes2");
+
       if (!res) {
         throw Exception("Server authenticated error");
       }

@@ -36,6 +36,12 @@ Future<void> encryptDataAndLogin(
   UserResponse user = await Supabase.instance.client.auth.getUser();
   print(user.user?.toJson().toString() ?? "no data");
 
+  print(
+      "Supabase.instance.client.auth.headers ${Supabase.instance.client.auth.headers}");
+
+  // Supabase.instance.client.auth.headers
+  //     .putIfAbsent("accountId", () => authorizationCredentials.accountId);
+
   final authController = Modular.get<AuthController>();
   await authController
       .login(
