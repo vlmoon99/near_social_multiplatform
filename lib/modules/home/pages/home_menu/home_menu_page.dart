@@ -291,17 +291,17 @@ class _HomeMenuPageState extends State<HomeMenuPage> {
                   },
                 ),
                 //TODO: handle chat
-                // SizedBox(height: 15.h),
-                // HomeMenuListTile(
-                //   tile: const Icon(Icons.message),
-                //   title: "Chats",
-                //   onTap: () {
-                //     HapticFeedback.lightImpact();
-                //     Modular.to.pushNamed(
-                //       ".${Routes.home.chatsPage}",
-                //     );
-                //   },
-                // ),
+                SizedBox(height: 15.h),
+                HomeMenuListTile(
+                  tile: const Icon(Icons.message),
+                  title: "Chats",
+                  onTap: () {
+                    HapticFeedback.lightImpact();
+                    Modular.to.pushNamed(
+                      ".${Routes.home.chatsPage}",
+                    );
+                  },
+                ),
                 SizedBox(height: 15.h),
                 HomeMenuListTile(
                   tile: const Icon(Icons.feed),

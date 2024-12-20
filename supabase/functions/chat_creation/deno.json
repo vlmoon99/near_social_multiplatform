@@ -1,7 +1,5 @@
 {
     "imports": {
-      "bs58": "https://esm.sh/bs58@6.0.0",
-      "near-api-js": "https://esm.sh/near-api-js@5.0.1",
       "drizzle-orm": "npm:drizzle-orm@0.29.1",
       "drizzle-orm/": "npm:/drizzle-orm@0.29.1/",
       "postgres": "npm:postgres@3.4.3"

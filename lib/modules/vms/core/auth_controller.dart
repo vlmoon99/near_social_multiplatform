@@ -1,12 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/foundation.dart';
-import 'package:flutter_firebase_chat_core/flutter_firebase_chat_core.dart';
 import 'package:near_social_mobile/modules/home/apis/near_social.dart';
 // import 'package:cloud_functions/cloud_functions.dart';
-
-import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_modular/flutter_modular.dart';
@@ -15,6 +10,7 @@ import 'package:flutterchain/flutterchain_lib/services/chains/near_blockchain_se
 import 'package:near_social_mobile/config/constants.dart';
 import 'package:near_social_mobile/modules/home/apis/models/private_key_info.dart';
 import 'package:near_social_mobile/services/crypto_storage_service.dart';
+import 'package:near_social_mobile/services/cryptography/internal_cryptography_service.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -74,14 +70,46 @@ class AuthController extends Disposable {
         ...await _getAdditionalAccessKeys()
       };
 
-      //TODO: implement for new web version and mobile
-      // if (kIsWeb) {
-      //   try {
-      //     authenticateUser(accountId, secretKey);
-      //   } catch (e) {
-      //     print("Error while auth uesr using firebase");
-      //   }
-      // }
+      String signedMessagedForVerification =
+          await Modular.get<InternalCryptographyService>()
+              .encryptionRunner
+              .signMessageForVerification(secretKey);
+
+      final uuid = Supabase.instance.client.auth.currentUser!.id;
+
+      final res = await verifyTransaction(
+        signature: signedMessagedForVerification,
+        publicKeyStr: base58PubKey,
+        uuid: uuid,
+        accountId: accountId,
+      );
+
+      // final dbRes1 = await Supabase.instance.client.rpc("has_active_session");
+
+      // print("dbRes1 $dbRes1");
+
+      // final dbRes2 = await Supabase.instance.client.rpc(
+      //   "is_user_participant_in_chat",
+      //   params: {
+      //     "chat_data": {
+      //       "id":
+      //           "21bf58783e2fca2828b9e5dcf27a0c8cf16a81c7ac3214d3d9e4e4209b127d9a",
+      //       "metadata": {
+      //         "chat_type": "public",
+      //         "participants": [
+      //           "bosmobile.near",
+      //           "flutterchain.near",
+      //         ],
+      //       },
+      //     }
+      //   },
+      // );
+
+      // print("dbRes2 $dbRes2");
+
+      if (!res) {
+        throw Exception("Server authenticated error");
+      }
 
       _streamController.add(state.copyWith(
         accountId: accountId,
@@ -121,8 +149,6 @@ class AuthController extends Disposable {
     required String uuid,
     required String accountId,
   }) async {
-    // final FirebaseFunctions functions = FirebaseFunctions.instance;
-
     try {
       final response = await Supabase.instance.client.functions.invoke(
         'verifyAccount',
@@ -137,10 +163,6 @@ class AuthController extends Disposable {
           'accountId': accountId,
         },
       );
-      final data = response.data;
-
-      print('Unexpected error: $data');
-
       return response.data['success'] == true;
     } catch (e) {
       print('Unexpected error: $e');
@@ -166,12 +188,12 @@ class AuthController extends Disposable {
   //   String base58EncodedPublicKey = (await _nearBlockChainService.jsVMService
   //       .callJS("window.fromSecretToNearAPIJSPublicKey('$secretKey')"));
 
-  //   String signedMessagedForVerification = (await _nearBlockChainService
-  //           .jsVMService
-  //           .callJS("window.signMessageForVerification('$secretKey')"))
-  //       .toString();
+  // String signedMessagedForVerification = (await _nearBlockChainService
+  //         .jsVMService
+  //         .callJS("window.signMessageForVerification('$secretKey')"))
+  //     .toString();
 
-  //   print("signedMessagedForVerification  " + signedMessagedForVerification);
+  // print("signedMessagedForVerification  " + signedMessagedForVerification);
 
   //   verifyTransaction(
   //     signature: signedMessagedForVerification,

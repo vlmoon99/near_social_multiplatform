@@ -1,0 +1,33 @@
+{
+  "name": "cryptogrpahy_gateway",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "npx vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.24.9",
+    "@babel/preset-env": "^7.25.0",
+    "babelify": "^10.0.0",
+    "browserify": "^17.0.0",
+    "vite": "^5.4.11",
+    "vite-plugin-babel": "^1.2.0",
+    "vite-plugin-node-polyfills": "^0.22.0",
+    "vite-plugin-static-copy": "^1.0.6",
+    "vite-plugin-top-level-await": "^1.4.2",
+    "vite-plugin-wasm": "^3.3.0",
+    "vite-plugin-webworker-service": "^1.1.0"
+  },
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "bs58": "^6.0.0",
+    "buffer": "^6.0.3",
+    "core-js": "^3.39.0",
+    "near-api-js": "^5.0.1"
+  }
+}

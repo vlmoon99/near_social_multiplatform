@@ -495,17 +495,17 @@ class UserPageMainInfo extends StatelessWidget {
                           //           );
 
                           //           if (room != null) {
-                          //             Navigator.push(
-                          //               context,
-                          //               MaterialPageRoute(
-                          //                 builder: (ctx) => ChatPage(
-                          //                   isSecure: false,
-                          //                   room: room,
-                          //                   currentUser: currentUser,
-                          //                   otherUser: otherUser,
-                          //                 ),
-                          //               ),
-                          //             );
+                          // Navigator.push(
+                          //   context,
+                          //   MaterialPageRoute(
+                          //     builder: (ctx) => ChatPage(
+                          //       isSecure: false,
+                          //       room: room,
+                          //       currentUser: currentUser,
+                          //       otherUser: otherUser,
+                          //     ),
+                          //   ),
+                          // );
                           //             print(
                           //                 'Chat room created successfully with user: $room');
                           //           }

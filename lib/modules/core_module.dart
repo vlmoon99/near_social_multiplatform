@@ -7,6 +7,7 @@ import 'package:near_social_mobile/config/constants.dart';
 import 'package:near_social_mobile/modules/home/apis/near_social.dart';
 import 'package:near_social_mobile/modules/vms/core/auth_controller.dart';
 import 'package:near_social_mobile/network/near_custom_client.dart';
+import 'package:near_social_mobile/services/cryptography/internal_cryptography_service.dart';
 import 'package:near_social_mobile/services/notification_subscription_service.dart';
 
 class CoreModule extends Module {
@@ -27,7 +28,9 @@ class CoreModule extends Module {
         ),
       ),
     );
+
     i.add(NearSocialApi.new);
+    i.addSingleton(InternalCryptographyService.new);
     i.addLazySingleton(AuthController.new);
     i.addLazySingleton(NotificationSubscriptionService.new);
   }

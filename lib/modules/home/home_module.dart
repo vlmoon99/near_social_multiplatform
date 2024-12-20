@@ -40,6 +40,7 @@ class HomeModule extends Module {
     i.addSingleton(NotificationsController.new);
     i.addSingleton(FilterController.new);
     i.addSingleton(MintbaseController.new);
+    i.addSingleton(UserChatsPageController.new);
   }
 
   @override
