@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -5,6 +7,7 @@ import 'package:flutter_svg/svg.dart';
 import 'package:intl/intl.dart';
 import 'package:near_social_mobile/config/constants.dart';
 import 'package:near_social_mobile/config/theme.dart';
+import 'package:near_social_mobile/modules/home/pages/chat/chat_page.dart';
 import 'package:near_social_mobile/modules/vms/core/auth_controller.dart';
 import 'package:rxdart/rxdart.dart';
 
@@ -18,30 +21,24 @@ import 'dart:convert';
 
 //VM's
 class UserChatsPageController {
-  // Public stream to manage page state
   final BehaviorSubject<UserChatPageState> pageStateStream =
       BehaviorSubject<UserChatPageState>()
         ..add(
           UserChatPageState(isSearching: false),
         );
 
-  // Public method to create a chat with clear inputs and outputs
   Future<Map<String, dynamic>> createChat({
     required ChatType chatType,
     required String currentUserId,
     required String otherUserId,
   }) async {
     try {
-      // Switch to the appropriate chat creation method
       switch (chatType) {
         case ChatType.publicUserToUser:
           return await _createPublicUserToUserChat(currentUserId, otherUserId);
 
         case ChatType.privateUserToUser:
           return await _createPrivateUserToUserChat(currentUserId, otherUserId);
-
-        // case ChatType.ai:
-        //   return await _createAIChat(currentUserId);
 
         default:
           throw ArgumentError('Unsupported chat type');
@@ -54,7 +51,6 @@ class UserChatsPageController {
     }
   }
 
-  // Private method to generate a unique chat ID based on user IDs and chat type
   Future<String> _generateChatHash(
       String userId1, String userId2, String type) async {
     final sortedIds = [userId1, userId2, type]..sort();
@@ -69,11 +65,8 @@ class UserChatsPageController {
   Future<Map<String, dynamic>> _createChatUsingEdgeFunction(
       Map<String, dynamic> data) async {
     try {
-      print(
-        "data to pass $data",
-      );
       final response = await Supabase.instance.client.functions.invoke(
-        'chat_managing',
+        'chat_creation',
         headers: {
           "Accept": "application/json",
           "Access-Control-Allow-Origin": "*",
@@ -90,7 +83,6 @@ class UserChatsPageController {
     }
   }
 
-  // Method to create a public user-to-user chat
   Future<Map<String, dynamic>> _createPublicUserToUserChat(
       String currentUserId, String otherUserId) async {
     final chatId =
@@ -108,17 +100,6 @@ class UserChatsPageController {
 
     try {
       return _createChatUsingEdgeFunction(data);
-      // final response = await Supabase.instance.client
-      //     .from('Chat')
-      //     .upsert(data)
-      //     .select()
-      //     .single();
-
-      // return {
-      //   'result': 'ok',
-      //   'operation_message': 'Public chat created successfully.',
-      //   'chat_data': response,
-      // };
     } catch (e) {
       return {
         'result': 'error',
@@ -127,7 +108,6 @@ class UserChatsPageController {
     }
   }
 
-  // Method to create a private user-to-user chat
   Future<Map<String, dynamic>> _createPrivateUserToUserChat(
       String currentUserId, String otherUserId) async {
     final chatId =
@@ -147,21 +127,6 @@ class UserChatsPageController {
 
     try {
       return _createChatUsingEdgeFunction(data);
-
-      // final response = await Supabase.instance.client
-      //     .from('Chat')
-      //     .upsert({
-      //       'id': chatId,
-      //       'metadata': metadata,
-      //     })
-      //     .select()
-      //     .single();
-
-      // return {
-      //   'result': 'ok',
-      //   'operation_message': 'Private chat created successfully.',
-      //   'chat_data': response,
-      // };
     } catch (e) {
       return {
         'result': 'error',
@@ -170,7 +135,6 @@ class UserChatsPageController {
     }
   }
 
-  // Method to create an AI chat
   Future<Map<String, dynamic>> _createAIChat(String userId) async {
     final chatId = '${userId}_ai_${DateTime.now().millisecondsSinceEpoch}';
 
@@ -201,11 +165,30 @@ class UserChatsPageController {
       };
     }
   }
+
+  Future<Map<String, dynamic>> deleteChat(String chatId) async {
+    try {
+      final response = await Supabase.instance.client.functions.invoke(
+        'delete_chat',
+        headers: {
+          "Accept": "application/json",
+          "Access-Control-Allow-Origin": "*",
+        },
+        body: {"chatId": chatId},
+      );
+      return response.data;
+    } catch (e) {
+      print('Unexpected error: $e');
+      return {
+        'result': 'error',
+        'operation_message': 'Unexpected error',
+      };
+    }
+  }
 }
 
-//
+//Pages
 
-//Pages //
 class UserChatsPage extends StatefulWidget {
   const UserChatsPage({super.key});
 
@@ -215,47 +198,6 @@ class UserChatsPage extends StatefulWidget {
 
 class _UserChatsPageState extends State<UserChatsPage> {
   final TextEditingController searchController = TextEditingController();
-
-  List<Chat> chats = [
-    Chat(
-      name: "John Doe",
-      imagePath: "assets/john_doe.jpg",
-      isPublic: true,
-    ),
-    Chat(
-      name: "Jane Smith",
-      imagePath: "assets/jane_smith.jpg",
-      isPublic: false,
-    ),
-    Chat(
-      name: "Robert Brown",
-      imagePath: "assets/robert_brown.jpg",
-      isPublic: true,
-    ),
-    Chat(
-      name: "Emily Davis",
-      imagePath: "assets/emily_davis.jpg",
-      isPublic: false,
-    ),
-  ];
-
-  List<User> users = [
-    User(
-      name: "Vladyslav Mykolaienko",
-      accountId: "vlmoon.near",
-      photo: "John Doe",
-    ),
-    User(
-      name: "Illie Polosuhin",
-      accountId: "root.near",
-      photo: "John Doe",
-    ),
-    User(
-      name: "Vlad Frolov",
-      accountId: "frol.near",
-      photo: "John Doe",
-    ),
-  ];
 
   @override
   void dispose() {
@@ -273,7 +215,6 @@ class _UserChatsPageState extends State<UserChatsPage> {
       stream: pageController.pageStateStream,
       builder: (context, snapshot) {
         final state = snapshot.data ?? UserChatPageState(isSearching: false);
-        print("state ${state.toString()}");
         return Scaffold(
           appBar: PreferredSize(
             preferredSize: Size.fromHeight(kToolbarHeight),
@@ -321,12 +262,10 @@ class _UserChatsPageState extends State<UserChatsPage> {
             child: state.isSearching
                 ? SearchBody(
                     key: ValueKey('searchBody'),
-                    // users: users,
                     searchController: searchController,
                   )
                 : ChatListBody(
                     key: ValueKey('chatListBody'),
-                    // chats: chats,
                   ),
           ),
         );
@@ -446,6 +385,20 @@ class _ChatListBodyState extends State<ChatListBody> {
     super.initState();
     _loadChats();
     _scrollController.addListener(_onScroll);
+    final uid = Supabase.instance.client.auth.currentUser!.id;
+
+    print("uid : $uid");
+
+    Supabase.instance.client
+        .channel('public:Chat')
+        .onPostgresChanges(
+            event: PostgresChangeEvent.all,
+            schema: 'public',
+            table: 'Chat',
+            callback: (payload) {
+              print('Change received: ${payload.toString()}');
+            })
+        .subscribe();
   }
 
   void _onScroll() {
@@ -507,7 +460,6 @@ class _ChatListBodyState extends State<ChatListBody> {
     final participants = List<String>.from(metadata['participants']);
     final currentUserAccountId = Modular.get<AuthController>().state.accountId;
 
-    // Remove current user from participants to show other user's name
     participants.remove(currentUserAccountId);
 
     return participants.isNotEmpty ? participants.first : 'Chat';
@@ -530,7 +482,15 @@ class _ChatListBodyState extends State<ChatListBody> {
 
         return ListTile(
           onTap: () {
-            print("chat $chat");
+            //GO to the caht page
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (ctx) => ChatPage(
+                  chat: chat,
+                ),
+              ),
+            );
           },
           leading: CircleAvatar(
             backgroundColor: NEARColors.aqua,
@@ -544,20 +504,151 @@ class _ChatListBodyState extends State<ChatListBody> {
                 ?.copyWith(color: NEARColors.black),
           ),
           subtitle: Text(
-            metadata['chat_type'] ?? 'Chat',
+            "Type of chat : ${metadata['chat_type']} , Last update : ${DateFormat('MMM d, y').format(
+              DateTime.parse(chat['updated_at']),
+            )}",
             style: Theme.of(context)
                 .textTheme
                 .titleMedium
                 ?.copyWith(color: NEARColors.black),
           ),
-          trailing: Text(
-            DateFormat('MMM d, y').format(
-              DateTime.parse(chat['updated_at']),
+          trailing: IconButton(
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder: (BuildContext context) {
+                  final screenWidth = MediaQuery.of(context).size.width;
+
+                  final dialogWidth = screenWidth > 1200
+                      ? 400.0
+                      : screenWidth > 600
+                          ? screenWidth * 0.3
+                          : screenWidth * 0.8;
+
+                  return Dialog(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12.r),
+                    ),
+                    child: Container(
+                      constraints: BoxConstraints(
+                        maxWidth: dialogWidth,
+                        minWidth: 280.0,
+                      ),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 20.w,
+                        vertical: 24.h,
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.delete_outline,
+                            size: 32.r,
+                            color: NEARColors.red,
+                          ),
+                          SizedBox(height: 16.h),
+                          Text(
+                            'Delete Chat',
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleLarge
+                                ?.copyWith(
+                                  color: NEARColors.black,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                          ),
+                          SizedBox(height: 12.h),
+                          Text(
+                            'Are you sure you want to delete this chat?',
+                            style:
+                                Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                      color: NEARColors.black,
+                                    ),
+                            textAlign: TextAlign.center,
+                          ),
+                          SizedBox(height: 24.h),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Expanded(
+                                child: TextButton(
+                                  onPressed: () {
+                                    Navigator.of(context).pop();
+                                  },
+                                  style: TextButton.styleFrom(
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8.r),
+                                      side: BorderSide(
+                                        color: NEARColors.grey,
+                                        width: 1.0,
+                                      ),
+                                    ),
+                                    padding: EdgeInsets.symmetric(
+                                      vertical: 12.h,
+                                    ),
+                                    minimumSize: Size(100.w, 44.h),
+                                  ),
+                                  child: Text(
+                                    'Cancel',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .labelLarge
+                                        ?.copyWith(
+                                          color: NEARColors.grey,
+                                          // fontSize: 16.sp,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                  ),
+                                ),
+                              ),
+                              SizedBox(width: 16.w),
+                              Expanded(
+                                child: ElevatedButton(
+                                  onPressed: () async {
+                                    final pageController =
+                                        Modular.get<UserChatsPageController>();
+                                    final res = await pageController
+                                        .deleteChat(chat['id'].toString());
+
+                                    print("delete caht res : $res");
+
+                                    Navigator.of(context).pop();
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: NEARColors.red,
+                                    padding: EdgeInsets.symmetric(
+                                      vertical: 12.h,
+                                    ),
+                                    minimumSize: Size(100.w, 44.h),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8.r),
+                                    ),
+                                  ),
+                                  child: Text(
+                                    'Delete',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .labelLarge
+                                        ?.copyWith(
+                                          color: NEARColors.white,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              );
+            },
+            icon: Icon(
+              Icons.delete,
+              color: NEARColors.red,
             ),
-            style: Theme.of(context)
-                .textTheme
-                .bodySmall
-                ?.copyWith(color: NEARColors.grey),
           ),
         );
       },
@@ -593,13 +684,10 @@ class _SearchBodyState extends State<SearchBody> {
   void initState() {
     super.initState();
 
-    // Initial load of users
     _loadUsers();
 
-    // Add scroll listener for pagination
     _scrollController.addListener(_onScroll);
 
-    // Add listener to search controller
     widget.searchController.addListener(_onSearchTextChanged);
   }
 
@@ -613,7 +701,6 @@ class _SearchBodyState extends State<SearchBody> {
   void _onSearchTextChanged() {
     final newSearchText = widget.searchController.text.toLowerCase();
 
-    // If search text has changed, reset pagination
     if (newSearchText != _currentSearchText) {
       setState(() {
         _users.clear();
@@ -626,7 +713,6 @@ class _SearchBodyState extends State<SearchBody> {
   }
 
   Future<void> _loadUsers() async {
-    // Prevent multiple simultaneous loads
     if (_isLoading || !_hasMoreUsers) return;
 
     setState(() {
@@ -722,7 +808,6 @@ class _SearchBodyState extends State<SearchBody> {
                   otherUserId: user['id'].toString(),
                 );
 
-                print("res $res");
                 if (res['result'] == 'ok') {
                   showDialog(
                     context: context,
@@ -1009,6 +1094,8 @@ class _ChatTypeSelectionModalState extends State<ChatTypeSelectionModal> {
   }
 }
 
+//Models
+
 enum ChatType {
   publicUserToUser(
     label: 'Public',
@@ -1036,7 +1123,6 @@ enum ChatType {
   });
 }
 
-//Models
 class Chat {
   final String name;
   final String imagePath;

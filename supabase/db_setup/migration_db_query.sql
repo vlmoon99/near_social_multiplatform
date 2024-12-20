@@ -36,7 +36,14 @@ CREATE TABLE "Message" (
 
 -- Indexes
 
-CREATE INDEX idx_chat_metadata ON "Chat" USING GIN (metadata);
+CREATE INDEX idx_chat_metadata_delete ON "Chat" USING GIN ((metadata->'delete'));
+
+CREATE INDEX idx_chat_metadata_participants ON "Chat" USING GIN ((metadata->'participants'));
+
+CREATE INDEX idx_chat_pub_keys ON "Chat" USING GIN ((metadata->'pub_keys'));
+
+CREATE INDEX idx_chat_metadata ON "Chat" USING (metadata);
+
 
 CREATE INDEX idx_message_content ON "Message" USING GIN (message);
 
@@ -44,7 +51,6 @@ CREATE INDEX idx_message_author ON "Message" (author_id);
 
 CREATE INDEX idx_session_account ON "Session" (account_id);
 
-CREATE INDEX idx_chat_pub_keys ON "Chat" ((metadata->'pub_keys'));
 
 
 -- Enable RLS
@@ -54,23 +60,9 @@ alter table "Chat" enable row level security;
 alter table "Message" enable row level security;
 alter table "Session" enable row level security;
 
--- Policies
-
-create policy "Enable users to view their own data only."
-on "public"."Session" 
-as RESTRICTIVE
-for SELECT
-to authenticated
-using (
-  (select auth.uid()) = user_id
-);
 
 
-create policy "Enable read for authenticated users only"
-on "public"."User" for select
-to authenticated
-using ( true );
-
+-- Functions Start
 
 
 -- Check if the user has active session
@@ -126,6 +118,65 @@ END;
 $$;
 
 
+
+CREATE OR REPLACE FUNCTION public.is_user_participant_in_chat(metadata JSONB)
+RETURNS BOOLEAN
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  accountId TEXT; 
+  isActiveSession BOOLEAN; 
+  deleteStatus JSONB;
+BEGIN
+  SELECT account_id, is_active
+  INTO accountId, isActiveSession
+  FROM "Session"
+  WHERE user_id = (SELECT auth.uid())
+  LIMIT 1;
+
+  IF NOT FOUND OR NOT isActiveSession THEN
+    RAISE NOTICE 'No active session found or session inactive.';
+    RETURN FALSE;
+  END IF;
+
+
+  deleteStatus := metadata->'delete';
+
+  IF deleteStatus ? accountId AND deleteStatus->>accountId = 'true' THEN
+    RETURN FALSE;
+  END IF;
+
+  RETURN EXISTS (
+    SELECT 1
+    FROM jsonb_array_elements_text(metadata->'participants') AS participant
+    WHERE participant = accountId
+  );
+END;
+$$;
+
+
+-- Functions END
+
+
+-- Policies Start
+
+create policy "Enable users to view their own data only."
+on "public"."Session" 
+as RESTRICTIVE
+for SELECT
+to authenticated
+using (
+  (select auth.uid()) = user_id
+);
+
+
+create policy "Enable read for authenticated users only"
+on "public"."User" for select
+to authenticated
+using ( true );
+
+
 CREATE POLICY "Users can view chats they participate in" 
 ON "Chat"
 FOR SELECT
@@ -158,3 +209,18 @@ INSERT INTO "Chat" (id, metadata)
 --     FROM jsonb_array_elements_text("Chat".metadata->'participants') AS participant
 --     WHERE participant = 'bosmobile.near'
 -- );
+
+
+create policy "Allow listening for broadcasts for authenticated users only"
+on "realtime"."messages"
+as PERMISSIVE
+for SELECT
+to authenticated
+using (
+  realtime.messages.extension = 'broadcast'
+);
+
+
+
+
+-- Policies End
