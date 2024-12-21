@@ -16,7 +16,7 @@ import 'config/setup.dart';
 
 void main() async {
   await Supabase.initialize(
-    url: 'https://fadc-178-54-185-162.ngrok-free.app/',
+    url: 'https://a8ce-178-54-185-162.ngrok-free.app/',
     anonKey:
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0',
     authOptions:

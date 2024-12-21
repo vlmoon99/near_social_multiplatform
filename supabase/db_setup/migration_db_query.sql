@@ -23,16 +23,16 @@ CREATE TABLE "Chat" (
 );
 
 CREATE TABLE "Message" (
-    id TEXT PRIMARY KEY,
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     created_at TIMESTAMP NOT NULL DEFAULT NOW(), 
     updated_at TIMESTAMP NOT NULL DEFAULT NOW(), 
     message_type TEXT NOT NULL,          
-    message JSONB NOT NULL,              
+    message JSONB NOT NULL,
+    chat_id TEXT NOT NULL,             
+    FOREIGN KEY (chat_id) REFERENCES "Chat"(id) ON DELETE CASCADE,
     author_id TEXT NOT NULL,             
     FOREIGN KEY (author_id) REFERENCES "User"(id) ON DELETE CASCADE
 );
-
-
 
 -- Indexes
 
@@ -48,6 +48,8 @@ CREATE INDEX idx_chat_metadata ON "Chat" USING (metadata);
 CREATE INDEX idx_message_content ON "Message" USING GIN (message);
 
 CREATE INDEX idx_message_author ON "Message" (author_id);
+
+CREATE INDEX idx_message_author ON "Message" (chat_id);
 
 CREATE INDEX idx_session_account ON "Session" (account_id);
 
@@ -184,16 +186,29 @@ USING (
   public.is_user_participant_in_chat(metadata)
 );
 
-CREATE POLICY "Users can create chats if they are participants" 
-ON "Chat"
-FOR INSERT
-WITH CHECK (
-  public.is_user_participant_in_chat(metadata)
+
+create policy "Allow listening for broadcasts for authenticated users only"
+on "realtime"."messages"
+as PERMISSIVE
+for SELECT
+to authenticated
+using (
+  realtime.messages.extension = 'broadcast'
 );
+
+-- Policies End
+
+
+-- CREATE POLICY "Users can create chats if they are participants" 
+-- ON "Chat"
+-- FOR INSERT
+-- WITH CHECK (
+--   public.is_user_participant_in_chat(metadata)
+-- );
 
 -- Test for this policies
 
-INSERT INTO "Chat" (id, metadata) 
+-- INSERT INTO "Chat" (id, metadata) 
 -- VALUES (
 --     '3',
 --     '{
@@ -209,18 +224,3 @@ INSERT INTO "Chat" (id, metadata)
 --     FROM jsonb_array_elements_text("Chat".metadata->'participants') AS participant
 --     WHERE participant = 'bosmobile.near'
 -- );
-
-
-create policy "Allow listening for broadcasts for authenticated users only"
-on "realtime"."messages"
-as PERMISSIVE
-for SELECT
-to authenticated
-using (
-  realtime.messages.extension = 'broadcast'
-);
-
-
-
-
--- Policies End

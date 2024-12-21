@@ -51,7 +51,7 @@ class UserChatsPageController {
     }
   }
 
-  Future<String> _generateChatHash(
+  Future<String> generateChatHash(
       String userId1, String userId2, String type) async {
     final sortedIds = [userId1, userId2, type]..sort();
 
@@ -85,8 +85,7 @@ class UserChatsPageController {
 
   Future<Map<String, dynamic>> _createPublicUserToUserChat(
       String currentUserId, String otherUserId) async {
-    final chatId =
-        await _generateChatHash(currentUserId, otherUserId, 'public');
+    final chatId = await generateChatHash(currentUserId, otherUserId, 'public');
 
     final metadata = {
       'chat_type': 'public',
@@ -111,7 +110,7 @@ class UserChatsPageController {
   Future<Map<String, dynamic>> _createPrivateUserToUserChat(
       String currentUserId, String otherUserId) async {
     final chatId =
-        await _generateChatHash(currentUserId, otherUserId, 'private');
+        await generateChatHash(currentUserId, otherUserId, 'private');
 
     final metadata = {
       'chat_type': 'private',
@@ -375,84 +374,113 @@ class ChatListBody extends StatefulWidget {
 class _ChatListBodyState extends State<ChatListBody> {
   final _scrollController = ScrollController();
   final List<Map<String, dynamic>> _chats = [];
+  StreamSubscription<List<Map<String, dynamic>>>? chatSubscription;
 
-  String? _lastChatId;
-  bool _hasMoreChats = true;
   bool _isLoading = false;
+  DateTime? _lastTimestamp;
+  static const int _pageSize = 50;
 
   @override
   void initState() {
     super.initState();
-    _loadChats();
+    _setupInitialStream();
     _scrollController.addListener(_onScroll);
-    final uid = Supabase.instance.client.auth.currentUser!.id;
+  }
 
-    print("uid : $uid");
+  void _setupInitialStream() async {
+    // Get current timestamp for initial query
+    _lastTimestamp = DateTime.now();
 
-    Supabase.instance.client
-        .channel('public:Chat')
-        .onPostgresChanges(
-            event: PostgresChangeEvent.all,
-            schema: 'public',
-            table: 'Chat',
-            callback: (payload) {
-              print('Change received: ${payload.toString()}');
-            })
-        .subscribe();
+    chatSubscription = Supabase.instance.client
+        .from('Chat')
+        .stream(primaryKey: ['id'])
+        .lte('updated_at', _lastTimestamp!.toIso8601String())
+        .order('updated_at', ascending: false)
+        .limit(_pageSize)
+        .listen(_handleStreamData);
+  }
+
+  void _handleStreamData(List<Map<String, dynamic>> listOfChats) {
+    if (!mounted) return;
+
+    setState(() {
+      // Handle updates to existing chats
+      for (var newChat in listOfChats) {
+        final existingIndex =
+            _chats.indexWhere((chat) => chat['id'] == newChat['id']);
+
+        if (existingIndex != -1) {
+          // Update existing chat
+          _chats[existingIndex] = newChat;
+        } else {
+          // Add new chat if it's within our time window
+          final chatTimestamp = DateTime.parse(newChat['updated_at']);
+          if (_lastTimestamp == null ||
+              chatTimestamp.isBefore(_lastTimestamp!)) {
+            _chats.add(newChat);
+          }
+        }
+      }
+
+      // Remove chats that no longer exist in the stream
+      _chats.removeWhere((chat) =>
+          !listOfChats.any((streamChat) => streamChat['id'] == chat['id']) &&
+          DateTime.parse(chat['updated_at']).isAfter(_lastTimestamp!));
+
+      // Sort chats by updated_at
+      _chats.sort((a, b) => DateTime.parse(b['updated_at'])
+          .compareTo(DateTime.parse(a['updated_at'])));
+    });
   }
 
   void _onScroll() {
     if (_scrollController.position.pixels ==
         _scrollController.position.maxScrollExtent) {
-      _loadChats();
+      _loadMoreChats();
     }
   }
 
-  Future<void> _loadChats() async {
-    if (_isLoading || !_hasMoreChats) return;
+  Future<void> _loadMoreChats() async {
+    if (_isLoading || _lastTimestamp == null) return;
 
     setState(() {
       _isLoading = true;
     });
 
     try {
-      PostgrestTransformBuilder<List<Map<String, dynamic>>> query;
-
-      if (_lastChatId != null) {
-        query = Supabase.instance.client
-            .from('Chat')
-            .select()
-            .gt('id', _lastChatId!)
-            .order('updated_at', ascending: false)
-            .limit(50);
-      } else {
-        query = Supabase.instance.client
-            .from('Chat')
-            .select()
-            .order('updated_at', ascending: false)
-            .limit(50);
+      // Get the timestamp of the last chat in our current list
+      if (_chats.isNotEmpty) {
+        final lastChat = _chats.last;
+        _lastTimestamp = DateTime.parse(lastChat['updated_at']);
       }
 
-      final response = await query;
+      // Cancel existing subscription
+      await chatSubscription?.cancel();
 
-      setState(() {
-        _chats.addAll(response);
-
-        if (response.length < 50) {
-          _hasMoreChats = false;
-        } else if (response.isNotEmpty) {
-          _lastChatId = response.last['id'];
-        }
-
-        _isLoading = false;
-      });
+      // Set up new stream with updated timestamp
+      chatSubscription = Supabase.instance.client
+          .from('Chat')
+          .stream(primaryKey: ['id'])
+          .lte('updated_at', _lastTimestamp!.toIso8601String())
+          .order('updated_at', ascending: false)
+          .limit(_pageSize)
+          .listen(_handleStreamData);
     } catch (e) {
-      setState(() {
-        _isLoading = false;
-        _hasMoreChats = false;
-      });
-      print('Error loading chats: $e');
+      print('Error loading more chats: $e');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
+  }
+
+  @override
+  void dispose() {
+    chatSubscription?.cancel();
+    _scrollController.dispose();
+    super.dispose();
   }
 
   String _getChatTitle(Map<String, dynamic> chat) {
@@ -469,7 +497,7 @@ class _ChatListBodyState extends State<ChatListBody> {
   Widget build(BuildContext context) {
     return ListView.builder(
       controller: _scrollController,
-      itemCount: _chats.length + (_hasMoreChats ? 1 : 0),
+      itemCount: _chats.length + 1,
       itemBuilder: (context, index) {
         if (index == _chats.length) {
           return _isLoading
@@ -482,7 +510,6 @@ class _ChatListBodyState extends State<ChatListBody> {
 
         return ListTile(
           onTap: () {
-            //GO to the caht page
             Navigator.push(
               context,
               MaterialPageRoute(
@@ -494,7 +521,7 @@ class _ChatListBodyState extends State<ChatListBody> {
           },
           leading: CircleAvatar(
             backgroundColor: NEARColors.aqua,
-            child: Text(_getChatTitle(chat)[0].toUpperCase()),
+            child: Text(_getChatTitle(chat)[index].toUpperCase()),
           ),
           title: Text(
             _getChatTitle(chat),
@@ -610,7 +637,11 @@ class _ChatListBodyState extends State<ChatListBody> {
                                     final res = await pageController
                                         .deleteChat(chat['id'].toString());
 
-                                    print("delete caht res : $res");
+                                    setState(() {
+                                      _chats.removeAt(index);
+                                    });
+
+                                    print("delete chat res : $res");
 
                                     Navigator.of(context).pop();
                                   },
@@ -653,12 +684,6 @@ class _ChatListBodyState extends State<ChatListBody> {
         );
       },
     );
-  }
-
-  @override
-  void dispose() {
-    _scrollController.dispose();
-    super.dispose();
   }
 }
 
@@ -817,21 +842,41 @@ class _SearchBodyState extends State<SearchBody> {
                     ),
                   );
                 } else {
-                  final operationResult = res['operation_message'];
-                  showDialog(
-                    context: context,
-                    builder: (context) => ChatCreationResultModal(
-                      result: 'error',
-                      operationMessage: operationResult,
-                    ),
-                  );
-                }
+                  print("res $res");
 
-                pageController.pageStateStream.add(
-                  pageController.pageStateStream.value.copyWith(
-                    isSearching: false,
-                  ),
-                );
+                  final chatData = res['chat_data'];
+
+                  final operationResult = res['operation_message'];
+                  print("chatData $chatData");
+                  if (chatData != null) {
+                    pageController.pageStateStream.add(
+                      pageController.pageStateStream.value.copyWith(
+                        isSearching: false,
+                      ),
+                    );
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (ctx) => ChatPage(
+                          chat: chatData,
+                        ),
+                      ),
+                    );
+                  } else {
+                    showDialog(
+                      context: context,
+                      builder: (context) => ChatCreationResultModal(
+                        result: 'error',
+                        operationMessage: operationResult,
+                      ),
+                    );
+                    pageController.pageStateStream.add(
+                      pageController.pageStateStream.value.copyWith(
+                        isSearching: false,
+                      ),
+                    );
+                  }
+                }
               }
             });
           },

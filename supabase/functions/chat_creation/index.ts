@@ -119,7 +119,7 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({
         'result': 'error',
-        'operation_message': 'Error creating private chat: Incorrect chat hash',
+        'operation_message': 'Error creating chat: Incorrect chat hash',
       }),
       { ...corsHeaders, headers: { "Content-Type": "application/json" } },
     )
@@ -155,10 +155,42 @@ Deno.serve(async (req) => {
   }
   else {
     console.log("Chat is alredy exist");
+    if(existingChat.metadata.delete[existingUserSession.accountId] == true){
+      existingChat.metadata.delete[existingUserSession.accountId] = false;
+      existingChat.metadata = sql`${existingChat.metadata}::jsonb`;
+
+      const [updatedChat] = await db
+        .update(chat)
+        .set({ metadata: existingChat.metadata })
+        .where(eq(chat.id, existingChat.id))
+        .returning();
+    
+      if (!updatedChat) {
+        return new Response(
+          JSON.stringify({
+            result: 'error',
+            operation_message: 'Failed to return chat to the user.',
+          }),
+          { ...corsHeaders, headers: { "Content-Type": "application/json" } },
+        );
+      }
+
+      return new Response(
+        JSON.stringify({
+          result: 'ok',
+          operation_message: 'Chat returned to the user .',
+          chat_data: updatedChat,
+        }),
+        { ...corsHeaders, headers: { "Content-Type": "application/json" } },
+      );
+    
+    }
+
     return new Response(
       JSON.stringify({
         'result': 'error',
-        'operation_message': 'Error creating private chat: Chat is alredy exist',
+        'operation_message': 'Error creating chat: Chat is alredy exist',
+        'chat_data' : existingChat,
       }),
       { ...corsHeaders, headers: { "Content-Type": "application/json" } },
     )
