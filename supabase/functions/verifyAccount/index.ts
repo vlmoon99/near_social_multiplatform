@@ -84,7 +84,7 @@ Deno.serve(async (req) => {
 
 
     if (existingUser) {
-      if (existingUser.is_banned) {
+      if (existingUser.isBanned) {
         return new Response(
           JSON.stringify({ success: false, reason: "User is banned." }),
           { ...corsHeaders, headers: { "Content-Type": "application/json" } },

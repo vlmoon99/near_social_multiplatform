@@ -1,5 +1,5 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts"
-import { user, session, chat } from "../_shared/schema.ts";
+import { user, session, chat, message } from "../_shared/schema.ts";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import { eq, sql } from 'drizzle-orm';
@@ -28,59 +28,99 @@ Deno.serve(async (req) => {
   const { data } = await supabaseClient.auth.getUser(token)
   const supabaseUser = data.user
 
-    const [existingUserSession] = await db
+  const [existingUserSession] = await db
     .select()
     .from(session)
     .where(eq(session.userId, supabaseUser.id));
-  
-    if(!existingUserSession){
-      return new Response(
-        JSON.stringify({
-          'result': 'error',
-          'operation_message': 'Update your session',
-        }),
-        { ...corsHeaders, headers: { "Content-Type": "application/json" } },
-      )
-    }
-  
-    const [existingUser] = await db
+
+  if (!existingUserSession) {
+    return new Response(
+      JSON.stringify({
+        'result': 'error',
+        'operation_message': 'Update your session',
+      }),
+      { ...corsHeaders, headers: { "Content-Type": "application/json" } },
+    )
+  }
+
+  const [existingUser] = await db
     .select()
     .from(user)
     .where(eq(user.id, existingUserSession.accountId));
-  
-  
-    if (existingUser) {
-      if (existingUser.is_banned) {
-        return new Response(
-          JSON.stringify({ success: false, reason: "User is banned." }),
-          { ...corsHeaders, headers: { "Content-Type": "application/json" } },
-        );
-      }
-    } else {
+
+
+  if (existingUser) {
+    if (existingUser.isBanned) {
       return new Response(
-        JSON.stringify({
-          'result': 'error',
-          'operation_message': 'No User inside the system.',
-        }),
+        JSON.stringify({ success: false, reason: "User is banned." }),
         { ...corsHeaders, headers: { "Content-Type": "application/json" } },
-      )
-    } 
-  
+      );
+    }
+  } else {
+    return new Response(
+      JSON.stringify({
+        'result': 'error',
+        'operation_message': 'No User inside the system.',
+      }),
+      { ...corsHeaders, headers: { "Content-Type": "application/json" } },
+    )
+  }
+
 
   const jsonBody = await req.json()
 
-  // {
-  //   'messageId': messageId,
-  // }
 
-  
+  const [existingMessage] = await db
+    .select()
+    .from(message)
+    .where(eq(message.id, jsonBody.messageId));
+
+  if (existingMessage.authorId != existingUserSession.accountId) {
+    return new Response(
+      JSON.stringify({
+        'result': 'error',
+        'operation_message': 'Incorrect author id.',
+      }),
+      { ...corsHeaders, headers: { "Content-Type": "application/json" } },
+    )
+  }
+
+
+  existingMessage.message.delete[existingUserSession.accountId] = true
+
+  existingMessage.message = sql`${existingMessage.message}::jsonb`;
+
+  console.log("existingMessage {}", existingMessage);
+
+  const [updatedMessage] = await db
+    .update(message)
+    .set({ message: existingMessage.message })
+    .where(eq(message.id, existingMessage.id))
+    .returning();
+
+  if (!updatedMessage) {
+    return new Response(
+      JSON.stringify({
+        result: 'error',
+        operation_message: 'Failed to delete message.',
+      }),
+      { ...corsHeaders, headers: { "Content-Type": "application/json" } },
+    );
+  }
 
 
   return new Response(
-    JSON.stringify(""),
-    { headers: { "Content-Type": "application/json" } },
-  )
+    JSON.stringify({
+      result: 'ok',
+      operation_message: 'Message marked as deleted for the user.',
+      updated_message: updatedMessage,
+    }),
+    { ...corsHeaders, headers: { "Content-Type": "application/json" } },
+  );
 })
+
+
+
 /* To invoke locally:
 
   1. Run `supabase start` (see: https://supabase.com/docs/reference/cli/supabase-start)
