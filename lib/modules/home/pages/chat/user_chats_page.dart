@@ -708,8 +708,13 @@ class _SearchBodyState extends State<SearchBody> {
   @override
   void initState() {
     super.initState();
+    final aiChat = [
+      {"id": "AI"}
+    ];
 
-    _loadUsers();
+    _users.addAll(aiChat);
+
+    // _loadUsers();
 
     _scrollController.addListener(_onScroll);
 
@@ -1154,15 +1159,15 @@ enum ChatType {
   privateUserToUser(
     label: 'Private',
     icon: Icons.lock_outline,
+  ),
+  ai(
+    label: 'AI Chat',
+    icon: Icons.smart_toy_outlined,
   );
   // group(
   //   label: 'Group',
   //   icon: Icons.group,
   // ),
-  // ai(
-  //   label: 'AI Chat',
-  //   icon: Icons.smart_toy_outlined,
-  // )
 
   final String label;
   final IconData icon;

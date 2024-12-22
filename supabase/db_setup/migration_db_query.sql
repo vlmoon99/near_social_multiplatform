@@ -160,51 +160,51 @@ $$;
 
 -- Policies Start
 
-create policy "Enable users to view their own data only."
-on "public"."Session" 
-for SELECT
-to authenticated
-using (
-  (select auth.uid()) = user_id
-);
+-- create policy "Enable users to view their own data only."
+-- on "public"."Session" 
+-- for SELECT
+-- to authenticated
+-- using (
+--   (select auth.uid()) = user_id
+-- );
 
-create policy "Enable users to view their own data only."
-on "public"."Session" 
-for select using ( (select auth.uid()) = user_id );
-
-
-create policy "Enable read for authenticated users only"
-on "public"."User" for select
-to authenticated
-using ( true );
+-- create policy "Enable users to view their own data only."
+-- on "public"."Session" 
+-- for select using ( (select auth.uid()) = user_id );
 
 
-CREATE POLICY "Users can view chats they participate in" 
-ON "Chat"
-FOR SELECT
-USING (
-  public.is_user_participant_in_chat(metadata)
-);
+-- create policy "Enable read for authenticated users only"
+-- on "public"."User" for select
+-- to authenticated
+-- using ( true );
 
 
-create policy "Allow listening for broadcasts for authenticated users only"
-on "realtime"."messages"
-as PERMISSIVE
-for SELECT
-to authenticated
-using (
-  realtime.messages.extension = 'broadcast'
-);
+-- CREATE POLICY "Users can view chats they participate in" 
+-- ON "Chat"
+-- FOR SELECT
+-- USING (
+--   public.is_user_participant_in_chat(metadata)
+-- );
 
 
-create policy "Allow listening for broadcasts for authenticated users only"
-on "realtime"."messages"
-as PERMISSIVE
-for SELECT
-to authenticated
-using (
-  realtime.messages.extension = 'broadcast'
-);
+-- create policy "Allow listening for broadcasts for authenticated users only"
+-- on "realtime"."messages"
+-- as PERMISSIVE
+-- for SELECT
+-- to authenticated
+-- using (
+--   realtime.messages.extension = 'broadcast'
+-- );
+
+
+-- create policy "Allow listening for broadcasts for authenticated users only"
+-- on "realtime"."messages"
+-- as PERMISSIVE
+-- for SELECT
+-- to authenticated
+-- using (
+--   realtime.messages.extension = 'broadcast'
+-- );
 
 
 
