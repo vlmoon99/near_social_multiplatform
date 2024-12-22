@@ -4,6 +4,9 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 // ignore: depend_on_referenced_packages
 import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
+// ignore: depend_on_referenced_packages
+import 'package:scroll_to_index/scroll_to_index.dart';
+
 import 'package:flutter_chat_ui/flutter_chat_ui.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -45,7 +48,6 @@ class ChatPageController {
       );
       return response.data;
     } catch (e) {
-      print('Unexpected error: $e');
       return {
         'result': 'error',
         'operation_message': 'Unexpected error',
@@ -69,7 +71,7 @@ class ChatPage extends StatefulWidget {
 
 class _ChatPageState extends State<ChatPage> {
   final List<types.Message> _messages = [];
-  final _scrollController = ScrollController();
+  final _scrollController = AutoScrollController();
 
   late final types.User _user;
   StreamSubscription<List<Map<String, dynamic>>>? messagesSubscription;
@@ -89,7 +91,6 @@ class _ChatPageState extends State<ChatPage> {
 
   void _setupInitialStream() {
     _lastTimestamp = DateTime.now();
-    print("widget.chat['id'] ${widget.chat['id']}");
     messagesSubscription = Supabase.instance.client
         .from('Message')
         .stream(primaryKey: ['id'])
@@ -98,14 +99,12 @@ class _ChatPageState extends State<ChatPage> {
         .limit(_pageSize)
         .listen(
           _handleStreamData,
-          onError: (err) {
-            print(err.toString());
-          },
+          onError: (err) {},
         );
   }
 
   void _handleStreamData(List<Map<String, dynamic>> listOfMessages) {
-    print("listOfMessages $listOfMessages");
+    // print("listOfMessages $listOfMessages");
 
     if (!mounted) return;
 
@@ -190,8 +189,6 @@ class _ChatPageState extends State<ChatPage> {
       id: Random().nextInt(1000000).toString(),
       text: message.text,
     );
-    print(
-        "widget.chat['participants'] ${widget.chat['metadata']['participants']}");
     final participants =
         (widget.chat['metadata']['participants'] as List<dynamic>)
             .map((e) => e.toString())
@@ -209,15 +206,27 @@ class _ChatPageState extends State<ChatPage> {
       'messageType': 'text',
       'message': {'text': textMessage.text, 'delete': participantsMap},
     });
-
     print("res $res");
+    final messageData = res['message_data'];
+
+    setState(() {
+      // _messages.clear();
+      _messages.add(messageData);
+      messagesSubscription?.cancel();
+      _setupInitialStream();
+    });
   }
 
   void _handleMessageDelete(String messageId) async {
     final pageController = Modular.get<ChatPageController>();
 
     final res = await pageController.deleteMessage(messageId);
-    print("res $res");
+    setState(() {
+      // _messages.clear();
+      _messages.removeWhere((msg) => msg.id == res['updated_message']['id']);
+      messagesSubscription?.cancel();
+      _setupInitialStream();
+    });
   }
 
   @override
@@ -267,6 +276,11 @@ class _ChatPageState extends State<ChatPage> {
         ],
       ),
       body: Chat(
+        scrollController: _scrollController,
+        scrollToUnreadOptions: ScrollToUnreadOptions(
+          lastReadMessageId: _messages.last.id,
+          scrollOnOpen: true,
+        ),
         messages: _messages,
         onMessageLongPress: (context, message) {
           showDialog(

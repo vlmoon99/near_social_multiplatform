@@ -375,6 +375,7 @@ class _ChatListBodyState extends State<ChatListBody> {
   final _scrollController = ScrollController();
   final List<Map<String, dynamic>> _chats = [];
   StreamSubscription<List<Map<String, dynamic>>>? chatSubscription;
+  // RealtimeChannel? channel;
 
   bool _isLoading = false;
   DateTime? _lastTimestamp;
@@ -385,6 +386,22 @@ class _ChatListBodyState extends State<ChatListBody> {
     super.initState();
     _setupInitialStream();
     _scrollController.addListener(_onScroll);
+    print("uid ${Supabase.instance.client.auth.currentUser!.id}");
+    // channel = Supabase.instance.client
+    //     .channel('public:Chat')
+    //     .onPostgresChanges(
+    //         event: PostgresChangeEvent.all,
+    //         schema: 'public',
+    //         table: 'Chat',
+    //         // filter: PostgresChangeFilter(
+    //         //   type: PostgresChangeFilterType.eq,
+    //         //   column: 'room_id',
+    //         //   value: 200,
+    //         // ),
+    //         callback: (payload) {
+    //           print(payload);
+    //         })
+    //     .subscribe();
   }
 
   void _setupInitialStream() async {
@@ -637,13 +654,18 @@ class _ChatListBodyState extends State<ChatListBody> {
                                     final res = await pageController
                                         .deleteChat(chat['id'].toString());
 
-                                    setState(() {
-                                      _chats.removeAt(index);
-                                    });
-
                                     print("delete chat res : $res");
 
                                     Navigator.of(context).pop();
+
+                                    setState(() {
+                                      chatSubscription?.cancel();
+                                      final chatId = res['chat_data']['id'];
+                                      _chats.removeWhere(
+                                          (chat) => chat['id'] == chatId);
+
+                                      _setupInitialStream();
+                                    });
                                   },
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: NEARColors.red,
