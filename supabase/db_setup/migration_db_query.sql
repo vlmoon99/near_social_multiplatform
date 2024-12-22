@@ -1,5 +1,3 @@
--- Tables
-
 CREATE TABLE "User" (
     id TEXT PRIMARY KEY,
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
@@ -8,7 +6,7 @@ CREATE TABLE "User" (
 );
 
 CREATE TABLE "Session" (
-    user_id TEXT PRIMARY KEY,
+    user_id UUID PRIMARY KEY,
     account_id TEXT NOT NULL,             
     FOREIGN KEY (account_id) REFERENCES "User"(id) ON DELETE CASCADE,
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),  
@@ -24,14 +22,14 @@ CREATE TABLE "Chat" (
 );
 
 CREATE TABLE "Message" (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id UUID not null default uuid_generate_v4() primary key,
     created_at TIMESTAMP NOT NULL DEFAULT NOW(), 
     updated_at TIMESTAMP NOT NULL DEFAULT NOW(), 
     message_type TEXT NOT NULL,          
     message JSONB NOT NULL,      
     chat_id TEXT NOT NULL,             
     FOREIGN KEY (chat_id) REFERENCES "Chat"(id) ON DELETE CASCADE,
-    author_id TEXT NOT NULL,             
+    author_id TEXT NOT NULL,
     FOREIGN KEY (author_id) REFERENCES "User"(id) ON DELETE CASCADE
 );
 
