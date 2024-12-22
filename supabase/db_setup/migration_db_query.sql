@@ -9,7 +9,8 @@ CREATE TABLE "User" (
 
 CREATE TABLE "Session" (
     user_id TEXT PRIMARY KEY,
-    account_id TEXT NOT NULL,            
+    account_id TEXT NOT NULL,             
+    FOREIGN KEY (account_id) REFERENCES "User"(id) ON DELETE CASCADE,
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),  
     updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
     is_active BOOLEAN NOT NULL           
@@ -27,7 +28,7 @@ CREATE TABLE "Message" (
     created_at TIMESTAMP NOT NULL DEFAULT NOW(), 
     updated_at TIMESTAMP NOT NULL DEFAULT NOW(), 
     message_type TEXT NOT NULL,          
-    message JSONB NOT NULL,
+    message JSONB NOT NULL,      
     chat_id TEXT NOT NULL,             
     FOREIGN KEY (chat_id) REFERENCES "Chat"(id) ON DELETE CASCADE,
     author_id TEXT NOT NULL,             
@@ -42,14 +43,12 @@ CREATE INDEX idx_chat_metadata_participants ON "Chat" USING GIN ((metadata->'par
 
 CREATE INDEX idx_chat_pub_keys ON "Chat" USING GIN ((metadata->'pub_keys'));
 
-CREATE INDEX idx_chat_metadata ON "Chat" USING (metadata);
-
 
 CREATE INDEX idx_message_content ON "Message" USING GIN (message);
 
 CREATE INDEX idx_message_author ON "Message" (author_id);
 
-CREATE INDEX idx_message_author ON "Message" (chat_id);
+CREATE INDEX idx_message_chat ON "Message" (chat_id);
 
 CREATE INDEX idx_session_account ON "Session" (account_id);
 
@@ -165,12 +164,15 @@ $$;
 
 create policy "Enable users to view their own data only."
 on "public"."Session" 
-as RESTRICTIVE
 for SELECT
 to authenticated
 using (
   (select auth.uid()) = user_id
 );
+
+create policy "Enable users to view their own data only."
+on "public"."Session" 
+for select using ( (select auth.uid()) = user_id );
 
 
 create policy "Enable read for authenticated users only"
@@ -196,15 +198,16 @@ using (
   realtime.messages.extension = 'broadcast'
 );
 
--- Policies End
 
+create policy "Allow listening for broadcasts for authenticated users only"
+on "realtime"."messages"
+as PERMISSIVE
+for SELECT
+to authenticated
+using (
+  realtime.messages.extension = 'broadcast'
+);
 
--- CREATE POLICY "Users can create chats if they are participants" 
--- ON "Chat"
--- FOR INSERT
--- WITH CHECK (
---   public.is_user_participant_in_chat(metadata)
--- );
 
 -- Test for this policies
 
@@ -224,3 +227,7 @@ using (
 --     FROM jsonb_array_elements_text("Chat".metadata->'participants') AS participant
 --     WHERE participant = 'bosmobile.near'
 -- );
+
+
+
+-- Policies End

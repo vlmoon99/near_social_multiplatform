@@ -97,6 +97,7 @@ Deno.serve(async (req) => {
           id: accountId,
           createdAt: new Date(),
           updatedAt: new Date(),
+          isBanned : false,
         });
     }
 
