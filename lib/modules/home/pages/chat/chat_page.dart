@@ -10,6 +10,51 @@ import 'package:near_social_mobile/config/theme.dart';
 import 'package:near_social_mobile/modules/vms/core/auth_controller.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+//Controller
+class ChatPageController {
+  Future<Map<String, dynamic>> addMessage(Map<String, dynamic> message) async {
+    try {
+      final response = await Supabase.instance.client.functions.invoke(
+        'add_message_to_the_chat',
+        headers: {
+          "Accept": "application/json",
+          "Access-Control-Allow-Origin": "*",
+        },
+        body: message,
+      );
+      return response.data;
+    } catch (e) {
+      print('Unexpected error: $e');
+      return {
+        'result': 'error',
+        'operation_message': 'Unexpected error',
+      };
+    }
+  }
+
+  Future<Map<String, dynamic>> deleteMessage(String messageId) async {
+    try {
+      final response = await Supabase.instance.client.functions.invoke(
+        'add_message_to_the_chat',
+        headers: {
+          "Accept": "application/json",
+          "Access-Control-Allow-Origin": "*",
+        },
+        body: {"messageId": messageId},
+      );
+      return response.data;
+    } catch (e) {
+      print('Unexpected error: $e');
+      return {
+        'result': 'error',
+        'operation_message': 'Unexpected error',
+      };
+    }
+  }
+}
+
+//Page
+
 class ChatPage extends StatefulWidget {
   const ChatPage({
     super.key,
@@ -48,7 +93,7 @@ class _ChatPageState extends State<ChatPage> {
         .from('Message')
         .stream(primaryKey: ['id'])
         .eq('chat_id', widget.chat['id'])
-        .order('updated_at', ascending: false)
+        .order('created_at', ascending: false)
         .limit(_pageSize)
         .listen(_handleStreamData);
   }
@@ -149,24 +194,24 @@ class _ChatPageState extends State<ChatPage> {
       for (int i = 0; i < participants.length; i++) participants[i]: false
     };
 
-    final supabase = Supabase.instance.client;
-    await supabase.from('Message').insert({
-      'chat_id': widget.chat['id'],
-      'author_id': _user.id,
-      'message_type': 'text',
+    final pageController = Modular.get<ChatPageController>();
+
+    final res = await pageController.addMessage({
+      'chatId': widget.chat['id'],
+      'authorId': _user.id,
+      'messageType': 'text',
       'message': {'text': textMessage.text, 'delete': participantsMap},
     });
+
+    print("res $res");
   }
 
   void _handleMessageDelete(String messageId, String authorId) async {
-    final supabase = Supabase.instance.client;
-    await supabase.from('Message').update({
-      "message": {
-        "delete": {
-          authorId: true,
-        }
-      }
-    }).eq('id', messageId);
+    final pageController = Modular.get<ChatPageController>();
+
+    final res = await pageController.deleteMessage(messageId);
+
+    print("res $res");
   }
 
   @override

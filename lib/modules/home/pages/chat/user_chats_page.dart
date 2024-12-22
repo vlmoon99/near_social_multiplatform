@@ -503,8 +503,6 @@ class _ChatListBodyState extends State<ChatListBody> {
             ? screenWidth * 0.3
             : screenWidth * 0.8;
 
-    print("dialogWidth $dialogWidth");
-
     return ListView.builder(
       controller: _scrollController,
       itemCount: _chats.length + 1,
