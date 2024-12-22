@@ -1,10 +1,10 @@
-import { pgTable, serial, text, timestamp, jsonb, boolean } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, timestamp, jsonb, boolean,  } from "drizzle-orm/pg-core";
 
 export const user = pgTable("User", {
   id: text("id").primaryKey(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
-  is_banned : boolean("is_banned").notNull(),
+  isBanned : boolean("is_banned").notNull(),
 });
 
 export const chat = pgTable("Chat", {
@@ -15,19 +15,24 @@ export const chat = pgTable("Chat", {
 });
 
 export const message = pgTable("Message", {
-  id: text("id").primaryKey(),
+  id: serial("id").primaryKey(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
   messageType: text("message_type").notNull(),
   message: jsonb("message").notNull(),
+  chatId: text("chat_id")
+  .notNull()
+  .references(() => user.id, { onDelete: "cascade" }),
   authorId: text("author_id")
     .notNull()
     .references(() => user.id, { onDelete: "cascade" }),
 });
 
 export const session = pgTable("Session", {
-  userId: text("user_id").primaryKey(),
-  accountId: text("account_id").notNull(),
+  userId: serial("user_id").primaryKey(),
+  accountId: text("account_id")
+  .notNull()
+  .references(() => user.id, { onDelete: "cascade" }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
   isActive: boolean("is_active").notNull(),

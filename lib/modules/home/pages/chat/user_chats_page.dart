@@ -495,6 +495,16 @@ class _ChatListBodyState extends State<ChatListBody> {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+
+    final dialogWidth = screenWidth > 1200
+        ? 400.0
+        : screenWidth > 600
+            ? screenWidth * 0.3
+            : screenWidth * 0.8;
+
+    print("dialogWidth $dialogWidth");
+
     return ListView.builder(
       controller: _scrollController,
       itemCount: _chats.length + 1,
@@ -544,14 +554,6 @@ class _ChatListBodyState extends State<ChatListBody> {
               showDialog(
                 context: context,
                 builder: (BuildContext context) {
-                  final screenWidth = MediaQuery.of(context).size.width;
-
-                  final dialogWidth = screenWidth > 1200
-                      ? 400.0
-                      : screenWidth > 600
-                          ? screenWidth * 0.3
-                          : screenWidth * 0.8;
-
                   return Dialog(
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12.r),
@@ -839,6 +841,11 @@ class _SearchBodyState extends State<SearchBody> {
                     builder: (context) => ChatCreationResultModal(
                       result: 'ok',
                       operationMessage: 'Chat was created successfully.',
+                    ),
+                  );
+                  pageController.pageStateStream.add(
+                    pageController.pageStateStream.value.copyWith(
+                      isSearching: false,
                     ),
                   );
                 } else {
