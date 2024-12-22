@@ -151,14 +151,14 @@ BEGIN
   WHERE id = chat_id
   LIMIT 1;
 
-  IF NOT FOUND OR NOT metadata THEN
-    RAISE NOTICE 'No chat by providede chat_id.';
+  IF chatMetadata IS NULL THEN
+    RAISE NOTICE 'No chat by provided chat_id.';
     RETURN FALSE;
   END IF;
 
   SELECT EXISTS (
     SELECT 1
-    FROM jsonb_array_elements_text(metadata->'participants') AS participant
+    FROM jsonb_array_elements_text(chatMetadata->'participants') AS participant
     WHERE participant = accountId
   ) INTO isParticipant;
 
@@ -179,7 +179,6 @@ BEGIN
 
 END;
 $$;
-
 
 -- Functions END
 

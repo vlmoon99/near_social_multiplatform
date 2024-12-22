@@ -96,11 +96,17 @@ class _ChatPageState extends State<ChatPage> {
         .eq('chat_id', widget.chat['id'])
         .order('created_at', ascending: false)
         .limit(_pageSize)
-        .listen(_handleStreamData);
+        .listen(
+          _handleStreamData,
+          onError: (err) {
+            print(err.toString());
+          },
+        );
   }
 
   void _handleStreamData(List<Map<String, dynamic>> listOfMessages) {
     print("listOfMessages $listOfMessages");
+
     if (!mounted) return;
 
     setState(() {
@@ -211,7 +217,6 @@ class _ChatPageState extends State<ChatPage> {
     final pageController = Modular.get<ChatPageController>();
 
     final res = await pageController.deleteMessage(messageId);
-
     print("res $res");
   }
 
@@ -264,8 +269,6 @@ class _ChatPageState extends State<ChatPage> {
       body: Chat(
         messages: _messages,
         onMessageLongPress: (context, message) {
-          print('message.id ${message.id}');
-          print('message.author.id ${message.author.id}');
           showDialog(
             context: context,
             builder: (BuildContext context) {

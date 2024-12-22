@@ -102,7 +102,7 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({
         result: 'error',
-        operation_message: 'Failed to delete message.',
+        operation_message: 'Failed to mark chat as deleted.',
       }),
       { ...corsHeaders, headers: { "Content-Type": "application/json" } },
     );
@@ -112,14 +112,12 @@ Deno.serve(async (req) => {
   return new Response(
     JSON.stringify({
       result: 'ok',
-      operation_message: 'Message marked as deleted for the user.',
+      operation_message: 'Chat marked as deleted for the user.',
       updated_message: updatedMessage,
     }),
     { ...corsHeaders, headers: { "Content-Type": "application/json" } },
   );
 })
-
-
 
 /* To invoke locally:
 
