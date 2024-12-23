@@ -40,6 +40,9 @@ class UserChatsPageController {
         case ChatType.privateUserToUser:
           return await _createPrivateUserToUserChat(currentUserId, otherUserId);
 
+        case ChatType.ai:
+          return await _createAIChat(currentUserId);
+
         default:
           throw ArgumentError('Unsupported chat type');
       }
@@ -241,32 +244,96 @@ class _UserChatsPageState extends State<UserChatsPage> {
                             .add(state.copyWith(isSearching: false));
                       },
                     )
-                  : DefaultAppBar(
-                      key: ValueKey('defaultAppBar'),
-                      onSearchPressed: () {
-                        final pageController =
-                            Modular.get<UserChatsPageController>();
+                  : state.isAIFolader == true
+                      ? AIFolderAppBar(
+                          key: ValueKey('aiFolderAppBar'),
+                          searchController: searchController,
+                          onCancel: () {
+                            final pageController =
+                                Modular.get<UserChatsPageController>();
 
-                        pageController.pageStateStream
-                            .add(state.copyWith(isSearching: true));
-                      },
-                    ),
+                            pageController.pageStateStream
+                                .add(state.copyWith(isAIFolader: false));
+                          },
+                        )
+                      : DefaultAppBar(
+                          key: ValueKey('defaultAppBar'),
+                          onSearchPressed: () {
+                            final pageController =
+                                Modular.get<UserChatsPageController>();
+
+                            pageController.pageStateStream
+                                .add(state.copyWith(isSearching: true));
+                          },
+                        ),
             ),
           ),
           body: AnimatedSwitcher(
-            duration: Duration(milliseconds: 300),
-            transitionBuilder: (child, animation) {
-              return FadeTransition(opacity: animation, child: child);
-            },
-            child: state.isSearching
-                ? SearchBody(
-                    key: ValueKey('searchBody'),
-                    searchController: searchController,
-                  )
-                : ChatListBody(
-                    key: ValueKey('chatListBody'),
-                  ),
-          ),
+              duration: Duration(milliseconds: 300),
+              transitionBuilder: (child, animation) {
+                return FadeTransition(opacity: animation, child: child);
+              },
+              child: state.isSearching
+                  ? SearchBody(
+                      key: ValueKey('searchBody'),
+                      searchController: searchController,
+                    )
+                  : state.isAIFolader == true
+                      ? AiBody(
+                          key: ValueKey('aiBody'),
+                        )
+                      : LayoutBuilder(
+                          builder: (context, constraints) {
+                            return SizedBox(
+                                width: constraints.maxWidth * 0.8,
+                                height: 100,
+                                child: Column(
+                                  children: [
+                                    ElevatedButton(
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor:
+                                            Colors.grey[200], // Цвет кнопки
+                                        padding: const EdgeInsets.all(16),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(8),
+                                        ),
+                                        elevation: 3, // Эффект тени для объема
+                                      ),
+                                      onPressed: (() {
+                                        final pageController = Modular.get<
+                                            UserChatsPageController>();
+
+                                        pageController.pageStateStream.add(
+                                            state.copyWith(isAIFolader: true));
+                                      }),
+                                      child: Column(
+                                        children: [
+                                          Icon(
+                                            Icons.smart_toy_rounded,
+                                            size: 48,
+                                          ),
+                                          const SizedBox(height: 8),
+                                          Text(
+                                            "label",
+                                            style: const TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.w600,
+                                              color: Colors.black,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    // Flexible(
+                                    //   child: ChatListBody(
+                                    //     key: ValueKey('chatListBody'),
+                                    //   ),
+                                    // ),
+                                  ],
+                                ));
+                          },
+                        )),
         );
       },
     );
@@ -345,14 +412,38 @@ class SearchAppBar extends StatelessWidget {
   }
 }
 
+class AIFolderAppBar extends StatelessWidget {
+  final TextEditingController searchController;
+  final VoidCallback onCancel;
+
+  const AIFolderAppBar({
+    super.key,
+    required this.searchController,
+    required this.onCancel,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return AppBar(
+      backgroundColor: NEARColors.blue,
+      leading: IconButton(
+        icon: Icon(Icons.arrow_back),
+        onPressed: onCancel,
+      ),
+    );
+  }
+}
+
 class UserChatPageState {
   final bool isSearching;
+  bool? isAIFolader;
 
-  UserChatPageState({required this.isSearching});
+  UserChatPageState({required this.isSearching, this.isAIFolader});
 
-  UserChatPageState copyWith({bool? isSearching}) {
+  UserChatPageState copyWith({bool? isSearching, bool? isAIFolader}) {
     return UserChatPageState(
       isSearching: isSearching ?? this.isSearching,
+      isAIFolader: isAIFolader ?? this.isAIFolader,
     );
   }
 
@@ -376,32 +467,23 @@ class _ChatListBodyState extends State<ChatListBody> {
   final List<Map<String, dynamic>> _chats = [];
   StreamSubscription<List<Map<String, dynamic>>>? chatSubscription;
 
-  bool _isLoading = false;
-  DateTime? _lastTimestamp;
-  static const int _pageSize = 50;
-
   @override
   void initState() {
     super.initState();
     _setupInitialStream();
-    _scrollController.addListener(_onScroll);
+    print("uid ${Supabase.instance.client.auth.currentUser!.id}");
   }
 
   void _setupInitialStream() async {
-    // Get current timestamp for initial query
-    _lastTimestamp = DateTime.now();
-
     chatSubscription = Supabase.instance.client
         .from('Chat')
-        .stream(primaryKey: ['id'])
-        .lte('updated_at', _lastTimestamp!.toIso8601String())
-        .order('updated_at', ascending: false)
-        .limit(_pageSize)
-        .listen(_handleStreamData);
+        .stream(primaryKey: ['id']).listen(_handleStreamData);
   }
 
   void _handleStreamData(List<Map<String, dynamic>> listOfChats) {
     if (!mounted) return;
+
+    print(listOfChats);
 
     setState(() {
       // Handle updates to existing chats
@@ -414,66 +496,10 @@ class _ChatListBodyState extends State<ChatListBody> {
           _chats[existingIndex] = newChat;
         } else {
           // Add new chat if it's within our time window
-          final chatTimestamp = DateTime.parse(newChat['updated_at']);
-          if (_lastTimestamp == null ||
-              chatTimestamp.isBefore(_lastTimestamp!)) {
-            _chats.add(newChat);
-          }
+          _chats.add(newChat);
         }
       }
-
-      // Remove chats that no longer exist in the stream
-      _chats.removeWhere((chat) =>
-          !listOfChats.any((streamChat) => streamChat['id'] == chat['id']) &&
-          DateTime.parse(chat['updated_at']).isAfter(_lastTimestamp!));
-
-      // Sort chats by updated_at
-      _chats.sort((a, b) => DateTime.parse(b['updated_at'])
-          .compareTo(DateTime.parse(a['updated_at'])));
     });
-  }
-
-  void _onScroll() {
-    if (_scrollController.position.pixels ==
-        _scrollController.position.maxScrollExtent) {
-      _loadMoreChats();
-    }
-  }
-
-  Future<void> _loadMoreChats() async {
-    if (_isLoading || _lastTimestamp == null) return;
-
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      // Get the timestamp of the last chat in our current list
-      if (_chats.isNotEmpty) {
-        final lastChat = _chats.last;
-        _lastTimestamp = DateTime.parse(lastChat['updated_at']);
-      }
-
-      // Cancel existing subscription
-      await chatSubscription?.cancel();
-
-      // Set up new stream with updated timestamp
-      chatSubscription = Supabase.instance.client
-          .from('Chat')
-          .stream(primaryKey: ['id'])
-          .lte('updated_at', _lastTimestamp!.toIso8601String())
-          .order('updated_at', ascending: false)
-          .limit(_pageSize)
-          .listen(_handleStreamData);
-    } catch (e) {
-      print('Error loading more chats: $e');
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    }
   }
 
   @override
@@ -505,14 +531,8 @@ class _ChatListBodyState extends State<ChatListBody> {
 
     return ListView.builder(
       controller: _scrollController,
-      itemCount: _chats.length + 1,
+      itemCount: _chats.length,
       itemBuilder: (context, index) {
-        if (index == _chats.length) {
-          return _isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : const SizedBox.shrink();
-        }
-
         final chat = _chats[index];
         final metadata = chat['metadata'] as Map<String, dynamic>;
 
@@ -637,13 +657,18 @@ class _ChatListBodyState extends State<ChatListBody> {
                                     final res = await pageController
                                         .deleteChat(chat['id'].toString());
 
-                                    setState(() {
-                                      _chats.removeAt(index);
-                                    });
-
                                     print("delete chat res : $res");
 
                                     Navigator.of(context).pop();
+
+                                    setState(() {
+                                      chatSubscription?.cancel();
+                                      final chatId = res['chat_data']['id'];
+                                      _chats.removeWhere(
+                                          (chat) => chat['id'] == chatId);
+
+                                      _setupInitialStream();
+                                    });
                                   },
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: NEARColors.red,
@@ -709,7 +734,9 @@ class _SearchBodyState extends State<SearchBody> {
   void initState() {
     super.initState();
     final aiChat = [
-      {"id": "AI"}
+      {"id": "AI"},
+      {"id": "test.near"},
+      {"id": "vlmoon.near"}
     ];
 
     _users.addAll(aiChat);
@@ -922,6 +949,93 @@ class _SearchBodyState extends State<SearchBody> {
     _scrollController.dispose();
     widget.searchController.removeListener(_onSearchTextChanged);
     super.dispose();
+  }
+}
+
+class AiBody extends StatefulWidget {
+  const AiBody({super.key});
+
+  @override
+  State<AiBody> createState() => _AiBodyState();
+}
+
+class _AiBodyState extends State<AiBody> {
+  List<Map<String, dynamic>> _aiChats = [];
+  bool _isLoading = true;
+  @override
+  void initState() {
+    super.initState();
+    getAiChat();
+  }
+
+  getAiChat() async {
+    final currentUserAccountId = Modular.get<AuthController>().state.accountId;
+
+    final response = await Supabase.instance.client
+        .from("Chat")
+        .select("*")
+        .eq('metadata->>user_id', currentUserAccountId)
+        .eq('metadata->>chat_type', 'ai');
+
+    setState(() {
+      _aiChats = response as List<Map<String, dynamic>>;
+      _isLoading = false;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        if (_isLoading)
+          Expanded(
+            child: Center(
+              child: CircularProgressIndicator(),
+            ),
+          )
+        else if (_aiChats.isEmpty)
+          Expanded(
+            child: Center(
+              child: Text(
+                'AI Chats Absent',
+                style: TextStyle(fontSize: 18, color: Colors.grey),
+              ),
+            ),
+          )
+        else
+          Expanded(
+            child: ListView.builder(
+              itemCount: _aiChats.length,
+              itemBuilder: (context, index) {
+                final chat = _aiChats[index];
+                final metadata = chat['metadata'];
+
+                return ListTile(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (ctx) => ChatPage(
+                          chat: chat,
+                        ),
+                      ),
+                    );
+                  },
+                  title: Text(
+                    metadata['user_id'],
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  subtitle: Text(
+                    "Chat Type: ${metadata['chat_type']}",
+                    style: TextStyle(color: Colors.grey[600]),
+                  ),
+                  trailing: Icon(Icons.arrow_forward_ios, size: 16),
+                );
+              },
+            ),
+          ),
+      ],
+    );
   }
 }
 

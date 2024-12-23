@@ -83,40 +83,6 @@ $$;
 
 -- Check if the user has active session and he inside the chat which he want to create
 
-CREATE OR REPLACE FUNCTION public.is_user_participant_in_chat(metadata JSONB)
-RETURNS BOOLEAN
-LANGUAGE plpgsql
-SECURITY DEFINER
-AS $$
-DECLARE
-  accountId TEXT; 
-  isActiveSession BOOLEAN; 
-BEGIN
-  SELECT account_id, is_active
-  INTO accountId, isActiveSession
-  FROM "Session"
-  WHERE user_id = (SELECT auth.uid())
-  LIMIT 1;
-
-  RAISE NOTICE 'Account ID: %', accountId;
-  RAISE NOTICE 'Is Active Session: %', isActiveSession;
-
-  IF NOT FOUND OR NOT isActiveSession THEN
-    RAISE NOTICE 'No active session found or session inactive.';
-    RETURN FALSE;
-  END IF;
-
-  RAISE NOTICE 'Participants Array: %', metadata->'participants';
-
-  RETURN EXISTS (
-    SELECT 1
-    FROM jsonb_array_elements_text(metadata->'participants') AS participant
-    WHERE participant = accountId
-  );
-END;
-$$;
-
-
 
 CREATE OR REPLACE FUNCTION public.is_user_participant_in_chat(metadata JSONB)
 RETURNS BOOLEAN
@@ -155,56 +121,124 @@ END;
 $$;
 
 
+CREATE OR REPLACE FUNCTION public.is_user_can_see_the_message(message JSONB, chat_id TEXT)
+RETURNS BOOLEAN
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  accountId TEXT;
+  authorId TEXT;
+  isActiveSession BOOLEAN; 
+  isParticipant BOOLEAN;
+  deleteStatus JSONB;
+  chatMetadata JSONB;
+BEGIN
+  SELECT account_id, is_active
+  INTO accountId, isActiveSession
+  FROM "Session"
+  WHERE user_id = (SELECT auth.uid())
+  LIMIT 1;
+
+  IF NOT FOUND OR NOT isActiveSession THEN
+    RAISE NOTICE 'No active session found or session inactive.';
+    RETURN FALSE;
+  END IF;
+
+  SELECT metadata
+  INTO chatMetadata
+  FROM "Chat"
+  WHERE id = chat_id
+  LIMIT 1;
+
+  IF chatMetadata IS NULL THEN
+    RAISE NOTICE 'No chat by provided chat_id.';
+    RETURN FALSE;
+  END IF;
+
+  SELECT EXISTS (
+    SELECT 1
+    FROM jsonb_array_elements_text(chatMetadata->'participants') AS participant
+    WHERE participant = accountId
+  ) INTO isParticipant;
+
+
+  deleteStatus := message->'delete';
+
+  authorId := message->'author_id';
+
+  IF (
+    (deleteStatus ? accountId AND deleteStatus->>accountId = 'true')
+    OR authorId != accountId
+    OR isParticipant = false
+  ) THEN
+    RETURN FALSE;
+  END IF;
+
+  RETURN TRUE;
+
+END;
+$$;
+
 -- Functions END
 
 
 -- Policies Start
 
--- create policy "Enable users to view their own data only."
--- on "public"."Session" 
--- for SELECT
--- to authenticated
--- using (
---   (select auth.uid()) = user_id
--- );
+create policy "Enable users to view their own data only."
+on "public"."Session" 
+for SELECT
+to authenticated
+using (
+  (select auth.uid()) = user_id
+);
 
--- create policy "Enable users to view their own data only."
--- on "public"."Session" 
--- for select using ( (select auth.uid()) = user_id );
-
-
--- create policy "Enable read for authenticated users only"
--- on "public"."User" for select
--- to authenticated
--- using ( true );
+create policy "Enable users to view their own data only."
+on "public"."Session" 
+for select using ( (select auth.uid()) = user_id );
 
 
--- CREATE POLICY "Users can view chats they participate in" 
--- ON "Chat"
--- FOR SELECT
--- USING (
---   public.is_user_participant_in_chat(metadata)
--- );
+create policy "Enable read for authenticated users only"
+on "public"."User" for select
+to authenticated
+using ( true );
 
 
--- create policy "Allow listening for broadcasts for authenticated users only"
--- on "realtime"."messages"
--- as PERMISSIVE
--- for SELECT
--- to authenticated
--- using (
---   realtime.messages.extension = 'broadcast'
--- );
+CREATE POLICY "Users can view chats they participate in" 
+ON "Chat"
+FOR SELECT
+USING (
+  public.is_user_participant_in_chat(metadata)
+);
 
 
--- create policy "Allow listening for broadcasts for authenticated users only"
--- on "realtime"."messages"
--- as PERMISSIVE
--- for SELECT
--- to authenticated
--- using (
---   realtime.messages.extension = 'broadcast'
--- );
+CREATE POLICY "Users can view chats message they participate in" 
+ON "Message"
+FOR SELECT
+USING (
+  public.is_user_can_see_the_message(message,chat_id)
+);
+
+
+
+create policy "Allow listening for broadcasts for authenticated users only"
+on "realtime"."messages"
+as PERMISSIVE
+for SELECT
+to authenticated
+using (
+  realtime.messages.extension = 'broadcast'
+);
+
+
+create policy "Allow listening for broadcasts for authenticated users only"
+on "realtime"."messages"
+as PERMISSIVE
+for SELECT
+to authenticated
+using (
+  realtime.messages.extension = 'broadcast'
+);
 
 
 
