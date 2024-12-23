@@ -74,38 +74,30 @@ class _ChatPageState extends State<ChatPage> {
   final _scrollController = AutoScrollController();
 
   late final types.User _user;
-  StreamSubscription<List<Map<String, dynamic>>>? messagesSubscription;
-
-  bool _isLoading = false;
-  DateTime? _lastTimestamp;
-  static const int _pageSize = 50;
+  StreamSubscription<List<Map<String, dynamic>>>? newMessageSubscription;
 
   @override
   void initState() {
     super.initState();
     final currentUserAccountID = Modular.get<AuthController>().state.accountId;
     _user = types.User(id: currentUserAccountID);
-    _setupInitialStream();
+    _setupNewMessageStream();
     _scrollController.addListener(_onScroll);
   }
 
-  void _setupInitialStream() {
-    _lastTimestamp = DateTime.now();
-    messagesSubscription = Supabase.instance.client
+  void _setupNewMessageStream() {
+    newMessageSubscription = Supabase.instance.client
         .from('Message')
         .stream(primaryKey: ['id'])
         .eq('chat_id', widget.chat['id'])
         .order('created_at', ascending: false)
-        .limit(_pageSize)
         .listen(
-          _handleStreamData,
+          _handlePushNewMessage,
           onError: (err) {},
         );
   }
 
-  void _handleStreamData(List<Map<String, dynamic>> listOfMessages) {
-    // print("listOfMessages $listOfMessages");
-
+  void _handlePushNewMessage(List<Map<String, dynamic>> listOfMessages) {
     if (!mounted) return;
 
     setState(() {
@@ -135,50 +127,15 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   void _onScroll() {
-    if (_scrollController.position.pixels ==
-        _scrollController.position.minScrollExtent) {
-      _loadMoreMessages();
-    }
-  }
+    final comparsion1 = _scrollController.position.pixels ==
+        _scrollController.position.minScrollExtent;
+    final comparsion2 = _scrollController.position.pixels ==
+        _scrollController.position.maxScrollExtent;
 
-  Future<void> _loadMoreMessages() async {
-    if (_isLoading || _lastTimestamp == null) return;
-
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      // Update last timestamp for pagination
-      final oldestMessage = _messages.isNotEmpty ? _messages.first : null;
-      if (oldestMessage != null) {
-        _lastTimestamp = DateTime.fromMillisecondsSinceEpoch(
-          oldestMessage.createdAt!,
-        );
-      }
-
-      // Fetch older messages
-      final olderMessages = await Supabase.instance.client
-          .from('Message')
-          .select()
-          .eq('chat_id', widget.chat['id'])
-          .lte('updated_at', _lastTimestamp!.toIso8601String())
-          .order('updated_at', ascending: false)
-          .limit(_pageSize);
-
-      if (olderMessages.isNotEmpty) {
-        setState(() {
-          final newMessages =
-              olderMessages.map((msg) => _mapMessage(msg)).toList();
-          _messages.insertAll(0, newMessages);
-        });
-      }
-    } catch (e) {
-      print('Error loading more messages: $e');
-    } finally {
-      setState(() {
-        _isLoading = false;
-      });
+    if (comparsion1) {
+      print("comparsion1 $comparsion1");
+    } else if (comparsion2) {
+      print("comparsion2 $comparsion2");
     }
   }
 
@@ -206,14 +163,13 @@ class _ChatPageState extends State<ChatPage> {
       'messageType': 'text',
       'message': {'text': textMessage.text, 'delete': participantsMap},
     });
-    print("res $res");
+
     final messageData = res['message_data'];
 
     setState(() {
-      // _messages.clear();
-      _messages.add(messageData);
-      messagesSubscription?.cancel();
-      _setupInitialStream();
+      _messages.add(_mapMessage(messageData));
+      newMessageSubscription?.cancel();
+      _setupNewMessageStream();
     });
   }
 
@@ -222,16 +178,14 @@ class _ChatPageState extends State<ChatPage> {
 
     final res = await pageController.deleteMessage(messageId);
     setState(() {
-      // _messages.clear();
       _messages.removeWhere((msg) => msg.id == res['updated_message']['id']);
-      messagesSubscription?.cancel();
-      _setupInitialStream();
+      newMessageSubscription?.cancel();
+      _setupNewMessageStream();
     });
   }
 
   @override
   void dispose() {
-    messagesSubscription?.cancel();
     _scrollController.dispose();
     super.dispose();
   }
@@ -277,11 +231,10 @@ class _ChatPageState extends State<ChatPage> {
       ),
       body: Chat(
         scrollController: _scrollController,
-        scrollToUnreadOptions: ScrollToUnreadOptions(
-          lastReadMessageId: _messages.last.id,
-          scrollOnOpen: true,
-        ),
-        messages: _messages,
+        onEndReached: () async {
+          print("onEndReached");
+        },
+        messages: _messages.reversed.toList(),
         onMessageLongPress: (context, message) {
           showDialog(
             context: context,
