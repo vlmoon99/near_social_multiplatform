@@ -66,7 +66,7 @@ alter table "Session" enable row level security;
 
 -- Check if the user has active session
 
-CREATE OR REPLACE FUNCTION private.has_active_session()
+CREATE OR REPLACE FUNCTION public.has_active_session()
 RETURNS boolean
 LANGUAGE plpgsql
 SECURITY DEFINER
