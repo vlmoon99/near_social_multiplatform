@@ -376,28 +376,17 @@ class _ChatListBodyState extends State<ChatListBody> {
   final List<Map<String, dynamic>> _chats = [];
   StreamSubscription<List<Map<String, dynamic>>>? chatSubscription;
 
-  bool _isLoading = false;
-  DateTime? _lastTimestamp;
-  static const int _pageSize = 50;
-
   @override
   void initState() {
     super.initState();
     _setupInitialStream();
-    _scrollController.addListener(_onScroll);
+    print("uid ${Supabase.instance.client.auth.currentUser!.id}");
   }
 
   void _setupInitialStream() async {
-    // Get current timestamp for initial query
-    _lastTimestamp = DateTime.now();
-
     chatSubscription = Supabase.instance.client
         .from('Chat')
-        .stream(primaryKey: ['id'])
-        .lte('updated_at', _lastTimestamp!.toIso8601String())
-        .order('updated_at', ascending: false)
-        .limit(_pageSize)
-        .listen(_handleStreamData);
+        .stream(primaryKey: ['id']).listen(_handleStreamData);
   }
 
   void _handleStreamData(List<Map<String, dynamic>> listOfChats) {
@@ -416,66 +405,10 @@ class _ChatListBodyState extends State<ChatListBody> {
           _chats[existingIndex] = newChat;
         } else {
           // Add new chat if it's within our time window
-          final chatTimestamp = DateTime.parse(newChat['updated_at']);
-          if (_lastTimestamp == null ||
-              chatTimestamp.isBefore(_lastTimestamp!)) {
-            _chats.add(newChat);
-          }
+          _chats.add(newChat);
         }
       }
-
-      // Remove chats that no longer exist in the stream
-      _chats.removeWhere((chat) =>
-          !listOfChats.any((streamChat) => streamChat['id'] == chat['id']) &&
-          DateTime.parse(chat['updated_at']).isAfter(_lastTimestamp!));
-
-      // Sort chats by updated_at
-      _chats.sort((a, b) => DateTime.parse(b['updated_at'])
-          .compareTo(DateTime.parse(a['updated_at'])));
     });
-  }
-
-  void _onScroll() {
-    if (_scrollController.position.pixels ==
-        _scrollController.position.maxScrollExtent) {
-      _loadMoreChats();
-    }
-  }
-
-  Future<void> _loadMoreChats() async {
-    if (_isLoading || _lastTimestamp == null) return;
-
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      // Get the timestamp of the last chat in our current list
-      if (_chats.isNotEmpty) {
-        final lastChat = _chats.last;
-        _lastTimestamp = DateTime.parse(lastChat['updated_at']);
-      }
-
-      // Cancel existing subscription
-      await chatSubscription?.cancel();
-
-      // Set up new stream with updated timestamp
-      chatSubscription = Supabase.instance.client
-          .from('Chat')
-          .stream(primaryKey: ['id'])
-          .lte('updated_at', _lastTimestamp!.toIso8601String())
-          .order('updated_at', ascending: false)
-          .limit(_pageSize)
-          .listen(_handleStreamData);
-    } catch (e) {
-      print('Error loading more chats: $e');
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    }
   }
 
   @override
@@ -507,14 +440,8 @@ class _ChatListBodyState extends State<ChatListBody> {
 
     return ListView.builder(
       controller: _scrollController,
-      itemCount: _chats.length + 1,
+      itemCount: _chats.length,
       itemBuilder: (context, index) {
-        if (index == _chats.length) {
-          return _isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : const SizedBox.shrink();
-        }
-
         final chat = _chats[index];
         final metadata = chat['metadata'] as Map<String, dynamic>;
 
@@ -639,13 +566,18 @@ class _ChatListBodyState extends State<ChatListBody> {
                                     final res = await pageController
                                         .deleteChat(chat['id'].toString());
 
-                                    setState(() {
-                                      _chats.removeAt(index);
-                                    });
-
                                     print("delete chat res : $res");
 
                                     Navigator.of(context).pop();
+
+                                    setState(() {
+                                      chatSubscription?.cancel();
+                                      final chatId = res['chat_data']['id'];
+                                      _chats.removeWhere(
+                                          (chat) => chat['id'] == chatId);
+
+                                      _setupInitialStream();
+                                    });
                                   },
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: NEARColors.red,
