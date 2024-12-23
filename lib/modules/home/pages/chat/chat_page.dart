@@ -19,7 +19,7 @@ class ChatPageController {
   Future<Map<String, dynamic>> addMessage(Map<String, dynamic> message) async {
     try {
       final response = await Supabase.instance.client.functions.invoke(
-        'add_message_to_the_chat',
+        'ai_message',
         headers: {
           "Accept": "application/json",
           "Access-Control-Allow-Origin": "*",
@@ -146,14 +146,6 @@ class _ChatPageState extends State<ChatPage> {
       id: Random().nextInt(1000000).toString(),
       text: message.text,
     );
-    final participants =
-        (widget.chat['metadata']['participants'] as List<dynamic>)
-            .map((e) => e.toString())
-            .toList();
-
-    final participantsMap = {
-      for (int i = 0; i < participants.length; i++) participants[i]: false
-    };
 
     final pageController = Modular.get<ChatPageController>();
 
@@ -161,7 +153,7 @@ class _ChatPageState extends State<ChatPage> {
       'chatId': widget.chat['id'],
       'authorId': _user.id,
       'messageType': 'text',
-      'message': {'text': textMessage.text, 'delete': participantsMap},
+      'message': {'text': textMessage.text},
     });
 
     final messageData = res['message_data'];
@@ -173,16 +165,16 @@ class _ChatPageState extends State<ChatPage> {
     });
   }
 
-  void _handleMessageDelete(String messageId) async {
-    final pageController = Modular.get<ChatPageController>();
+  // void _handleMessageDelete(String messageId) async {
+  //   final pageController = Modular.get<ChatPageController>();
 
-    final res = await pageController.deleteMessage(messageId);
-    setState(() {
-      _messages.removeWhere((msg) => msg.id == res['updated_message']['id']);
-      newMessageSubscription?.cancel();
-      _setupNewMessageStream();
-    });
-  }
+  //   final res = await pageController.deleteMessage(messageId);
+  //   setState(() {
+  //     _messages.removeWhere((msg) => msg.id == res['updated_message']['id']);
+  //     newMessageSubscription?.cancel();
+  //     _setupNewMessageStream();
+  //   });
+  // }
 
   @override
   void dispose() {
@@ -312,36 +304,36 @@ class _ChatPageState extends State<ChatPage> {
                             ),
                           ),
                           SizedBox(width: 16.w),
-                          Expanded(
-                            child: ElevatedButton(
-                              onPressed: () {
-                                _handleMessageDelete(
-                                  message.id,
-                                );
-                                Navigator.of(context).pop();
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: NEARColors.red,
-                                padding: EdgeInsets.symmetric(
-                                  vertical: 12.h,
-                                ),
-                                minimumSize: Size(100.w, 44.h),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8.r),
-                                ),
-                              ),
-                              child: Text(
-                                'Yes',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .labelLarge
-                                    ?.copyWith(
-                                      color: NEARColors.white,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                              ),
-                            ),
-                          ),
+                          // Expanded(
+                          //   child: ElevatedButton(
+                          //     onPressed: () {
+                          //       _handleMessageDelete(
+                          //         message.id,
+                          //       );
+                          //       Navigator.of(context).pop();
+                          //     },
+                          //     style: ElevatedButton.styleFrom(
+                          //       backgroundColor: NEARColors.red,
+                          //       padding: EdgeInsets.symmetric(
+                          //         vertical: 12.h,
+                          //       ),
+                          //       minimumSize: Size(100.w, 44.h),
+                          //       shape: RoundedRectangleBorder(
+                          //         borderRadius: BorderRadius.circular(8.r),
+                          //       ),
+                          //     ),
+                          //     child: Text(
+                          //       'Yes',
+                          //       style: Theme.of(context)
+                          //           .textTheme
+                          //           .labelLarge
+                          //           ?.copyWith(
+                          //             color: NEARColors.white,
+                          //             fontWeight: FontWeight.w600,
+                          //           ),
+                          //     ),
+                          //   ),
+                          // ),
                         ],
                       ),
                     ],

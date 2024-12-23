@@ -40,6 +40,9 @@ class UserChatsPageController {
         case ChatType.privateUserToUser:
           return await _createPrivateUserToUserChat(currentUserId, otherUserId);
 
+        case ChatType.ai:
+          return await _createAIChat(currentUserId);
+
         default:
           throw ArgumentError('Unsupported chat type');
       }
@@ -241,32 +244,96 @@ class _UserChatsPageState extends State<UserChatsPage> {
                             .add(state.copyWith(isSearching: false));
                       },
                     )
-                  : DefaultAppBar(
-                      key: ValueKey('defaultAppBar'),
-                      onSearchPressed: () {
-                        final pageController =
-                            Modular.get<UserChatsPageController>();
+                  : state.isAIFolader == true
+                      ? AIFolderAppBar(
+                          key: ValueKey('aiFolderAppBar'),
+                          searchController: searchController,
+                          onCancel: () {
+                            final pageController =
+                                Modular.get<UserChatsPageController>();
 
-                        pageController.pageStateStream
-                            .add(state.copyWith(isSearching: true));
-                      },
-                    ),
+                            pageController.pageStateStream
+                                .add(state.copyWith(isAIFolader: false));
+                          },
+                        )
+                      : DefaultAppBar(
+                          key: ValueKey('defaultAppBar'),
+                          onSearchPressed: () {
+                            final pageController =
+                                Modular.get<UserChatsPageController>();
+
+                            pageController.pageStateStream
+                                .add(state.copyWith(isSearching: true));
+                          },
+                        ),
             ),
           ),
           body: AnimatedSwitcher(
-            duration: Duration(milliseconds: 300),
-            transitionBuilder: (child, animation) {
-              return FadeTransition(opacity: animation, child: child);
-            },
-            child: state.isSearching
-                ? SearchBody(
-                    key: ValueKey('searchBody'),
-                    searchController: searchController,
-                  )
-                : ChatListBody(
-                    key: ValueKey('chatListBody'),
-                  ),
-          ),
+              duration: Duration(milliseconds: 300),
+              transitionBuilder: (child, animation) {
+                return FadeTransition(opacity: animation, child: child);
+              },
+              child: state.isSearching
+                  ? SearchBody(
+                      key: ValueKey('searchBody'),
+                      searchController: searchController,
+                    )
+                  : state.isAIFolader == true
+                      ? AiBody(
+                          key: ValueKey('aiBody'),
+                        )
+                      : LayoutBuilder(
+                          builder: (context, constraints) {
+                            return SizedBox(
+                                width: constraints.maxWidth * 0.8,
+                                height: 100,
+                                child: Column(
+                                  children: [
+                                    ElevatedButton(
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor:
+                                            Colors.grey[200], // Цвет кнопки
+                                        padding: const EdgeInsets.all(16),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(8),
+                                        ),
+                                        elevation: 3, // Эффект тени для объема
+                                      ),
+                                      onPressed: (() {
+                                        final pageController = Modular.get<
+                                            UserChatsPageController>();
+
+                                        pageController.pageStateStream.add(
+                                            state.copyWith(isAIFolader: true));
+                                      }),
+                                      child: Column(
+                                        children: [
+                                          Icon(
+                                            Icons.smart_toy_rounded,
+                                            size: 48,
+                                          ),
+                                          const SizedBox(height: 8),
+                                          Text(
+                                            "label",
+                                            style: const TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.w600,
+                                              color: Colors.black,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    // Flexible(
+                                    //   child: ChatListBody(
+                                    //     key: ValueKey('chatListBody'),
+                                    //   ),
+                                    // ),
+                                  ],
+                                ));
+                          },
+                        )),
         );
       },
     );
@@ -345,14 +412,38 @@ class SearchAppBar extends StatelessWidget {
   }
 }
 
+class AIFolderAppBar extends StatelessWidget {
+  final TextEditingController searchController;
+  final VoidCallback onCancel;
+
+  const AIFolderAppBar({
+    super.key,
+    required this.searchController,
+    required this.onCancel,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return AppBar(
+      backgroundColor: NEARColors.blue,
+      leading: IconButton(
+        icon: Icon(Icons.arrow_back),
+        onPressed: onCancel,
+      ),
+    );
+  }
+}
+
 class UserChatPageState {
   final bool isSearching;
+  bool? isAIFolader;
 
-  UserChatPageState({required this.isSearching});
+  UserChatPageState({required this.isSearching, this.isAIFolader});
 
-  UserChatPageState copyWith({bool? isSearching}) {
+  UserChatPageState copyWith({bool? isSearching, bool? isAIFolader}) {
     return UserChatPageState(
       isSearching: isSearching ?? this.isSearching,
+      isAIFolader: isAIFolader ?? this.isAIFolader,
     );
   }
 
@@ -644,7 +735,8 @@ class _SearchBodyState extends State<SearchBody> {
     super.initState();
     final aiChat = [
       {"id": "AI"},
-      {"id": "test.near"}
+      {"id": "test.near"},
+      {"id": "vlmoon.near"}
     ];
 
     _users.addAll(aiChat);
@@ -857,6 +949,93 @@ class _SearchBodyState extends State<SearchBody> {
     _scrollController.dispose();
     widget.searchController.removeListener(_onSearchTextChanged);
     super.dispose();
+  }
+}
+
+class AiBody extends StatefulWidget {
+  const AiBody({super.key});
+
+  @override
+  State<AiBody> createState() => _AiBodyState();
+}
+
+class _AiBodyState extends State<AiBody> {
+  List<Map<String, dynamic>> _aiChats = [];
+  bool _isLoading = true;
+  @override
+  void initState() {
+    super.initState();
+    getAiChat();
+  }
+
+  getAiChat() async {
+    final currentUserAccountId = Modular.get<AuthController>().state.accountId;
+
+    final response = await Supabase.instance.client
+        .from("Chat")
+        .select("*")
+        .eq('metadata->>user_id', currentUserAccountId)
+        .eq('metadata->>chat_type', 'ai');
+
+    setState(() {
+      _aiChats = response as List<Map<String, dynamic>>;
+      _isLoading = false;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        if (_isLoading)
+          Expanded(
+            child: Center(
+              child: CircularProgressIndicator(),
+            ),
+          )
+        else if (_aiChats.isEmpty)
+          Expanded(
+            child: Center(
+              child: Text(
+                'AI Chats Absent',
+                style: TextStyle(fontSize: 18, color: Colors.grey),
+              ),
+            ),
+          )
+        else
+          Expanded(
+            child: ListView.builder(
+              itemCount: _aiChats.length,
+              itemBuilder: (context, index) {
+                final chat = _aiChats[index];
+                final metadata = chat['metadata'];
+
+                return ListTile(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (ctx) => ChatPage(
+                          chat: chat,
+                        ),
+                      ),
+                    );
+                  },
+                  title: Text(
+                    metadata['user_id'],
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  subtitle: Text(
+                    "Chat Type: ${metadata['chat_type']}",
+                    style: TextStyle(color: Colors.grey[600]),
+                  ),
+                  trailing: Icon(Icons.arrow_forward_ios, size: 16),
+                );
+              },
+            ),
+          ),
+      ],
+    );
   }
 }
 
