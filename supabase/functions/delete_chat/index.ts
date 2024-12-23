@@ -1,9 +1,9 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts"
 
-import { user, session, chat } from "../_shared/schema.ts";
+import { user, session, chat, message } from "../_shared/schema.ts";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
-import { eq, sql } from "drizzle-orm";
+import { eq, sql, and } from "drizzle-orm";
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 
 const connectionString = Deno.env.get("SUPABASE_DB_URL")!;
@@ -105,7 +105,7 @@ Deno.serve(async (req) => {
   }
   console.log("Pass all cheks");
 
-  if(!existingChat.metadata.delete) {
+  if (!existingChat.metadata.delete) {
     existingChat.metadata.delete = {
       [participants[0]]: false,
       [participants[1]]: false,
@@ -114,7 +114,19 @@ Deno.serve(async (req) => {
 
   existingChat.metadata.delete[accountId] = true;
 
-  console.log("existingChat.metadata {}",existingChat.metadata);
+
+  if (existingChat.metadata['chat_type'] == 'private') {
+    delete existingChat.metadata['pub_keys'][accountId]
+    existingChat.metadata.delete[accountId] = true;
+    
+    await db.update(message)
+      .set({ message: {'delete' : {accountId : true}} })
+      .where(and(eq(message.authorId, accountId), eq(message.chatId, existingChat.id)))
+      .where(eq(message.authorId, accountId));
+
+  }
+
+  console.log("existingChat.metadata {}", existingChat.metadata);
 
   existingChat.metadata = sql`${existingChat.metadata}::jsonb`;
 

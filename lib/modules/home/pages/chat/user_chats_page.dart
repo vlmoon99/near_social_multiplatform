@@ -3,12 +3,14 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:intl/intl.dart';
 import 'package:near_social_mobile/config/constants.dart';
 import 'package:near_social_mobile/config/theme.dart';
 import 'package:near_social_mobile/modules/home/pages/chat/chat_page.dart';
 import 'package:near_social_mobile/modules/vms/core/auth_controller.dart';
+import 'package:near_social_mobile/services/cryptography/internal_cryptography_service.dart';
 import 'package:rxdart/rxdart.dart';
 
 import 'package:flutter_svg/flutter_svg.dart';
@@ -62,7 +64,7 @@ class UserChatsPageController {
     return chatId;
   }
 
-  Future<Map<String, dynamic>> _createChatUsingEdgeFunction(
+  Future<Map<String, dynamic>> createChatUsingEdgeFunction(
       Map<String, dynamic> data) async {
     try {
       final response = await Supabase.instance.client.functions.invoke(
@@ -98,7 +100,7 @@ class UserChatsPageController {
     };
 
     try {
-      return _createChatUsingEdgeFunction(data);
+      return createChatUsingEdgeFunction(data);
     } catch (e) {
       return {
         'result': 'error',
@@ -112,11 +114,42 @@ class UserChatsPageController {
     final chatId =
         await generateChatHash(currentUserId, otherUserId, 'private');
 
+    final secureStorage = Modular.get<FlutterSecureStorage>();
+
+    var res = (await secureStorage.read(
+      key: chatId,
+    ));
+
+    var publicKey;
+
+    if (res == null) {
+      final keyPair = await Modular.get<InternalCryptographyService>()
+          .encryptionRunner
+          .generateKeyPair();
+
+      await secureStorage.write(
+          key: chatId, value: jsonEncode(keyPair.toJson()));
+
+      res = (await secureStorage.read(
+        key: chatId,
+      ));
+
+      final keys = jsonDecode(res!);
+
+      publicKey = keys['public_key'];
+    } else {
+      final keys = jsonDecode(res);
+
+      publicKey = keys['public_key'];
+    }
+
     final metadata = {
       'chat_type': 'private',
       'participants': [currentUserId, otherUserId],
       'isSecure': true,
-      'pub_keys': {},
+      'pub_keys': {
+        currentUserId: publicKey,
+      },
     };
 
     final data = {
@@ -124,8 +157,10 @@ class UserChatsPageController {
       'metadata': metadata,
     };
 
+    print(data.toString());
+
     try {
-      return _createChatUsingEdgeFunction(data);
+      return createChatUsingEdgeFunction(data);
     } catch (e) {
       return {
         'result': 'error',
@@ -390,6 +425,8 @@ class _ChatListBodyState extends State<ChatListBody> {
   }
 
   void _handleStreamData(List<Map<String, dynamic>> listOfChats) {
+    print(listOfChats);
+
     if (!mounted) return;
 
     setState(() {

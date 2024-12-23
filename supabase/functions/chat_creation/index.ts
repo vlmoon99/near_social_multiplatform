@@ -134,7 +134,6 @@ Deno.serve(async (req) => {
 
   if (!existingChat) {
 
-
     console.log("reqJsonBody {}",reqJsonBody);
 
     reqJsonBody.metadata = sql`${reqJsonBody.metadata}::jsonb`;
@@ -184,6 +183,33 @@ Deno.serve(async (req) => {
         { ...corsHeaders, headers: { "Content-Type": "application/json" } },
       );
     
+    } else if (!existingChat.metadata['pub_keys'][existingUserSession.accountId] &&  metadata['pub_keys'][existingUserSession.accountId] && chatType == "private"){
+      existingChat.metadata = sql`${metadata}::jsonb`;
+      const [updatedChat] = await db
+        .update(chat)
+        .set({ metadata: existingChat.metadata })
+        .where(eq(chat.id, existingChat.id))
+        .returning();
+    
+      if (!updatedChat) {
+        return new Response(
+          JSON.stringify({
+            result: 'error',
+            operation_message: 'Failed to add pub key to the private chat.',
+          }),
+          { ...corsHeaders, headers: { "Content-Type": "application/json" } },
+        );
+      }
+
+      return new Response(
+        JSON.stringify({
+          result: 'ok',
+          operation_message: 'Pub key successfully added to the chat.',
+          chat_data: updatedChat,
+        }),
+        { ...corsHeaders, headers: { "Content-Type": "application/json" } },
+      );
+
     }
 
     return new Response(
