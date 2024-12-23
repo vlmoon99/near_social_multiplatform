@@ -403,6 +403,8 @@ class _ChatListBodyState extends State<ChatListBody> {
   void _handleStreamData(List<Map<String, dynamic>> listOfChats) {
     if (!mounted) return;
 
+    print(listOfChats);
+
     setState(() {
       // Handle updates to existing chats
       for (var newChat in listOfChats) {
@@ -709,7 +711,8 @@ class _SearchBodyState extends State<SearchBody> {
   void initState() {
     super.initState();
     final aiChat = [
-      {"id": "AI"}
+      {"id": "AI"},
+      {"id": "test.near"}
     ];
 
     _users.addAll(aiChat);
