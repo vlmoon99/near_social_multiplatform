@@ -37,3 +37,10 @@ export const session = pgTable("Session", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
   isActive: boolean("is_active").notNull(),
 });
+
+export const session = pgTable("Embedding", {
+  id: serial("id").primaryKey(),
+  // text
+  // embedding
+});
+

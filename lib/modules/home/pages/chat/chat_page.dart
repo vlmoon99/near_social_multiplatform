@@ -18,7 +18,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 class ChatPageController {
   Future<Map<String, dynamic>> addMessage(Map<String, dynamic> message) async {
     try {
-      final response = await Supabase.instance.client.functions.invoke(
+      late FunctionResponse response;
+      response = await Supabase.instance.client.functions.invoke(
         'ai_message',
         headers: {
           "Accept": "application/json",
@@ -79,6 +80,7 @@ class _ChatPageState extends State<ChatPage> {
   @override
   void initState() {
     super.initState();
+    print(widget.chat);
     final currentUserAccountID = Modular.get<AuthController>().state.accountId;
     _user = types.User(id: currentUserAccountID);
     _setupNewMessageStream();
