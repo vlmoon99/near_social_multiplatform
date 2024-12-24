@@ -105,6 +105,20 @@ Deno.serve(async (req) => {
 
   jsonBody.message = sql`${jsonBody.message}::jsonb`;
 
+
+ const participants = existingChat['metadata']['participants'];
+
+  if(!jsonBody.delete){
+
+    jsonBody.delete = {
+      [participants[0]]: false,
+      [participants[1]]: false,
+    };
+
+  }
+
+  jsonBody.delete = sql`${jsonBody.delete}::jsonb`;
+
   console.log("jsonBody 2 {}", jsonBody);
 
 
@@ -122,12 +136,6 @@ Deno.serve(async (req) => {
     { ...corsHeaders, headers: { "Content-Type": "application/json" } },
   )
 
-  // {
-  //   'chat_id': widget.chat['id'],
-  //   'author_id': _user.id,
-  //   'message_type': 'text',
-  //   'message': {'text': textMessage.text, 'delete': participantsMap},
-  // }
 
 })
 

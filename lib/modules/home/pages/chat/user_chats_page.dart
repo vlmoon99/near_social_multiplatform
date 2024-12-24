@@ -3,14 +3,12 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:intl/intl.dart';
 import 'package:near_social_mobile/config/constants.dart';
 import 'package:near_social_mobile/config/theme.dart';
 import 'package:near_social_mobile/modules/home/pages/chat/chat_page.dart';
 import 'package:near_social_mobile/modules/vms/core/auth_controller.dart';
-import 'package:near_social_mobile/services/cryptography/internal_cryptography_service.dart';
 import 'package:rxdart/rxdart.dart';
 
 import 'package:flutter_svg/flutter_svg.dart';
@@ -431,13 +429,7 @@ class _ChatListBodyState extends State<ChatListBody> {
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-
-    final dialogWidth = screenWidth > 1200
-        ? 400.0
-        : screenWidth > 600
-            ? screenWidth * 0.3
-            : screenWidth * 0.8;
+    final dialogWidth = 500.0;
 
     return ListView.builder(
       controller: _scrollController,

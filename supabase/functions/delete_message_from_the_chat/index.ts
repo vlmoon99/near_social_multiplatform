@@ -86,17 +86,19 @@ Deno.serve(async (req) => {
   }
 
 
-  existingMessage.message.delete[existingUserSession.accountId] = true
+  existingMessage.delete[existingUserSession.accountId] = true
 
-  existingMessage.message = sql`${existingMessage.message}::jsonb`;
+  existingMessage.delete = sql`${existingMessage.delete}::jsonb`;
 
   console.log("existingMessage {}", existingMessage);
 
   const [updatedMessage] = await db
     .update(message)
-    .set({ message: existingMessage.message })
+    .set({ delete: existingMessage.delete })
     .where(eq(message.id, existingMessage.id))
     .returning();
+
+  console.log("updatedMessage {}", updatedMessage);
 
   if (!updatedMessage) {
     return new Response(
@@ -128,5 +130,5 @@ Deno.serve(async (req) => {
     --header 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0' \
     --header 'Content-Type: application/json' \
     --data '{"name":"Functions"}'
-
+    
 */

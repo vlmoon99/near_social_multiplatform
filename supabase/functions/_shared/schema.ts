@@ -21,6 +21,7 @@ export const message = pgTable("Message", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
   messageType: text("message_type").notNull(),
   message: jsonb("message").notNull(),
+  delete : jsonb("delete").notNull(),
   chatId: text("chat_id")
   .notNull()
   .references(() => user.id, { onDelete: "cascade" }),

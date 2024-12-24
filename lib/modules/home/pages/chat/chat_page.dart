@@ -186,7 +186,10 @@ class _ChatPageState extends State<ChatPage> {
       'chatId': widget.chat['id'],
       'authorId': _user.id,
       'messageType': 'text',
-      'message': {'text': textMessage.text, 'delete': participantsMap},
+      'delete': participantsMap,
+      'message': {
+        'text': textMessage.text,
+      },
     });
 
     final messageData = res['message_data'];
@@ -203,6 +206,7 @@ class _ChatPageState extends State<ChatPage> {
     final pageController = Modular.get<ChatPageController>();
 
     final res = await pageController.deleteMessage(messageId);
+    print("res $res");
     setState(() {
       _messages.removeWhere((msg) => msg.id == res['updated_message']['id']);
       newMessageSubscription?.cancel();
@@ -270,7 +274,6 @@ class _ChatPageState extends State<ChatPage> {
           if (message.author.id != currentUserAccountID) {
             return;
           }
-          // final screenWidth = 100.w;
 
           final dialogWidth = 500.0;
 
