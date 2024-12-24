@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_modular/flutter_modular.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:near_social_mobile/config/constants.dart';
@@ -63,6 +64,7 @@ class _HomePageState extends State<HomePage> {
               Modular.get<NotificationsController>().clear();
               Modular.get<FilterController>().clear();
               Modular.get<PostsController>().clear();
+              await Modular.get<FlutterSecureStorage>().deleteAll();
               Modular.to.navigate("/");
             }
           } else {

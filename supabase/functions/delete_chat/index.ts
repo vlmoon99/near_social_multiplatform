@@ -57,7 +57,6 @@ Deno.serve(async (req) => {
   const reqJsonBody = await req.json();
   const { chatId } = reqJsonBody;
 
-
   if (!chatId) {
     return new Response(
       JSON.stringify({
@@ -87,8 +86,6 @@ Deno.serve(async (req) => {
   }
 
   const accountId = existingUserSession.accountId;
-
-
   const participants = existingChat.metadata['participants']
 
   if (!participants.includes(existingUserSession.accountId)) {
@@ -116,14 +113,7 @@ Deno.serve(async (req) => {
 
 
   if (existingChat.metadata['chat_type'] == 'private') {
-    delete existingChat.metadata['pub_keys'][accountId]
-    existingChat.metadata.delete[accountId] = true;
-    
-    await db.update(message)
-      .set({ message: {'delete' : {accountId : true}} })
-      .where(and(eq(message.authorId, accountId), eq(message.chatId, existingChat.id)))
-      .where(eq(message.authorId, accountId));
-
+    console.log("existingChat.metadata['chat_type'] == 'private'");
   }
 
   console.log("existingChat.metadata {}", existingChat.metadata);

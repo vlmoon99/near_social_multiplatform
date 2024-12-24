@@ -82,6 +82,8 @@ class AuthController extends Disposable {
           .encryptionRunner
           .generateKeyPair();
 
+      print("keyPair ${keyPair.publicKey}");
+
       await secureStorage.write(
           key: "session_keys", value: jsonEncode(keyPair.toJson()));
 

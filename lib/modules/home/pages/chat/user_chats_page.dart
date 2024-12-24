@@ -36,9 +36,8 @@ class UserChatsPageController {
   }) async {
     try {
       switch (chatType) {
-        case ChatType.publicUserToUser:
-          return await _createPublicUserToUserChat(currentUserId, otherUserId);
-
+        // case ChatType.publicUserToUser:
+        //   return await _createPublicUserToUserChat(currentUserId, otherUserId);
         case ChatType.privateUserToUser:
           return await _createPrivateUserToUserChat(currentUserId, otherUserId);
 
@@ -114,42 +113,9 @@ class UserChatsPageController {
     final chatId =
         await generateChatHash(currentUserId, otherUserId, 'private');
 
-    final secureStorage = Modular.get<FlutterSecureStorage>();
-
-    var res = (await secureStorage.read(
-      key: chatId,
-    ));
-
-    var publicKey;
-
-    if (res == null) {
-      final keyPair = await Modular.get<InternalCryptographyService>()
-          .encryptionRunner
-          .generateKeyPair();
-
-      await secureStorage.write(
-          key: chatId, value: jsonEncode(keyPair.toJson()));
-
-      res = (await secureStorage.read(
-        key: chatId,
-      ));
-
-      final keys = jsonDecode(res!);
-
-      publicKey = keys['public_key'];
-    } else {
-      final keys = jsonDecode(res);
-
-      publicKey = keys['public_key'];
-    }
-
     final metadata = {
       'chat_type': 'private',
       'participants': [currentUserId, otherUserId],
-      'isSecure': true,
-      'pub_keys': {
-        currentUserId: publicKey,
-      },
     };
 
     final data = {
@@ -1116,10 +1082,10 @@ class _ChatTypeSelectionModalState extends State<ChatTypeSelectionModal> {
 //Models
 
 enum ChatType {
-  publicUserToUser(
-    label: 'Public',
-    icon: Icons.public,
-  ),
+  // publicUserToUser(
+  //   label: 'Public',
+  //   icon: Icons.public,
+  // ),
   privateUserToUser(
     label: 'Private',
     icon: Icons.lock_outline,
