@@ -6,6 +6,7 @@ import 'package:near_social_mobile/modules/home/pages/home_menu/subpages/mint_ma
 import 'package:near_social_mobile/modules/home/pages/home_menu/widgets/home_menu_list_tile.dart';
 import 'package:near_social_mobile/modules/vms/core/auth_controller.dart';
 import 'package:near_social_mobile/routes/routes.dart';
+import 'package:near_social_mobile/shared_widgets/home_menu_card.dart';
 import 'package:near_social_mobile/shared_widgets/spinner_loading_indicator.dart';
 
 class MintbaseManagerPage extends StatefulWidget {
@@ -30,6 +31,16 @@ class _MintbaseManagerPageState extends State<MintbaseManagerPage> {
         );
       }
     });
+  }
+
+  Future<void> onCollectionTap() async {
+    HapticFeedback.lightImpact();
+    Modular.to.pushNamed(".${Routes.home.mintbaseCollectionsPage}");
+  }
+
+  Future<void> onAllNftsTap() async {
+    HapticFeedback.lightImpact();
+    Modular.to.pushNamed(".${Routes.home.allMintbaseNftsPage}");
   }
 
   @override
@@ -61,31 +72,40 @@ class _MintbaseManagerPageState extends State<MintbaseManagerPage> {
             width: double.infinity,
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20).r,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  SizedBox(height: 15.h),
-                  HomeMenuListTile(
-                    tile: const Icon(Icons.dashboard_customize_sharp),
-                    title: "Collections you own",
-                    onTap: () {
-                      HapticFeedback.lightImpact();
-                      Modular.to
-                          .pushNamed(".${Routes.home.mintbaseCollectionsPage}");
-                    },
-                  ),
-                  SizedBox(height: 15.h),
-                  HomeMenuListTile(
-                    tile: const Icon(Icons.collections_rounded),
-                    title: "All NFTs",
-                    onTap: () {
-                      HapticFeedback.lightImpact();
-                      Modular.to
-                          .pushNamed(".${Routes.home.allMintbaseNftsPage}");
-                    },
-                  ),
-                ],
-              ),
+              child: MediaQuery.sizeOf(context).width < 600
+                  ? Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        SizedBox(height: 15.h),
+                        HomeMenuListTile(
+                          tile: const Icon(Icons.dashboard_customize_sharp),
+                          title: "Collections you own",
+                          onTap: onCollectionTap,
+                        ),
+                        SizedBox(height: 15.h),
+                        HomeMenuListTile(
+                          tile: const Icon(Icons.collections_rounded),
+                          title: "All NFTs",
+                          onTap: onAllNftsTap,
+                        ),
+                      ],
+                    )
+                  : Wrap(
+                      alignment: WrapAlignment.center,
+                      spacing: 20,
+                      children: [
+                        HomeMenuCard(
+                          icon: const Icon(Icons.dashboard_customize_sharp),
+                          title: "Collections you own",
+                          onTap: onCollectionTap,
+                        ),
+                        HomeMenuCard(
+                          icon: const Icon(Icons.collections_rounded),
+                          title: "All NFTs",
+                          onTap: onAllNftsTap,
+                        ),
+                      ],
+                    ),
             ),
           );
         },

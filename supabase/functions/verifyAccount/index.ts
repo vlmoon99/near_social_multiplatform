@@ -52,7 +52,7 @@ Deno.serve(async (req) => {
     const supabaseUser = data.user
 
     const body = await req.json();
-    const { signature, publicKeyStr, uuid, accountId } = body;
+    const { signature, publicKeyStr, uuid, accountId, encryptionPublicKey } = body;
 
     console.log("supabaseUser.id {}",supabaseUser.id)
     console.log("uuid {}",uuid)
@@ -84,11 +84,21 @@ Deno.serve(async (req) => {
 
 
     if (existingUser) {
-      if (existingUser.is_banned) {
+      if (existingUser.isBanned) {
         return new Response(
           JSON.stringify({ success: false, reason: "User is banned." }),
           { ...corsHeaders, headers: { "Content-Type": "application/json" } },
         );
+      } else {
+      const [updatedUser] =  await db
+        .update(user)
+        .set({
+          updatedAt: new Date(),
+          publickey : encryptionPublicKey,
+        })
+        .where(eq(user.id, existingUser.id));
+        
+      console.log("updatedUser {}",updatedUser)
       }
     } else {
       await db
@@ -97,6 +107,7 @@ Deno.serve(async (req) => {
           id: accountId,
           createdAt: new Date(),
           updatedAt: new Date(),
+          publickey : encryptionPublicKey,
           isBanned : false,
         });
     }

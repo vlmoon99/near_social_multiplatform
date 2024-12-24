@@ -1,5 +1,6 @@
 CREATE TABLE "User" (
     id TEXT PRIMARY KEY,
+    public_key TEXT NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
     is_banned BOOLEAN NOT NULL           
@@ -26,7 +27,8 @@ CREATE TABLE "Message" (
     created_at TIMESTAMP NOT NULL DEFAULT NOW(), 
     updated_at TIMESTAMP NOT NULL DEFAULT NOW(), 
     message_type TEXT NOT NULL,          
-    message JSONB NOT NULL,      
+    message JSONB NOT NULL,
+    delete JSONB NOT NULL,        
     chat_id TEXT NOT NULL,             
     FOREIGN KEY (chat_id) REFERENCES "Chat"(id) ON DELETE CASCADE,
     author_id TEXT NOT NULL,
@@ -66,7 +68,7 @@ alter table "Session" enable row level security;
 
 -- Check if the user has active session
 
-CREATE OR REPLACE FUNCTION private.has_active_session()
+CREATE OR REPLACE FUNCTION public.has_active_session()
 RETURNS boolean
 LANGUAGE plpgsql
 SECURITY DEFINER
@@ -82,40 +84,6 @@ END;
 $$;
 
 -- Check if the user has active session and he inside the chat which he want to create
-
-CREATE OR REPLACE FUNCTION public.is_user_participant_in_chat(metadata JSONB)
-RETURNS BOOLEAN
-LANGUAGE plpgsql
-SECURITY DEFINER
-AS $$
-DECLARE
-  accountId TEXT; 
-  isActiveSession BOOLEAN; 
-BEGIN
-  SELECT account_id, is_active
-  INTO accountId, isActiveSession
-  FROM "Session"
-  WHERE user_id = (SELECT auth.uid())
-  LIMIT 1;
-
-  RAISE NOTICE 'Account ID: %', accountId;
-  RAISE NOTICE 'Is Active Session: %', isActiveSession;
-
-  IF NOT FOUND OR NOT isActiveSession THEN
-    RAISE NOTICE 'No active session found or session inactive.';
-    RETURN FALSE;
-  END IF;
-
-  RAISE NOTICE 'Participants Array: %', metadata->'participants';
-
-  RETURN EXISTS (
-    SELECT 1
-    FROM jsonb_array_elements_text(metadata->'participants') AS participant
-    WHERE participant = accountId
-  );
-END;
-$$;
-
 
 
 CREATE OR REPLACE FUNCTION public.is_user_participant_in_chat(metadata JSONB)
@@ -155,6 +123,63 @@ END;
 $$;
 
 
+CREATE OR REPLACE FUNCTION public.is_user_can_see_the_message(message JSONB,deleteMap JSONB, chat_id TEXT)
+RETURNS BOOLEAN
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  accountId TEXT;
+  authorId TEXT;
+  isActiveSession BOOLEAN; 
+  isParticipant BOOLEAN;
+  chatMetadata JSONB;
+BEGIN
+  SELECT account_id, is_active
+  INTO accountId, isActiveSession
+  FROM "Session"
+  WHERE user_id = (SELECT auth.uid())
+  LIMIT 1;
+
+  IF NOT FOUND OR NOT isActiveSession THEN
+    RAISE NOTICE 'No active session found or session inactive.';
+    RETURN FALSE;
+  END IF;
+
+  SELECT metadata
+  INTO chatMetadata
+  FROM "Chat"
+  WHERE id = chat_id
+  LIMIT 1;
+
+  IF chatMetadata IS NULL THEN
+    RAISE NOTICE 'No chat by provided chat_id.';
+    RETURN FALSE;
+  END IF;
+
+  SELECT EXISTS (
+    SELECT 1
+    FROM jsonb_array_elements_text(chatMetadata->'participants') AS participant
+    WHERE participant = accountId
+  ) INTO isParticipant;
+
+
+
+  authorId := message->'author_id';
+
+  IF (
+    (deleteMap ? accountId AND deleteMap->>accountId = 'true')
+    OR authorId != accountId
+    OR isParticipant = false
+  ) THEN
+    RETURN FALSE;
+  END IF;
+
+  RETURN TRUE;
+
+END;
+$$;
+
 -- Functions END
 
 
@@ -185,6 +210,15 @@ FOR SELECT
 USING (
   public.is_user_participant_in_chat(metadata)
 );
+
+
+CREATE POLICY "Users can view chats message they participate in" 
+ON "Message"
+FOR SELECT
+USING (
+  public.is_user_can_see_the_message(message,delete,chat_id)
+);
+
 
 
 create policy "Allow listening for broadcasts for authenticated users only"

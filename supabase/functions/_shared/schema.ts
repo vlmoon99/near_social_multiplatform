@@ -2,6 +2,7 @@ import { pgTable, serial, text, timestamp, jsonb, boolean,  } from "drizzle-orm/
 
 export const user = pgTable("User", {
   id: text("id").primaryKey(),
+  publickey: text("public_key").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
   isBanned : boolean("is_banned").notNull(),
@@ -20,6 +21,7 @@ export const message = pgTable("Message", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
   messageType: text("message_type").notNull(),
   message: jsonb("message").notNull(),
+  delete : jsonb("delete").notNull(),
   chatId: text("chat_id")
   .notNull()
   .references(() => user.id, { onDelete: "cascade" }),

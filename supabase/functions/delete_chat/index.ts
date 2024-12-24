@@ -1,9 +1,9 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts"
 
-import { user, session, chat } from "../_shared/schema.ts";
+import { user, session, chat, message } from "../_shared/schema.ts";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
-import { eq, sql } from "drizzle-orm";
+import { eq, sql, and } from "drizzle-orm";
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 
 const connectionString = Deno.env.get("SUPABASE_DB_URL")!;
@@ -57,7 +57,6 @@ Deno.serve(async (req) => {
   const reqJsonBody = await req.json();
   const { chatId } = reqJsonBody;
 
-
   if (!chatId) {
     return new Response(
       JSON.stringify({
@@ -87,8 +86,6 @@ Deno.serve(async (req) => {
   }
 
   const accountId = existingUserSession.accountId;
-
-
   const participants = existingChat.metadata['participants']
 
   if (!participants.includes(existingUserSession.accountId)) {
@@ -105,7 +102,7 @@ Deno.serve(async (req) => {
   }
   console.log("Pass all cheks");
 
-  if(!existingChat.metadata.delete) {
+  if (!existingChat.metadata.delete) {
     existingChat.metadata.delete = {
       [participants[0]]: false,
       [participants[1]]: false,
@@ -114,8 +111,14 @@ Deno.serve(async (req) => {
 
   existingChat.metadata.delete[accountId] = true;
 
-  console.log("existingChat.metadata {}",existingChat.metadata);
 
+  if (existingChat.metadata['chat_type'] == 'private') {
+    console.log("existingChat.metadata['chat_type'] == 'private'");
+  }
+
+  console.log("existingChat.metadata {}", existingChat.metadata);
+
+  
   existingChat.metadata = sql`${existingChat.metadata}::jsonb`;
 
   const [updatedChat] = await db
@@ -134,6 +137,22 @@ Deno.serve(async (req) => {
     );
   }
 
+
+  const updatedDelete = {
+    [participants[0]]: true,
+    [participants[1]]: true,
+  };
+
+  // updatedDelete[existingUserSession.accountId] = true
+  
+  await db
+    .update(message)
+    .set({
+      delete: sql`${updatedDelete}::jsonb`,
+    })
+    // .where(and(eq(message.authorId, existingUserSession.accountId),eq(message.chatId, updatedChat.id)))
+    .where(eq(message.chatId, updatedChat.id))
+    .returning();
 
   return new Response(
     JSON.stringify({

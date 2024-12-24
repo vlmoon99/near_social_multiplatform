@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:near_social_mobile/modules/core_module.dart';
+import 'package:near_social_mobile/modules/home/pages/chat/chat_page.dart';
 import 'package:near_social_mobile/modules/home/pages/chat/user_chats_page.dart';
 import 'package:near_social_mobile/modules/home/pages/home_menu/home_menu_page.dart';
 import 'package:near_social_mobile/modules/home/pages/home_menu/subpages/mint_manager/mintbase_module.dart';
@@ -41,6 +42,7 @@ class HomeModule extends Module {
     i.addSingleton(FilterController.new);
     i.addSingleton(MintbaseController.new);
     i.addSingleton(UserChatsPageController.new);
+    i.addSingleton(ChatPageController.new);
   }
 
   @override
