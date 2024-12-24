@@ -142,72 +142,76 @@
       }
 
       function displayFiles() {
-        fileList.innerHTML = '';
-        files.forEach((file) => {
-          const listItem = document.createElement('li');
-          const fileInfo = document.createElement('span');
-          fileInfo.textContent = `File: ${file.fileName}, Hash: ${file.fileHash}, Duration: ${file.duration.toFixed(2)} seconds `;
-          listItem.appendChild(fileInfo);
+  fileList.innerHTML = '';
+  files.forEach((file) => {
+    const listItem = document.createElement('li');
+    const fileInfo = document.createElement('span');
 
-          // Play button
-          const playButton = document.createElement('button');
-          playButton.textContent = 'Play';
-          playButton.addEventListener('click', () => {
-            const mediaURL = URL.createObjectURL(file.blob);
-            if (file.fileName.startsWith('audio')) {
-              const audio = new Audio(mediaURL);
-              audio.play();
-            } else {
-              const video = document.createElement('video');
-              video.src = mediaURL;
-              video.controls = true;
-              video.style.maxWidth = '300px';
-              document.body.appendChild(video);
-              video.play();
-            }
-          });
-          listItem.appendChild(playButton);
+    // Calculate file size in MB
+    const fileSizeInMB = (file.blob.size / (1024 * 1024)).toFixed(2);
+    fileInfo.textContent = `File: ${file.fileName}, Hash: ${file.fileHash}, Duration: ${file.duration.toFixed(2)} seconds, Size: ${fileSizeInMB} MB`;
 
-          // View Numbers button
-          const viewNumbersButton = document.createElement('button');
-          viewNumbersButton.textContent = 'View Numbers';
-          viewNumbersButton.addEventListener('click', () => {
-            console.log(`Numeric Data for ${file.fileName}:`, file.numericData);
-          });
-          listItem.appendChild(viewNumbersButton);
+    listItem.appendChild(fileInfo);
 
-          // Convert Blob to Numbers button
-          const blobToNumbersButton = document.createElement('button');
-          blobToNumbersButton.textContent = 'Convert Blob to Numbers';
-          blobToNumbersButton.addEventListener('click', async () => {
-            const numericData = await blobToNumbers(file.blob);
-            console.log(`Blob to Numbers for ${file.fileName}:`, numericData);
-          });
-          listItem.appendChild(blobToNumbersButton);
-
-          // Reconstruct and Play From Numbers button
-          const reconstructPlayButton = document.createElement('button');
-          reconstructPlayButton.textContent = 'Play From Numbers';
-          reconstructPlayButton.addEventListener('click', () => {
-            const reconstructedBlob = numbersToBlob(file.numericData);
-            const mediaURL = URL.createObjectURL(reconstructedBlob);
-            if (file.fileName.startsWith('audio')) {
-              const audio = new Audio(mediaURL);
-              audio.play();
-            } else {
-              const video = document.createElement('video');
-              video.src = mediaURL;
-              video.controls = true;
-              video.style.maxWidth = '300px';
-              document.body.appendChild(video);
-              video.play();
-            }
-          });
-          listItem.appendChild(reconstructPlayButton);
-
-          fileList.appendChild(listItem);
-        });
+    // Play button
+    const playButton = document.createElement('button');
+    playButton.textContent = 'Play';
+    playButton.addEventListener('click', () => {
+      const mediaURL = URL.createObjectURL(file.blob);
+      if (file.fileName.startsWith('audio')) {
+        const audio = new Audio(mediaURL);
+        audio.play();
+      } else {
+        const video = document.createElement('video');
+        video.src = mediaURL;
+        video.controls = true;
+        video.style.maxWidth = '300px';
+        document.body.appendChild(video);
+        video.play();
       }
+    });
+    listItem.appendChild(playButton);
+
+    // View Numbers button
+    const viewNumbersButton = document.createElement('button');
+    viewNumbersButton.textContent = 'View Numbers';
+    viewNumbersButton.addEventListener('click', () => {
+      console.log(`Numeric Data for ${file.fileName}:`, file.numericData);
+    });
+    listItem.appendChild(viewNumbersButton);
+
+    // Convert Blob to Numbers button
+    const blobToNumbersButton = document.createElement('button');
+    blobToNumbersButton.textContent = 'Convert Blob to Numbers';
+    blobToNumbersButton.addEventListener('click', async () => {
+      const numericData = await blobToNumbers(file.blob);
+      console.log(`Blob to Numbers for ${file.fileName}:`, numericData);
+    });
+    listItem.appendChild(blobToNumbersButton);
+
+    // Reconstruct and Play From Numbers button
+    const reconstructPlayButton = document.createElement('button');
+    reconstructPlayButton.textContent = 'Play From Numbers';
+    reconstructPlayButton.addEventListener('click', () => {
+      const reconstructedBlob = numbersToBlob(file.numericData);
+      const mediaURL = URL.createObjectURL(reconstructedBlob);
+      if (file.fileName.startsWith('audio')) {
+        const audio = new Audio(mediaURL);
+        audio.play();
+      } else {
+        const video = document.createElement('video');
+        video.src = mediaURL;
+        video.controls = true;
+        video.style.maxWidth = '300px';
+        document.body.appendChild(video);
+        video.play();
+      }
+    });
+    listItem.appendChild(reconstructPlayButton);
+
+    fileList.appendChild(listItem);
+  });
+}
     });
   </script>
 
