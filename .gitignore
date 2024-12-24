@@ -49,3 +49,7 @@ cryptography_project/target/
 local_gateway/node_modules/
 
 node_modules/
+
+to_ai_embedding/__pycache__
+
+to_ai_embedding/venv

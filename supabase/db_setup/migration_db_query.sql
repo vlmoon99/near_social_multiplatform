@@ -33,6 +33,12 @@ CREATE TABLE "Message" (
     FOREIGN KEY (author_id) REFERENCES "User"(id) ON DELETE CASCADE
 );
 
+create table "Embedding" (
+  id INT8 serial primary key,
+  text TEXT NOT NULL,
+  embedding vector(384)
+);
+
 -- Indexes
 
 CREATE INDEX idx_chat_metadata_delete ON "Chat" USING GIN ((metadata->'delete'));
@@ -243,3 +249,29 @@ using (
 
 
 -- Policies End
+
+--Postgres Func 
+
+create or replace function match_documents (
+  query_embedding vector(384),
+  match_threshold float,
+  match_count int
+)
+returns table (
+  id bigint,
+  title text,
+  body text,
+  similarity float
+)
+language sql stable
+as $$
+  select
+    Embedding.id,
+    Embedding.title,
+    Embedding.body,
+    1 - (documents.embedding <=> query_embedding) as similarity
+  from documents
+  where 1 - (documents.embedding <=> query_embedding) > match_threshold
+  order by (documents.embedding <=> query_embedding) asc
+  limit match_count;
+$$;
