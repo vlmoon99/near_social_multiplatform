@@ -86,69 +86,10 @@ class _ChatPageState extends State<ChatPage> {
     final currentUserAccountID = Modular.get<AuthController>().state.accountId;
     _user = types.User(id: currentUserAccountID);
     _setupNewMessageStream();
-    _setupChatStream();
     _scrollController.addListener(_onScroll);
   }
 
-  void _setupChatStream() async {
-    chatSubscription = Supabase.instance.client
-        .from('Chat')
-        .stream(primaryKey: ['id'])
-        .eq('id', widget.chat['id'].toString())
-        .listen((data) {
-          widget.chat['metadata'] = data[0]['metadata'];
-        });
-  }
-
   Future<void> _setupNewMessageStream() async {
-    final currentUserAccountID = Modular.get<AuthController>().state.accountId;
-
-    final pubKeys = widget.chat['metadata']['pub_keys'] as Map<String, dynamic>;
-
-    if (pubKeys[currentUserAccountID] == null) {
-      final secureStorage = Modular.get<FlutterSecureStorage>();
-
-      var res = (await secureStorage.read(
-        key: widget.chat['id'],
-      ));
-
-      if (res == null) {
-        final keyPair = await Modular.get<InternalCryptographyService>()
-            .encryptionRunner
-            .generateKeyPair();
-
-        await secureStorage.write(
-            key: widget.chat['id'], value: jsonEncode(keyPair.toJson()));
-        res = (await secureStorage.read(
-          key: widget.chat['id'],
-        ));
-      }
-
-      final keys = jsonDecode(res!);
-
-      final publicKey = keys['public_key'];
-
-      pubKeys.putIfAbsent(currentUserAccountID, () => publicKey);
-
-      widget.chat['metadata']['pub_keys'] = pubKeys;
-      try {
-        final response = await Supabase.instance.client.functions.invoke(
-          'chat_creation',
-          headers: {
-            "Accept": "application/json",
-            "Access-Control-Allow-Origin": "*",
-          },
-          body: widget.chat,
-        );
-
-        print("response.data ${response.data}");
-
-        return response.data;
-      } catch (e) {
-        print('Unexpected error: $e');
-      }
-    }
-
     newMessageSubscription = Supabase.instance.client
         .from('Message')
         .stream(primaryKey: ['id'])
@@ -279,13 +220,13 @@ class _ChatPageState extends State<ChatPage> {
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
+    // final screenWidth = MediaQuery.of(context).size.width;
 
-    final dialogWidth = screenWidth > 1200
-        ? 400.0
-        : screenWidth > 600
-            ? screenWidth * 0.3
-            : screenWidth * 0.8;
+    // final dialogWidth = screenWidth > 1200
+    //     ? 400.0
+    //     : screenWidth > 600
+    //         ? screenWidth * 0.3
+    //         : screenWidth * 0.8;
 
     return Scaffold(
       appBar: AppBar(
@@ -329,6 +270,9 @@ class _ChatPageState extends State<ChatPage> {
           if (message.author.id != currentUserAccountID) {
             return;
           }
+          // final screenWidth = 100.w;
+
+          final dialogWidth = 500.0;
 
           showDialog(
             context: context,
@@ -454,70 +398,7 @@ class _ChatPageState extends State<ChatPage> {
         onPreviewDataFetched: (text, preview) {
           print('_handlePreviewDataFetched');
         },
-        onSendPressed: (text) async {
-          final screenWidth = MediaQuery.of(context).size.width;
-
-          final dialogWidth = screenWidth > 1200
-              ? 400.0
-              : screenWidth > 600
-                  ? screenWidth * 0.3
-                  : screenWidth * 0.8;
-          print(widget.chat);
-          final pubKeys =
-              widget.chat['metadata']['pub_keys'] as Map<String, dynamic>;
-          if (pubKeys.length < 2) {
-            showDialog(
-              context: context,
-              builder: (BuildContext context) {
-                return Dialog(
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12.r),
-                  ),
-                  child: Container(
-                    constraints: BoxConstraints(
-                      maxWidth: dialogWidth,
-                      minWidth: 280.0,
-                    ),
-                    padding: EdgeInsets.symmetric(
-                      horizontal: 20.w,
-                      vertical: 24.h,
-                    ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.error,
-                          size: 32.r,
-                          color: NEARColors.red,
-                        ),
-                        SizedBox(height: 16.h),
-                        Text(
-                          'Error',
-                          style:
-                              Theme.of(context).textTheme.titleLarge?.copyWith(
-                                    color: NEARColors.black,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                        ),
-                        SizedBox(height: 12.h),
-                        Text(
-                          'Another user in Chat must add his public key',
-                          style:
-                              Theme.of(context).textTheme.bodyLarge?.copyWith(
-                                    color: NEARColors.black,
-                                  ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            );
-            return;
-          }
-          _handleSendPressed(text);
-        },
+        onSendPressed: _handleSendPressed,
         showUserAvatars: true,
         showUserNames: true,
         user: _user,

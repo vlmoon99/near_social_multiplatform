@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:near_social_mobile/modules/home/pages/chat/user_chats_page.dart';
 import 'package:near_social_mobile/modules/home/vms/notifications/notifications_controller.dart';
 import 'package:near_social_mobile/modules/home/vms/posts/posts_controller.dart';
@@ -57,6 +58,7 @@ class _HomePageState extends State<HomePage> {
               Modular.get<NotificationsController>().clear();
               Modular.get<FilterController>().clear();
               Modular.get<PostsController>().clear();
+              await Modular.get<FlutterSecureStorage>().deleteAll();
               Modular.to.navigate("/");
             }
           } else {
