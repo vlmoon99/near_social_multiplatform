@@ -90,12 +90,15 @@ Deno.serve(async (req) => {
           { ...corsHeaders, headers: { "Content-Type": "application/json" } },
         );
       } else {
-        await db
+      const [updatedUser] =  await db
         .update(user)
         .set({
-          publicKey : encryptionPublicKey,
+          updatedAt: new Date(),
+          publickey : encryptionPublicKey,
         })
-        .where(eq(user.id, accountId));
+        .where(eq(user.id, existingUser.id));
+        
+      console.log("updatedUser {}",updatedUser)
       }
     } else {
       await db
@@ -104,7 +107,7 @@ Deno.serve(async (req) => {
           id: accountId,
           createdAt: new Date(),
           updatedAt: new Date(),
-          publicKey : encryptionPublicKey,
+          publickey : encryptionPublicKey,
           isBanned : false,
         });
     }
