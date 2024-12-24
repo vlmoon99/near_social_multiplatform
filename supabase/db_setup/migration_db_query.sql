@@ -1,5 +1,6 @@
 CREATE TABLE "User" (
     id TEXT PRIMARY KEY,
+    public_key TEXT NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
     is_banned BOOLEAN NOT NULL           
