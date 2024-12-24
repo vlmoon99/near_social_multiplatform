@@ -16,15 +16,15 @@ import 'config/setup.dart';
 
 void main() async {
   await Supabase.initialize(
-    url: 'https://a058-178-54-185-162.ngrok-free.app',
+    url: 'https://b1e7-178-54-185-162.ngrok-free.app/',
     anonKey:
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0',
-    authOptions:
-        const FlutterAuthClientOptions(authFlowType: AuthFlowType.implicit),
-    storageOptions: const StorageClientOptions(retryAttempts: 10),
-    realtimeClientOptions: const RealtimeClientOptions(
-      logLevel: RealtimeLogLevel.info,
-    ),
+    // authOptions:
+    //     const FlutterAuthClientOptions(authFlowType: AuthFlowType.implicit),
+    // storageOptions: const StorageClientOptions(retryAttempts: 10),
+    // realtimeClientOptions: const RealtimeClientOptions(
+    //   logLevel: RealtimeLogLevel.info,
+    // ),
   );
 
   WidgetsFlutterBinding.ensureInitialized();
