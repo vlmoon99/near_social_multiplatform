@@ -8,21 +8,18 @@ class EncryptionWebviewJSRunner extends EncryptionRunner {
 
   @override
   Future<String> encryptMessage(
-    String publicKeyPem,
-    String message,
+    String dataFromDart,
   ) async {
-    final rawFunction = "window.encrypt_message('$publicKeyPem', '$message')";
+    final rawFunction = "window.encrypt_message('$dataFromDart')";
     final res = await jsVMService.callJS(rawFunction);
     return res.toString();
   }
 
   @override
   Future<String> decryptMessage(
-    String privateKeyPem,
-    String encryptedMessageBase64,
+    String dataFromDart,
   ) async {
-    final rawFunction =
-        "window.decrypt_message('$privateKeyPem', '$encryptedMessageBase64')";
+    final rawFunction = "window.decrypt_message('$dataFromDart')";
     final res = await jsVMService.callJS(rawFunction);
     return res.toString();
   }

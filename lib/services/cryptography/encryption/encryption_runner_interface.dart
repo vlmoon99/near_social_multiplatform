@@ -1,9 +1,8 @@
 abstract class EncryptionRunner {
   Future<String> signMessageForVerification(String privateKey);
   Future<String> fromSecretToNearAPIJSPublicKey(String secretKey);
-  Future<String> encryptMessage(String publicKeyPem, String message);
-  Future<String> decryptMessage(
-      String privateKeyPem, String encryptedMessageBase64);
+  Future<String> encryptMessage(String dataFromDart);
+  Future<String> decryptMessage(String dataFromDart);
   Future<KeyPair> generateKeyPair();
 }
 

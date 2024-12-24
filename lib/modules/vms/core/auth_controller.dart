@@ -10,6 +10,7 @@ import 'package:flutterchain/flutterchain_lib/services/chains/near_blockchain_se
 import 'package:near_social_mobile/config/constants.dart';
 import 'package:near_social_mobile/modules/home/apis/models/private_key_info.dart';
 import 'package:near_social_mobile/services/crypto_storage_service.dart';
+import 'package:near_social_mobile/services/cryptography/encryption/encryption_runner_interface.dart';
 import 'package:near_social_mobile/services/cryptography/internal_cryptography_service.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -77,15 +78,22 @@ class AuthController extends Disposable {
 
       final uuid = Supabase.instance.client.auth.currentUser!.id;
       final secureStorage = Modular.get<FlutterSecureStorage>();
+      var keyPair;
+      final keys = await secureStorage.read(key: "session_keys");
+      if (keys == null) {
+        keyPair = await Modular.get<InternalCryptographyService>()
+            .encryptionRunner
+            .generateKeyPair();
 
-      final keyPair = await Modular.get<InternalCryptographyService>()
-          .encryptionRunner
-          .generateKeyPair();
-
-      print("keyPair ${keyPair.publicKey}");
-
-      await secureStorage.write(
-          key: "session_keys", value: jsonEncode(keyPair.toJson()));
+        await secureStorage.write(
+            key: "session_keys", value: jsonEncode(keyPair.toJson()));
+      } else {
+        keyPair = KeyPair.fromJson(
+            jsonDecode(await Modular.get<FlutterSecureStorage>().read(
+                  key: "session_keys",
+                ) ??
+                '{}'));
+      }
 
       final res = await verifyTransaction(
         signature: signedMessagedForVerification,

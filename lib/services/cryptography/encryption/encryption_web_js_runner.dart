@@ -7,15 +7,14 @@ EncryptionRunner getEncryptionRunner() => WebEncryptionRunner();
 
 class WebEncryptionRunner implements EncryptionRunner {
   @override
-  Future<String> encryptMessage(String publicKeyPem, String message) {
-    return Future.value(_encryptMessage(publicKeyPem.toJS, message.toJS));
+  Future<String> encryptMessage(String dataFromDart) {
+    return Future.value(_encryptMessage(dataFromDart.toJS));
   }
 
   @override
-  Future<String> decryptMessage(
-      String privateKeyPem, String encryptedMessageBase64) {
-    return Future.value(
-        _decryptMessage(privateKeyPem.toJS, encryptedMessageBase64.toJS));
+  Future<String> decryptMessage(String dataFromDart) async {
+    final res = _decryptMessage(dataFromDart.toJS).toDart;
+    return res;
   }
 
   @override
@@ -52,8 +51,7 @@ external JSString _signMessageForVerification(JSString privateKey);
 external String _generateKeyPair();
 
 @JS('window.encrypt_message')
-external String _encryptMessage(JSString publicKeyPem, JSString message);
+external String _encryptMessage(JSString dataFromDart);
 
 @JS('window.decrypt_message')
-external String _decryptMessage(
-    JSString privateKeyPem, JSString encryptedMessageBase64);
+external JSString _decryptMessage(JSString dataFromDart);
