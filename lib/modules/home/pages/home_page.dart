@@ -3,9 +3,15 @@ import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:flutter_svg/svg.dart';
+import 'package:near_social_mobile/config/constants.dart';
+import 'package:near_social_mobile/config/theme.dart';
 import 'package:near_social_mobile/modules/home/pages/chat/user_chats_page.dart';
+import 'package:near_social_mobile/modules/home/pages/home_menu/home_menu_page.dart';
 import 'package:near_social_mobile/modules/home/vms/notifications/notifications_controller.dart';
 import 'package:near_social_mobile/modules/home/vms/posts/posts_controller.dart';
 import 'package:near_social_mobile/modules/vms/core/auth_controller.dart';
@@ -107,11 +113,12 @@ class _HomePageState extends State<HomePage> {
           // appBar: AppBar(
           //   title: SvgPicture.asset(NearAssets.logoIcon),
           //   centerTitle: true,
+          //   automaticallyImplyLeading: false,
+          //   actions: [Container()],
           // ),
-
+          // body: RouterOutlet(),
           body: UserChatsPage(),
-
-          // bottomNavigationBar: NavigationListener(builder: (_, __) {
+          // bottomNavigationBar: NavigationListener(builder: (context, __) {
           //   return BottomNavigationBar(
           //     backgroundColor: NEARColors.black,
           //     selectedItemColor: Theme.of(context).primaryColor,
@@ -158,8 +165,14 @@ class _HomePageState extends State<HomePage> {
           //           Modular.to.navigate(".${Routes.home.notificationsPage}");
           //           break;
           //         case 4:
-          //           Modular.to.navigate(".${Routes.home.homeMenu}");
-          //           break;
+          //           {
+          //             if (MediaQuery.sizeOf(context).width < 600) {
+          //               Modular.to.navigate(".${Routes.home.homeMenu}");
+          //             } else {
+          //               Scaffold.of(context).openEndDrawer();
+          //             }
+          //             break;
+          //           }
           //         default:
           //           Modular.to.navigate(".${Routes.home.postsFeed}");
           //           break;
@@ -167,6 +180,10 @@ class _HomePageState extends State<HomePage> {
           //     },
           //   );
           // }),
+          // endDrawer: Drawer(
+          //   width: .5.sw,
+          //   child: HomeMenuPage(),
+          // ),
         );
       },
     );
