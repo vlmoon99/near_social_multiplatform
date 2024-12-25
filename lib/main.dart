@@ -10,6 +10,7 @@ import 'package:near_social_mobile/assets/localizations/localizations_strings.da
 import 'package:near_social_mobile/config/theme.dart';
 import 'package:near_social_mobile/exceptions/exceptions.dart';
 import 'package:near_social_mobile/modules/app_module.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'config/setup.dart';

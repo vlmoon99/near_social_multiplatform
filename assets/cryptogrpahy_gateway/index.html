@@ -5,9 +5,15 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Crpytography Gateway</title>
+  <link rel="icon" href="data:," />
+  <link rel="manifest" href="/manifest.json">
 </head>
 
 <body>
+  <h1>Push Notification Demo</h1>
+  <button id="subscribe">Subscribe</button>
+  <button id="unsubscribe">Unsubscribe</button>
+
   <button id="recordAudioButton">Start Audio Recording</button>
   <button id="recordVideoButton">Start Video Recording</button>
   <ul id="fileList"></ul>
@@ -17,6 +23,117 @@
 
 
   <script>
+
+    function urlBase64ToUint8Array(base64String) {
+      var padding = '='.repeat((4 - base64String.length % 4) % 4);
+      var base64 = (base64String + padding)
+        .replace(/\-/g, '+')
+        .replace(/_/g, '/');
+
+      var rawData = window.atob(base64);
+      var outputArray = new Uint8Array(rawData.length);
+
+      for (var i = 0; i < rawData.length; ++i) {
+        outputArray[i] = rawData.charCodeAt(i);
+      }
+      return outputArray;
+    }
+
+    // Check if Push Notifications and Notification API are supported
+    if ('Notification' in window && 'serviceWorker' in navigator) {
+      // Request permission for push notifications
+      Notification.requestPermission().then(permission => {
+        if (permission === 'granted') {
+          console.log('Notification permission granted.');
+          // You can now proceed to subscribe the user to push notifications
+        } else {
+          console.log('Notification permission denied.');
+        }
+      }).catch(err => {
+        console.error('Error requesting notification permission:', err);
+      });
+    } else {
+      console.warn('Push Notifications are not supported in this browser.');
+    }
+    // Check if Service Worker and Push Manager are supported
+    if ('serviceWorker' in navigator && 'PushManager' in window) {
+      console.log('Service Worker and Push Manager are supported.');
+
+      // Register the Service Worker
+      navigator.serviceWorker.register('push-notification-service-worker.js')
+        .then(registration => {
+          console.log('Service Worker registered with scope:', registration.scope);
+        })
+        .catch(error => {
+          console.error('Service Worker registration failed:', error);
+        });
+    } else {
+      console.warn('Push notifications are not supported in this browser.');
+    }
+
+    // Subscribe to Push Notifications
+    document.getElementById('subscribe').addEventListener('click', async () => {
+      try {
+        const registration = await navigator.serviceWorker.ready;
+
+        // Fetch the VAPID public key from the server
+        const vapidPublicKey = await fetch('https://rich-ravens-wish.loca.lt/vapidPublicKey').then(response => response.text());
+        console.log('VAPID Public Key:', vapidPublicKey);
+
+        // Convert the VAPID public key to a Uint8Array
+        const convertedVapidKey = urlBase64ToUint8Array(vapidPublicKey);
+
+        // Subscribe to push notifications
+        const subscription = await registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: convertedVapidKey
+        });
+
+        console.log('User is subscribed:', subscription);
+
+        // Send the subscription to the server
+        await fetch('https://rich-ravens-wish.loca.lt/register', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ subscription }),
+        });
+
+        console.log('Subscription sent to server.');
+      } catch (error) {
+        console.error('Failed to subscribe the user:', error);
+      }
+    });
+
+    // Unsubscribe from Push Notifications
+    document.getElementById('unsubscribe').addEventListener('click', async () => {
+      try {
+        const registration = await navigator.serviceWorker.ready;
+        const subscription = await registration.pushManager.getSubscription();
+
+        if (subscription) {
+          await subscription.unsubscribe();
+          console.log('User is unsubscribed.');
+
+          // Optionally notify the server
+          await fetch('https://rich-ravens-wish.loca.lt/unregister', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ subscription }),
+          });
+
+          console.log('Unsubscription sent to server.');
+        } else {
+          console.warn('No subscription to unsubscribe.');
+        }
+      } catch (error) {
+        console.error('Failed to unsubscribe the user:', error);
+      }
+    });
+
     document.addEventListener('DOMContentLoaded', () => {
       let isAudioRecording = false;
       let isVideoRecording = false;
@@ -142,76 +259,76 @@
       }
 
       function displayFiles() {
-  fileList.innerHTML = '';
-  files.forEach((file) => {
-    const listItem = document.createElement('li');
-    const fileInfo = document.createElement('span');
+        fileList.innerHTML = '';
+        files.forEach((file) => {
+          const listItem = document.createElement('li');
+          const fileInfo = document.createElement('span');
 
-    // Calculate file size in MB
-    const fileSizeInMB = (file.blob.size / (1024 * 1024)).toFixed(2);
-    fileInfo.textContent = `File: ${file.fileName}, Hash: ${file.fileHash}, Duration: ${file.duration.toFixed(2)} seconds, Size: ${fileSizeInMB} MB`;
+          // Calculate file size in MB
+          const fileSizeInMB = (file.blob.size / (1024 * 1024)).toFixed(2);
+          fileInfo.textContent = `File: ${file.fileName}, Hash: ${file.fileHash}, Duration: ${file.duration.toFixed(2)} seconds, Size: ${fileSizeInMB} MB`;
 
-    listItem.appendChild(fileInfo);
+          listItem.appendChild(fileInfo);
 
-    // Play button
-    const playButton = document.createElement('button');
-    playButton.textContent = 'Play';
-    playButton.addEventListener('click', () => {
-      const mediaURL = URL.createObjectURL(file.blob);
-      if (file.fileName.startsWith('audio')) {
-        const audio = new Audio(mediaURL);
-        audio.play();
-      } else {
-        const video = document.createElement('video');
-        video.src = mediaURL;
-        video.controls = true;
-        video.style.maxWidth = '300px';
-        document.body.appendChild(video);
-        video.play();
+          // Play button
+          const playButton = document.createElement('button');
+          playButton.textContent = 'Play';
+          playButton.addEventListener('click', () => {
+            const mediaURL = URL.createObjectURL(file.blob);
+            if (file.fileName.startsWith('audio')) {
+              const audio = new Audio(mediaURL);
+              audio.play();
+            } else {
+              const video = document.createElement('video');
+              video.src = mediaURL;
+              video.controls = true;
+              video.style.maxWidth = '300px';
+              document.body.appendChild(video);
+              video.play();
+            }
+          });
+          listItem.appendChild(playButton);
+
+          // View Numbers button
+          const viewNumbersButton = document.createElement('button');
+          viewNumbersButton.textContent = 'View Numbers';
+          viewNumbersButton.addEventListener('click', () => {
+            console.log(`Numeric Data for ${file.fileName}:`, file.numericData);
+          });
+          listItem.appendChild(viewNumbersButton);
+
+          // Convert Blob to Numbers button
+          const blobToNumbersButton = document.createElement('button');
+          blobToNumbersButton.textContent = 'Convert Blob to Numbers';
+          blobToNumbersButton.addEventListener('click', async () => {
+            const numericData = await blobToNumbers(file.blob);
+            console.log(`Blob to Numbers for ${file.fileName}:`, numericData);
+          });
+          listItem.appendChild(blobToNumbersButton);
+
+          // Reconstruct and Play From Numbers button
+          const reconstructPlayButton = document.createElement('button');
+          reconstructPlayButton.textContent = 'Play From Numbers';
+          reconstructPlayButton.addEventListener('click', () => {
+            const reconstructedBlob = numbersToBlob(file.numericData);
+            const mediaURL = URL.createObjectURL(reconstructedBlob);
+            if (file.fileName.startsWith('audio')) {
+              const audio = new Audio(mediaURL);
+              audio.play();
+            } else {
+              const video = document.createElement('video');
+              video.src = mediaURL;
+              video.controls = true;
+              video.style.maxWidth = '300px';
+              document.body.appendChild(video);
+              video.play();
+            }
+          });
+          listItem.appendChild(reconstructPlayButton);
+
+          fileList.appendChild(listItem);
+        });
       }
-    });
-    listItem.appendChild(playButton);
-
-    // View Numbers button
-    const viewNumbersButton = document.createElement('button');
-    viewNumbersButton.textContent = 'View Numbers';
-    viewNumbersButton.addEventListener('click', () => {
-      console.log(`Numeric Data for ${file.fileName}:`, file.numericData);
-    });
-    listItem.appendChild(viewNumbersButton);
-
-    // Convert Blob to Numbers button
-    const blobToNumbersButton = document.createElement('button');
-    blobToNumbersButton.textContent = 'Convert Blob to Numbers';
-    blobToNumbersButton.addEventListener('click', async () => {
-      const numericData = await blobToNumbers(file.blob);
-      console.log(`Blob to Numbers for ${file.fileName}:`, numericData);
-    });
-    listItem.appendChild(blobToNumbersButton);
-
-    // Reconstruct and Play From Numbers button
-    const reconstructPlayButton = document.createElement('button');
-    reconstructPlayButton.textContent = 'Play From Numbers';
-    reconstructPlayButton.addEventListener('click', () => {
-      const reconstructedBlob = numbersToBlob(file.numericData);
-      const mediaURL = URL.createObjectURL(reconstructedBlob);
-      if (file.fileName.startsWith('audio')) {
-        const audio = new Audio(mediaURL);
-        audio.play();
-      } else {
-        const video = document.createElement('video');
-        video.src = mediaURL;
-        video.controls = true;
-        video.style.maxWidth = '300px';
-        document.body.appendChild(video);
-        video.play();
-      }
-    });
-    listItem.appendChild(reconstructPlayButton);
-
-    fileList.appendChild(listItem);
-  });
-}
     });
   </script>
 

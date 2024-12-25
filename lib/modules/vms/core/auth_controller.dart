@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:near_social_mobile/modules/home/apis/near_social.dart';
 // import 'package:cloud_functions/cloud_functions.dart';
 
@@ -12,6 +13,7 @@ import 'package:near_social_mobile/modules/home/apis/models/private_key_info.dar
 import 'package:near_social_mobile/services/crypto_storage_service.dart';
 import 'package:near_social_mobile/services/cryptography/encryption/encryption_runner_interface.dart';
 import 'package:near_social_mobile/services/cryptography/internal_cryptography_service.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -159,6 +161,13 @@ class AuthController extends Disposable {
       //     );
       // print("Test 1 decryptedMessage1 $decryptedMessage1");
 
+      if (kIsWeb) {
+        await Permission.notification.onDeniedCallback(() {
+          print("onDeniedCallback");
+        }).onGrantedCallback(() {
+          print("onGrantedCallback");
+        }).request();
+      }
       _streamController.add(state.copyWith(
         accountId: accountId,
         publicKey: publicKey,
