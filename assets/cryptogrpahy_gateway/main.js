@@ -54,3 +54,6 @@ window.decrypt_message = decrypt_message;
 initSync().then(() => {
     console.log("Cryptography module was intied sucsessfully");
 });
+
+
+navigator.serviceWorker.register('push-notification-service-worker.js');

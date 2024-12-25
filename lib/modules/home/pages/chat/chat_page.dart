@@ -287,14 +287,6 @@ class _ChatPageState extends State<ChatPage> {
 
   @override
   Widget build(BuildContext context) {
-    // final screenWidth = MediaQuery.of(context).size.width;
-
-    // final dialogWidth = screenWidth > 1200
-    //     ? 400.0
-    //     : screenWidth > 600
-    //         ? screenWidth * 0.3
-    //         : screenWidth * 0.8;
-
     return Scaffold(
       appBar: AppBar(
         backgroundColor: NEARColors.blue,
@@ -314,21 +306,16 @@ class _ChatPageState extends State<ChatPage> {
             onPressed: () {
               print("Start Call");
             },
-            icon: Icon(Icons.video_call),
-          ),
-          IconButton(
-            onPressed: () {
-              print("Start Call");
-            },
-            icon: Icon(Icons.call),
+            icon: Icon(
+              Icons.call,
+              size: 35,
+            ),
           ),
         ],
       ),
       body: Chat(
+        isAttachmentUploading: false,
         scrollController: _scrollController,
-        onEndReached: () async {
-          print("onEndReached");
-        },
         messages: _messages.reversed.toList(),
         onMessageLongPress: (context, message) {
           final currentUserAccountID =
