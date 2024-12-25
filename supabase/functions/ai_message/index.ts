@@ -1,6 +1,6 @@
 // Setup type definitions for built-in Supabase Runtime APIs
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
-import { user, session, chat, message } from "../_shared/schema.ts";
+import { user, session, chat, message , embedding} from "../_shared/schema.ts";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import { eq, sql } from "drizzle-orm";
@@ -82,6 +82,29 @@ async function validateChat(db, chatId: string) {
   return existingChat;
 }
 
+async function textToEmbedding(user_query:string) {
+  const url = "http://host.docker.internal:8000/createembeddings";
+  const data = {
+   "user_query": user_query
+  };
+
+  try {
+    const response = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      throw new Error("Convert service returned an error");
+    }
+    return await response.json();
+  } catch (error) {
+    console.error("Error converting prompt:", error);
+    throw new Error("Failed to communicate with convert service");
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, {
@@ -107,7 +130,7 @@ Deno.serve(async (req) => {
     const { supabaseUser, existingSession } = await validateSession(db, supabaseClient, token);
     const existingUser = await validateUser(db, existingSession.accountId);
 
-    const jsonBody = await req.json();
+    var jsonBody = await req.json();
     const { chatId, authorId, message: userMessage } = jsonBody;
 
     if (authorId !== existingSession.accountId) {
@@ -116,28 +139,128 @@ Deno.serve(async (req) => {
 
     const existingChat = await validateChat(db, chatId);
 
+    jsonBody.message.isActive = true;
+
+    const inputQuery = jsonBody.message.text;
+    
     jsonBody.message = sql`${userMessage}::jsonb`;
+
+    console.log(jsonBody);
 
     const [insertedMessage] = await db
       .insert(message)
       .values(jsonBody)
       .returning();
 
+    console.log("insertedMessage", insertedMessage);
+
+    const inputEmbedding = await textToEmbedding(inputQuery);
+    console.log("inputEmbedding ", inputEmbedding);
+
+    const userVectorString = JSON.stringify(inputEmbedding.successful);
+
+    const convertUserEmbedding = sql`${userVectorString}::vector`;
+
+    const valueForUserEmbedding = {
+      text: inputQuery,
+      embedding: convertUserEmbedding
+    }
+
+    const [insertedUserEmbedding] = await db
+    .insert(embedding)
+    .values(valueForUserEmbedding)
+    .returning();
+
+    console.log(insertedUserEmbedding);
+
     const chatHistory = await db
       .select()
       .from(message)
       .where(eq(message.chatId, chatId));
+    let aiResponse;
 
-    const promptForAI = chatHistory.map((msg) => ({
-      role: msg.authorId === "ai" ? "assistant" : "user",
-      content: msg.message.text,
-    }));
+    console.log("chatHistory ", chatHistory);
 
-    const aiResponse = await sendPrompt(promptForAI);
+
+    if(chatHistory.length > 1) {
+      const embeddingIdList = chatHistory.map((msg) => (msg.message.embedding_id));
+
+      console.log("embeddingIdList", embeddingIdList);
+
+
+      const { data, error } = await supabaseClient.rpc('match_embedding', {
+        query_embedding: inputEmbedding.successful,
+        match_threshold: 0.5,
+        match_count: 10,
+        ids: embeddingIdList,
+      });
+    
+      console.log(data);
+
+      if (error) {
+        console.error('Error calling match_embedding:', error);
+        throw error;
+      }
+
+      const contextChatHistory = chatHistory
+      .map(item => {
+        const matchingEmbedding = data.find(embedding => embedding.id.toString() === item.message.embedding_id);
+        if (!matchingEmbedding) return null;
+
+        return {
+          role: item.authorId === "ai" ? "assistant" : "user",
+          content: matchingEmbedding.text,
+        };
+      })
+      .filter(Boolean);
+
+
+      const userPromt = [{
+        role: "user",
+        content: inputQuery}];
+      
+      const promtToAI = [...contextChatHistory, ...userPromt];
+      console.log(promtToAI);
+
+      aiResponse = await sendPrompt(promtToAI);
+      console.log("aiResponse", aiResponse);
+      } else {
+      const promtToAi = [{
+        role: "user",
+        content: inputQuery}];
+
+      aiResponse = await sendPrompt(promtToAi);
+      console.log("aiResponse", aiResponse);
+
+    }
+
+    const aiEmbedding = await textToEmbedding(aiResponse.message.content);
+
+    const aiVectorString = JSON.stringify(aiEmbedding.successful);
+
+    console.log("aiVectorString", aiVectorString);
+
+    const convertAIEmbedding = sql`${aiVectorString}::vector`;
+
+    const valueForAIEmbedding = {
+      text: aiResponse.message.content,
+      embedding: convertAIEmbedding
+    }
+
+    const [insertedAIEmbedding] = await db
+    .insert(embedding)
+    .values(valueForAIEmbedding)
+    .returning();
+
+    console.log("insertedAIEmbedding", insertedAIEmbedding);
+
+
+
+    // const aiResponse = await sendPrompt(promptForAI);
 
     const aiBodyRequest = {
       messageType: "text",
-      message: { text: aiResponse.message.content },
+      message: { text: aiResponse.message.content, embedding_id: insertedAIEmbedding.id },
       chatId,
       authorId: "ai",
     };
@@ -148,6 +271,24 @@ Deno.serve(async (req) => {
       .insert(message)
       .values(aiBodyRequest)
       .returning();
+
+      console.log("insertedAIMessage", insertedAIMessage);
+
+      const updateMeesegeJSON = {
+        text: inputQuery,
+        embedding_id: insertedUserEmbedding.id,
+        isActive: false,
+      }
+
+      const updateUserMassage =  await db
+      .update(message)
+      .set({
+        message: sql`${updateMeesegeJSON}::jsonb`
+      })
+      .where(eq(message.id, insertedMessage.id))
+      .returning();
+
+      console.log("updateUserMassage", updateUserMassage);
 
     return new Response(
       JSON.stringify({ message_data: insertedAIMessage }),
