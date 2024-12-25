@@ -10,12 +10,6 @@ window.Buffer = Buffer;
 window.process = process;
 
 
-// async function sha256(message) {
-//     const msgBuffer = new TextEncoder().encode(message);
-//     const hashBuffer = await crypto.subtle.digest("SHA-256", msgBuffer);
-//     const hashArray = Array.from(new Uint8Array(hashBuffer));
-//     return hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
-// }
 
 function fromSecretToNearAPIJSPublicKey(secretKey) {
     const keypair = nearAPI.utils.KeyPair.fromString(secretKey);
@@ -32,10 +26,20 @@ function signMessageForVerification(privateKey) {
     return base58Signature;
 }
 
-function generateKeyPairProxy () {
+function generateKeyPairProxy() {
     let keys = generate_keypair();
-    return JSON.stringify({"private_key" : keys.private_key,"public_key" : keys.public_key});
+    return JSON.stringify({ "private_key": keys.private_key, "public_key": keys.public_key });
 }
+
+// function encryptionProxy(public_key,message){
+//     return encrypt_message(public_key,message);
+// }
+
+// function decryptionProxy(private_key,encrypted_message_base64){
+//     return decrypt_message(private_key,encrypted_message_base64);
+
+// }
+
 
 window.signMessageForVerification = signMessageForVerification;
 

@@ -1,11 +1,11 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:math';
 
 import 'package:flutter/material.dart';
 // ignore: depend_on_referenced_packages
 import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:near_social_mobile/services/cryptography/encryption/encryption_runner_interface.dart';
 import 'package:near_social_mobile/services/cryptography/internal_cryptography_service.dart';
 // ignore: depend_on_referenced_packages
 import 'package:scroll_to_index/scroll_to_index.dart';
@@ -104,25 +104,20 @@ class _ChatPageState extends State<ChatPage> {
   Future<void> _handlePushNewMessage(
       List<Map<String, dynamic>> listOfMessages) async {
     try {
-      print("step 1");
       if (!mounted) return;
       for (var newMessage in listOfMessages) {
-        print("step 2");
-
         final existingIndex =
             _messages.indexWhere((msg) => msg.id == newMessage['id']);
+
         final mapedMessage = await _mapMessage(newMessage);
-        print("step 3");
 
         if (existingIndex != -1) {
           _messages[existingIndex] = mapedMessage;
         } else {
           _messages.insert(0, mapedMessage);
         }
-        print("step 4");
       }
       _messages.sort((a, b) => a.createdAt!.compareTo(b.createdAt!));
-      print("step 5");
 
       setState(() {});
     } catch (e) {
@@ -131,24 +126,40 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   Future<types.Message> _mapMessage(Map<String, dynamic> rawMessage) async {
-    print("rawMessage $rawMessage");
-    final parsedMessage = types.TextMessage(
-      id: rawMessage['id'],
-      text: rawMessage['message']['text'],
-      createdAt:
-          DateTime.parse(rawMessage['created_at']).millisecondsSinceEpoch,
-      author: types.User(id: rawMessage['author_id']),
-    );
+    final currentUserAccountID = Modular.get<AuthController>().state.accountId;
 
-    print("parsedMessage $parsedMessage");
+    final res = KeyPair.fromJson(
+        jsonDecode(await Modular.get<FlutterSecureStorage>().read(
+              key: "session_keys",
+            ) ??
+            '{}'));
 
-    return types.TextMessage(
-      id: rawMessage['id'],
-      text: rawMessage['message']['text'],
-      createdAt:
-          DateTime.parse(rawMessage['created_at']).millisecondsSinceEpoch,
-      author: types.User(id: rawMessage['author_id']),
-    );
+    final encryptedMessage =
+        rawMessage['message']['text'][currentUserAccountID].toString();
+
+    try {
+      final decryptedMessage = await Modular.get<InternalCryptographyService>()
+          .encryptionRunner
+          .decryptMessage(res.privateKey, encryptedMessage);
+      final parsedMessage = types.TextMessage(
+        id: rawMessage['id'],
+        text: decryptedMessage,
+        createdAt:
+            DateTime.parse(rawMessage['created_at']).millisecondsSinceEpoch,
+        author: types.User(id: rawMessage['author_id']),
+      );
+      print("TEST 1 decryptedMessage $decryptedMessage");
+
+      return parsedMessage;
+    } catch (e) {
+      return types.TextMessage(
+        id: rawMessage['id'],
+        text: "This message was encrypted by another key",
+        createdAt:
+            DateTime.parse(rawMessage['created_at']).millisecondsSinceEpoch,
+        author: types.User(id: rawMessage['author_id']),
+      );
+    }
   }
 
   void _onScroll() {
@@ -165,12 +176,13 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   Future<void> _handleSendPressed(types.PartialText message) async {
-    final textMessage = types.TextMessage(
-      author: _user,
-      createdAt: DateTime.now().millisecondsSinceEpoch,
-      id: Random().nextInt(1000000).toString(),
-      text: message.text,
-    );
+    // final textMessage = types.TextMessage(
+    //   author: _user,
+    //   createdAt: DateTime.now().millisecondsSinceEpoch,
+    //   id: Random().nextInt(1000000).toString(),
+    //   text: message.text,
+    // );
+
     final participants =
         (widget.chat['metadata']['participants'] as List<dynamic>)
             .map((e) => e.toString())
@@ -180,6 +192,59 @@ class _ChatPageState extends State<ChatPage> {
       for (int i = 0; i < participants.length; i++) participants[i]: false
     };
 
+    final messageMap = {
+      // for (int i = 0; i < participants.length; i++) participants[i]: false
+    };
+
+    final data = Supabase.instance.client.from('User').select();
+    for (final id in participants) {
+      data.eq('id', id);
+    }
+    final accounts = await data;
+
+    for (int i = 0; i < accounts.length; i++) {
+      final accountPublicKeyForEncryption = accounts[i]['public_key'];
+
+      final encryptedMessage = await Modular.get<InternalCryptographyService>()
+          .encryptionRunner
+          .encryptMessage(
+            accountPublicKeyForEncryption,
+            message.text,
+          );
+
+      messageMap[accounts[i]['id'].toString()] = encryptedMessage;
+
+      //   final currentUserAccountID =
+      //       Modular.get<AuthController>().state.accountId;
+
+      //   if (accounts[i]['id'].toString() == currentUserAccountID) {
+      //     print(
+      //         "Test 1 Is currentAccountId ${accounts[i]['id'].toString() == currentUserAccountID}");
+
+      //     print("Test 1 encryptedMessage : $encryptedMessage");
+
+      //     final res = KeyPair.fromJson(
+      //         jsonDecode(await Modular.get<FlutterSecureStorage>().read(
+      //               key: "session_keys",
+      //             ) ??
+      //             '{}'));
+
+      //     print("Test 1 res.publicKey ${res.publicKey}");
+      //     print(
+      //         "Test 1 accountPublicKeyForEncryption $accountPublicKeyForEncryption");
+
+      //     print(
+      //         "Test 1 res.publicKey == accountPublicKeyForEncryption ${res.publicKey == accountPublicKeyForEncryption}");
+
+      //     final decryptednMessage =
+      //         await Modular.get<InternalCryptographyService>()
+      //             .encryptionRunner
+      //             .decryptMessage(res.privateKey, encryptedMessage);
+
+      //     print("Test 1 decryptednMessage $decryptednMessage");
+      //   }
+    }
+
     final pageController = Modular.get<ChatPageController>();
 
     final res = await pageController.addMessage({
@@ -188,13 +253,12 @@ class _ChatPageState extends State<ChatPage> {
       'messageType': 'text',
       'delete': participantsMap,
       'message': {
-        'text': textMessage.text,
+        'text': messageMap,
       },
     });
 
     final messageData = res['message_data'];
     final mappedMessage = await _mapMessage(messageData);
-
     setState(() {
       _messages.add(mappedMessage);
       newMessageSubscription?.cancel();
@@ -206,7 +270,6 @@ class _ChatPageState extends State<ChatPage> {
     final pageController = Modular.get<ChatPageController>();
 
     final res = await pageController.deleteMessage(messageId);
-    print("res $res");
     setState(() {
       _messages.removeWhere((msg) => msg.id == res['updated_message']['id']);
       newMessageSubscription?.cancel();
