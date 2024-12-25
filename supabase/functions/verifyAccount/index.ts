@@ -54,11 +54,8 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const { signature, publicKeyStr, uuid, accountId, encryptionPublicKey } = body;
 
-    console.log("supabaseUser.id {}",supabaseUser.id)
-    console.log("uuid {}",uuid)
-    console.log("supabaseUser.id != uuid {}",supabaseUser.id != uuid)
 
-    if(supabaseUser.id != uuid){
+    if (supabaseUser.id != uuid) {
       return new Response(
         JSON.stringify({ success: false, reason: "Fake user uid, pls re-install this app" }),
         { ...corsHeaders, headers: { "Content-Type": "application/json" } },
@@ -83,6 +80,9 @@ Deno.serve(async (req) => {
       .where(eq(user.id, accountId));
 
 
+  console.log("encryptionPublicKey {}", encryptionPublicKey)
+
+
     if (existingUser) {
       if (existingUser.isBanned) {
         return new Response(
@@ -90,26 +90,29 @@ Deno.serve(async (req) => {
           { ...corsHeaders, headers: { "Content-Type": "application/json" } },
         );
       } else {
-      const [updatedUser] =  await db
-        .update(user)
-        .set({
-          updatedAt: new Date(),
-          publickey : encryptionPublicKey,
-        })
-        .where(eq(user.id, existingUser.id));
-        
-      console.log("updatedUser {}",updatedUser)
+        const [updatedUser] = await db
+          .update(user)
+          .set({
+            updatedAt: new Date(),
+            publickey: encryptionPublicKey,
+          })
+          .where(eq(user.id, existingUser.id)).returning();
+
+        console.log("updatedUser {}", updatedUser)
       }
     } else {
-      await db
+      const [newUser] = await db
         .insert(user)
         .values({
           id: accountId,
           createdAt: new Date(),
           updatedAt: new Date(),
-          publickey : encryptionPublicKey,
-          isBanned : false,
+          publickey: encryptionPublicKey,
+          isBanned: false,
         });
+
+      console.log("newUser {}", newUser)
+
     }
 
 

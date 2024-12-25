@@ -138,30 +138,28 @@ class _ChatPageState extends State<ChatPage> {
         rawMessage['message']['text'][currentUserAccountID].toString();
 
     try {
-      // final decryptedMessage = await Modular.get<InternalCryptographyService>()
-      //     .encryptionRunner
-      //     .decryptMessage(res.privateKey, encryptedMessage);
+      final decryptedMessage = await Modular.get<InternalCryptographyService>()
+          .encryptionRunner
+          .decryptMessage(res.privateKey, encryptedMessage);
+      final parsedMessage = types.TextMessage(
+        id: rawMessage['id'],
+        text: decryptedMessage,
+        createdAt:
+            DateTime.parse(rawMessage['created_at']).millisecondsSinceEpoch,
+        author: types.User(id: rawMessage['author_id']),
+      );
+      print("TEST 1 decryptedMessage $decryptedMessage");
 
-      // print("TEST 1 decryptednMessage $decryptednMessage");
+      return parsedMessage;
     } catch (e) {
       return types.TextMessage(
         id: rawMessage['id'],
-        text: "Failed to decrypt",
+        text: "This message was encrypted by another key",
         createdAt:
             DateTime.parse(rawMessage['created_at']).millisecondsSinceEpoch,
         author: types.User(id: rawMessage['author_id']),
       );
     }
-
-    final parsedMessage = types.TextMessage(
-      id: rawMessage['id'],
-      text: encryptedMessage,
-      createdAt:
-          DateTime.parse(rawMessage['created_at']).millisecondsSinceEpoch,
-      author: types.User(id: rawMessage['author_id']),
-    );
-
-    return parsedMessage;
   }
 
   void _onScroll() {
@@ -205,35 +203,46 @@ class _ChatPageState extends State<ChatPage> {
     final accounts = await data;
 
     for (int i = 0; i < accounts.length; i++) {
-      final encryptedData = jsonEncode({
-        "public_key": accounts[i]['public_key'],
-        "message": message.text,
-      });
+      final accountPublicKeyForEncryption = accounts[i]['public_key'];
 
       final encryptedMessage = await Modular.get<InternalCryptographyService>()
           .encryptionRunner
-          .encryptMessage(encryptedData);
+          .encryptMessage(
+            accountPublicKeyForEncryption,
+            message.text,
+          );
 
-      print("Test 1 encryptedMessage : $encryptedMessage");
+      messageMap[accounts[i]['id'].toString()] = encryptedMessage;
 
-      final res = KeyPair.fromJson(
-          jsonDecode(await Modular.get<FlutterSecureStorage>().read(
-                key: "session_keys",
-              ) ??
-              '{}'));
+      //   final currentUserAccountID =
+      //       Modular.get<AuthController>().state.accountId;
 
-      final decryptedData = jsonEncode({
-        "keys": res.privateKey,
-        "encrypted_message_base64": encryptedMessage,
-      });
+      //   if (accounts[i]['id'].toString() == currentUserAccountID) {
+      //     print(
+      //         "Test 1 Is currentAccountId ${accounts[i]['id'].toString() == currentUserAccountID}");
 
-      final decryptednMessage = await Modular.get<InternalCryptographyService>()
-          .encryptionRunner
-          .decryptMessage(decryptedData);
+      //     print("Test 1 encryptedMessage : $encryptedMessage");
 
-      print("Test 1 decryptednMessage $decryptednMessage");
+      //     final res = KeyPair.fromJson(
+      //         jsonDecode(await Modular.get<FlutterSecureStorage>().read(
+      //               key: "session_keys",
+      //             ) ??
+      //             '{}'));
 
-      messageMap[participants[i]] = encryptedMessage;
+      //     print("Test 1 res.publicKey ${res.publicKey}");
+      //     print(
+      //         "Test 1 accountPublicKeyForEncryption $accountPublicKeyForEncryption");
+
+      //     print(
+      //         "Test 1 res.publicKey == accountPublicKeyForEncryption ${res.publicKey == accountPublicKeyForEncryption}");
+
+      //     final decryptednMessage =
+      //         await Modular.get<InternalCryptographyService>()
+      //             .encryptionRunner
+      //             .decryptMessage(res.privateKey, encryptedMessage);
+
+      //     print("Test 1 decryptednMessage $decryptednMessage");
+      //   }
     }
 
     final pageController = Modular.get<ChatPageController>();

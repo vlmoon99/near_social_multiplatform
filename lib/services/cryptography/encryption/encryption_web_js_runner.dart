@@ -6,14 +6,14 @@ import 'dart:js' as js;
 EncryptionRunner getEncryptionRunner() => WebEncryptionRunner();
 
 class WebEncryptionRunner implements EncryptionRunner {
-  @override
-  Future<String> encryptMessage(String dataFromDart) {
-    return Future.value(_encryptMessage(dataFromDart.toJS));
+  Future<String> encryptMessage(String publicKey, String message) {
+    return Future.value(_encryptMessage(publicKey, message));
   }
 
   @override
-  Future<String> decryptMessage(String dataFromDart) async {
-    final res = _decryptMessage(dataFromDart.toJS).toDart;
+  Future<String> decryptMessage(
+      String privateKey, String encryptedMessage) async {
+    final res = _decryptMessage(privateKey, encryptedMessage).toDart;
     return res;
   }
 
@@ -51,7 +51,7 @@ external JSString _signMessageForVerification(JSString privateKey);
 external String _generateKeyPair();
 
 @JS('window.encrypt_message')
-external String _encryptMessage(JSString dataFromDart);
+external String _encryptMessage(String publicKey, String message);
 
 @JS('window.decrypt_message')
-external JSString _decryptMessage(JSString dataFromDart);
+external JSString _decryptMessage(String privateKey, String encryptedMessage);
