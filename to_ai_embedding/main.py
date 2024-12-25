@@ -22,4 +22,6 @@ def CreateEmbeddings(new_params: ParamsForCreateEmbeddings):
     # Получаем эмбеддинг для текста
     embedding = embeddings.embed_query(new_params.user_query)
 
-    print("Эмбеддинг для текста:", embedding)
+    print(embedding)
+
+    return {"successful": embedding}

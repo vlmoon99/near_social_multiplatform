@@ -1,4 +1,4 @@
-import { pgTable, serial, text, timestamp, jsonb, boolean,  } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, timestamp, jsonb, boolean, vector } from "drizzle-orm/pg-core";
 
 export const user = pgTable("User", {
   id: text("id").primaryKey(),
@@ -38,9 +38,9 @@ export const session = pgTable("Session", {
   isActive: boolean("is_active").notNull(),
 });
 
-export const session = pgTable("Embedding", {
+export const embedding = pgTable("Embedding", {
   id: serial("id").primaryKey(),
-  // text
-  // embedding
+  text: text("text").notNull(),
+  embedding: vector("embedding", { dimensions: 384 }).notNull(),
 });
 
