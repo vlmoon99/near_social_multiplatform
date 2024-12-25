@@ -47,3 +47,4 @@ app.*.map.json
 cryptography_project/target/
 
 local_gateway/node_modules/
+web-push-notification-service/node_modules
