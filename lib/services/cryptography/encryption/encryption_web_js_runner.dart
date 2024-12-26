@@ -1,21 +1,20 @@
 import 'dart:convert';
 import 'dart:js_interop';
 import 'package:near_social_mobile/services/cryptography/encryption/encryption_runner_interface.dart';
-import 'dart:js' as js;
 
 EncryptionRunner getEncryptionRunner() => WebEncryptionRunner();
 
 class WebEncryptionRunner implements EncryptionRunner {
   @override
-  Future<String> encryptMessage(String publicKeyPem, String message) {
-    return Future.value(_encryptMessage(publicKeyPem.toJS, message.toJS));
+  Future<String> encryptMessage(String publicKey, String message) {
+    return Future.value(_encryptMessage(publicKey, message));
   }
 
   @override
   Future<String> decryptMessage(
-      String privateKeyPem, String encryptedMessageBase64) {
-    return Future.value(
-        _decryptMessage(privateKeyPem.toJS, encryptedMessageBase64.toJS));
+      String privateKey, String encryptedMessage) async {
+    final res = _decryptMessage(privateKey, encryptedMessage).toDart;
+    return res;
   }
 
   @override
@@ -52,8 +51,7 @@ external JSString _signMessageForVerification(JSString privateKey);
 external String _generateKeyPair();
 
 @JS('window.encrypt_message')
-external String _encryptMessage(JSString publicKeyPem, JSString message);
+external String _encryptMessage(String publicKey, String message);
 
 @JS('window.decrypt_message')
-external String _decryptMessage(
-    JSString privateKeyPem, JSString encryptedMessageBase64);
+external JSString _decryptMessage(String privateKey, String encryptedMessage);

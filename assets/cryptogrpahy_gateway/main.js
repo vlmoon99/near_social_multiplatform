@@ -10,12 +10,6 @@ window.Buffer = Buffer;
 window.process = process;
 
 
-// async function sha256(message) {
-//     const msgBuffer = new TextEncoder().encode(message);
-//     const hashBuffer = await crypto.subtle.digest("SHA-256", msgBuffer);
-//     const hashArray = Array.from(new Uint8Array(hashBuffer));
-//     return hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
-// }
 
 function fromSecretToNearAPIJSPublicKey(secretKey) {
     const keypair = nearAPI.utils.KeyPair.fromString(secretKey);
@@ -32,10 +26,30 @@ function signMessageForVerification(privateKey) {
     return base58Signature;
 }
 
-function generateKeyPairProxy () {
+function generateKeyPairProxy() {
     let keys = generate_keypair();
-    return JSON.stringify({"private_key" : keys.private_key,"public_key" : keys.public_key});
+    return JSON.stringify({ "private_key": keys.private_key, "public_key": keys.public_key });
 }
+
+
+
+function urlBase64ToUint8Array(base64String) {
+    var padding = '='.repeat((4 - base64String.length % 4) % 4);
+    var base64 = (base64String + padding)
+        .replace(/\-/g, '+')
+        .replace(/_/g, '/');
+
+    var rawData = window.atob(base64);
+    var outputArray = new Uint8Array(rawData.length);
+
+    for (var i = 0; i < rawData.length; ++i) {
+        outputArray[i] = rawData.charCodeAt(i);
+    }
+    return outputArray;
+}
+
+
+window.urlBase64ToUint8Array = urlBase64ToUint8Array;
 
 window.signMessageForVerification = signMessageForVerification;
 
@@ -47,6 +61,9 @@ window.encrypt_message = encrypt_message;
 
 window.decrypt_message = decrypt_message;
 
+
 initSync().then(() => {
     console.log("Cryptography module was intied sucsessfully");
 });
+
+

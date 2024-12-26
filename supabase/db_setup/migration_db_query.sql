@@ -1,5 +1,6 @@
 CREATE TABLE "User" (
     id TEXT PRIMARY KEY,
+    public_key TEXT NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
     is_banned BOOLEAN NOT NULL           
@@ -26,7 +27,8 @@ CREATE TABLE "Message" (
     created_at TIMESTAMP NOT NULL DEFAULT NOW(), 
     updated_at TIMESTAMP NOT NULL DEFAULT NOW(), 
     message_type TEXT NOT NULL,          
-    message JSONB NOT NULL,      
+    message JSONB NOT NULL,
+    delete JSONB NOT NULL,        
     chat_id TEXT NOT NULL,             
     FOREIGN KEY (chat_id) REFERENCES "Chat"(id) ON DELETE CASCADE,
     author_id TEXT NOT NULL,
@@ -83,7 +85,7 @@ alter table "Session" enable row level security;
 
 -- Check if the user has active session
 
-CREATE OR REPLACE FUNCTION private.has_active_session()
+CREATE OR REPLACE FUNCTION public.has_active_session()
 RETURNS boolean
 LANGUAGE plpgsql
 SECURITY DEFINER
@@ -138,7 +140,7 @@ END;
 $$;
 
 
-CREATE OR REPLACE FUNCTION public.is_user_can_see_the_message(message JSONB, chat_id TEXT)
+CREATE OR REPLACE FUNCTION public.is_user_can_see_the_message(message JSONB,deleteMap JSONB, chat_id TEXT)
 RETURNS BOOLEAN
 LANGUAGE plpgsql
 SECURITY DEFINER
@@ -148,7 +150,6 @@ DECLARE
   authorId TEXT;
   isActiveSession BOOLEAN; 
   isParticipant BOOLEAN;
-  deleteStatus JSONB;
   chatMetadata JSONB;
 BEGIN
   SELECT account_id, is_active
@@ -180,12 +181,11 @@ BEGIN
   ) INTO isParticipant;
 
 
-  deleteStatus := message->'delete';
 
   authorId := message->'author_id';
 
   IF (
-    (deleteStatus ? accountId AND deleteStatus->>accountId = 'true')
+    (deleteMap ? accountId AND deleteMap->>accountId = 'true')
     OR authorId != accountId
     OR isParticipant = false
   ) THEN
@@ -233,7 +233,7 @@ CREATE POLICY "Users can view chats message they participate in"
 ON "Message"
 FOR SELECT
 USING (
-  public.is_user_can_see_the_message(message,chat_id)
+  public.is_user_can_see_the_message(message,delete,chat_id)
 );
 
 

@@ -34,9 +34,8 @@ class UserChatsPageController {
   }) async {
     try {
       switch (chatType) {
-        case ChatType.publicUserToUser:
-          return await _createPublicUserToUserChat(currentUserId, otherUserId);
-
+        // case ChatType.publicUserToUser:
+        //   return await _createPublicUserToUserChat(currentUserId, otherUserId);
         case ChatType.privateUserToUser:
           return await _createPrivateUserToUserChat(currentUserId, otherUserId);
 
@@ -65,7 +64,7 @@ class UserChatsPageController {
     return chatId;
   }
 
-  Future<Map<String, dynamic>> _createChatUsingEdgeFunction(
+  Future<Map<String, dynamic>> createChatUsingEdgeFunction(
       Map<String, dynamic> data) async {
     try {
       final response = await Supabase.instance.client.functions.invoke(
@@ -101,7 +100,7 @@ class UserChatsPageController {
     };
 
     try {
-      return _createChatUsingEdgeFunction(data);
+      return createChatUsingEdgeFunction(data);
     } catch (e) {
       return {
         'result': 'error',
@@ -118,8 +117,6 @@ class UserChatsPageController {
     final metadata = {
       'chat_type': 'private',
       'participants': [currentUserId, otherUserId],
-      'isSecure': true,
-      'pub_keys': {},
     };
 
     final data = {
@@ -127,8 +124,10 @@ class UserChatsPageController {
       'metadata': metadata,
     };
 
+    print(data.toString());
+
     try {
-      return _createChatUsingEdgeFunction(data);
+      return createChatUsingEdgeFunction(data);
     } catch (e) {
       return {
         'result': 'error',
@@ -481,6 +480,8 @@ class _ChatListBodyState extends State<ChatListBody> {
   }
 
   void _handleStreamData(List<Map<String, dynamic>> listOfChats) {
+    print(listOfChats);
+
     if (!mounted) return;
 
     print(listOfChats);
@@ -521,13 +522,7 @@ class _ChatListBodyState extends State<ChatListBody> {
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-
-    final dialogWidth = screenWidth > 1200
-        ? 400.0
-        : screenWidth > 600
-            ? screenWidth * 0.3
-            : screenWidth * 0.8;
+    final dialogWidth = 500.0;
 
     return ListView.builder(
       controller: _scrollController,
@@ -1266,10 +1261,10 @@ class _ChatTypeSelectionModalState extends State<ChatTypeSelectionModal> {
 //Models
 
 enum ChatType {
-  publicUserToUser(
-    label: 'Public',
-    icon: Icons.public,
-  ),
+  // publicUserToUser(
+  //   label: 'Public',
+  //   icon: Icons.public,
+  // ),
   privateUserToUser(
     label: 'Private',
     icon: Icons.lock_outline,

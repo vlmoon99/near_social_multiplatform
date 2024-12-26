@@ -1,9 +1,13 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
 // ignore: depend_on_referenced_packages
 import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:near_social_mobile/services/cryptography/encryption/encryption_runner_interface.dart';
+import 'package:near_social_mobile/services/cryptography/internal_cryptography_service.dart';
 // ignore: depend_on_referenced_packages
 import 'package:scroll_to_index/scroll_to_index.dart';
 
@@ -13,6 +17,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:near_social_mobile/config/theme.dart';
 import 'package:near_social_mobile/modules/vms/core/auth_controller.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:web_socket_channel/web_socket_channel.dart';
 
 //Controller
 class ChatPageController {
@@ -88,6 +93,7 @@ class _ChatPageState extends State<ChatPage> {
 
   late final types.User _user;
   StreamSubscription<List<Map<String, dynamic>>>? newMessageSubscription;
+  StreamSubscription<List<Map<String, dynamic>>>? chatSubscription;
 
   @override
   void initState() {
@@ -99,7 +105,7 @@ class _ChatPageState extends State<ChatPage> {
     _scrollController.addListener(_onScroll);
   }
 
-  void _setupNewMessageStream() {
+  Future<void> _setupNewMessageStream() async {
     newMessageSubscription = Supabase.instance.client
         .from('Message')
         .stream(primaryKey: ['id'])
@@ -111,33 +117,65 @@ class _ChatPageState extends State<ChatPage> {
         );
   }
 
-  void _handlePushNewMessage(List<Map<String, dynamic>> listOfMessages) {
-    if (!mounted) return;
-
-    setState(() {
+  Future<void> _handlePushNewMessage(
+      List<Map<String, dynamic>> listOfMessages) async {
+    try {
+      if (!mounted) return;
       for (var newMessage in listOfMessages) {
         final existingIndex =
             _messages.indexWhere((msg) => msg.id == newMessage['id']);
 
+        final mapedMessage = await _mapMessage(newMessage);
+
         if (existingIndex != -1) {
-          _messages[existingIndex] = _mapMessage(newMessage);
+          _messages[existingIndex] = mapedMessage;
         } else {
-          _messages.insert(0, _mapMessage(newMessage));
+          _messages.insert(0, mapedMessage);
         }
       }
-
       _messages.sort((a, b) => a.createdAt!.compareTo(b.createdAt!));
-    });
+
+      setState(() {});
+    } catch (e) {
+      print("Error $e");
+    }
   }
 
-  types.Message _mapMessage(Map<String, dynamic> rawMessage) {
-    return types.TextMessage(
-      id: rawMessage['id'],
-      text: rawMessage['message']['text'],
-      createdAt:
-          DateTime.parse(rawMessage['created_at']).millisecondsSinceEpoch,
-      author: types.User(id: rawMessage['author_id']),
-    );
+  Future<types.Message> _mapMessage(Map<String, dynamic> rawMessage) async {
+    final currentUserAccountID = Modular.get<AuthController>().state.accountId;
+
+    final res = KeyPair.fromJson(
+        jsonDecode(await Modular.get<FlutterSecureStorage>().read(
+              key: "session_keys",
+            ) ??
+            '{}'));
+
+    final encryptedMessage =
+        rawMessage['message']['text'][currentUserAccountID].toString();
+
+    try {
+      final decryptedMessage = await Modular.get<InternalCryptographyService>()
+          .encryptionRunner
+          .decryptMessage(res.privateKey, encryptedMessage);
+      final parsedMessage = types.TextMessage(
+        id: rawMessage['id'],
+        text: decryptedMessage,
+        createdAt:
+            DateTime.parse(rawMessage['created_at']).millisecondsSinceEpoch,
+        author: types.User(id: rawMessage['author_id']),
+      );
+      print("TEST 1 decryptedMessage $decryptedMessage");
+
+      return parsedMessage;
+    } catch (e) {
+      return types.TextMessage(
+        id: rawMessage['id'],
+        text: "This message was encrypted by another key",
+        createdAt:
+            DateTime.parse(rawMessage['created_at']).millisecondsSinceEpoch,
+        author: types.User(id: rawMessage['author_id']),
+      );
+    }
   }
 
   void _onScroll() {
@@ -153,13 +191,75 @@ class _ChatPageState extends State<ChatPage> {
     }
   }
 
-  void _handleSendPressed(types.PartialText message) async {
-    final textMessage = types.TextMessage(
-      author: _user,
-      createdAt: DateTime.now().millisecondsSinceEpoch,
-      id: Random().nextInt(1000000).toString(),
-      text: message.text,
-    );
+  Future<void> _handleSendPressed(types.PartialText message) async {
+    // final textMessage = types.TextMessage(
+    //   author: _user,
+    //   createdAt: DateTime.now().millisecondsSinceEpoch,
+    //   id: Random().nextInt(1000000).toString(),
+    //   text: message.text,
+    // );
+
+    final participants =
+        (widget.chat['metadata']['participants'] as List<dynamic>)
+            .map((e) => e.toString())
+            .toList();
+
+    final participantsMap = {
+      for (int i = 0; i < participants.length; i++) participants[i]: false
+    };
+
+    final messageMap = {
+      // for (int i = 0; i < participants.length; i++) participants[i]: false
+    };
+
+    final data = Supabase.instance.client.from('User').select();
+    for (final id in participants) {
+      data.eq('id', id);
+    }
+    final accounts = await data;
+
+    for (int i = 0; i < accounts.length; i++) {
+      final accountPublicKeyForEncryption = accounts[i]['public_key'];
+
+      final encryptedMessage = await Modular.get<InternalCryptographyService>()
+          .encryptionRunner
+          .encryptMessage(
+            accountPublicKeyForEncryption,
+            message.text,
+          );
+
+      messageMap[accounts[i]['id'].toString()] = encryptedMessage;
+    }
+
+    //   final currentUserAccountID =
+    //       Modular.get<AuthController>().state.accountId;
+
+    //   if (accounts[i]['id'].toString() == currentUserAccountID) {
+    //     print(
+    //         "Test 1 Is currentAccountId ${accounts[i]['id'].toString() == currentUserAccountID}");
+
+    //     print("Test 1 encryptedMessage : $encryptedMessage");
+
+    //     final res = KeyPair.fromJson(
+    //         jsonDecode(await Modular.get<FlutterSecureStorage>().read(
+    //               key: "session_keys",
+    //             ) ??
+    //             '{}'));
+
+    //     print("Test 1 res.publicKey ${res.publicKey}");
+    //     print(
+    //         "Test 1 accountPublicKeyForEncryption $accountPublicKeyForEncryption");
+
+    //     print(
+    //         "Test 1 res.publicKey == accountPublicKeyForEncryption ${res.publicKey == accountPublicKeyForEncryption}");
+
+    //     final decryptednMessage =
+    //         await Modular.get<InternalCryptographyService>()
+    //             .encryptionRunner
+    //             .decryptMessage(res.privateKey, encryptedMessage);
+
+    //     print("Test 1 decryptednMessage $decryptednMessage");
+    //   }
 
     final pageController = Modular.get<ChatPageController>();
 
@@ -170,20 +270,9 @@ class _ChatPageState extends State<ChatPage> {
         'chatId': widget.chat['id'],
         'authorId': _user.id,
         'messageType': 'text',
-        'message': {'text': textMessage.text}
+        'message': {'text': messageMap}
       };
     } else {
-      final participants =
-          (widget.chat['metadata']['participants'] as List<dynamic>)
-              .map((e) => e.toString())
-              .toList();
-
-      final participantsMap = {
-        for (int i = 0; i < participants.length; i++) participants[i]: false
-      };
-      final messageMap = {
-        // for (int i = 0; i < participants.length; i++) participants[i]: false
-      };
       dataForAddMassage = {
         'chatId': widget.chat['id'],
         'authorId': _user.id,
@@ -199,9 +288,9 @@ class _ChatPageState extends State<ChatPage> {
         dataForAddMassage, widget.chat['metadata']['chat_type']);
 
     final messageData = res['message_data'];
-
+    final mappedMessage = await _mapMessage(messageData);
     setState(() {
-      _messages.add(_mapMessage(messageData));
+      _messages.add(mappedMessage);
       newMessageSubscription?.cancel();
       _setupNewMessageStream();
     });
@@ -221,19 +310,13 @@ class _ChatPageState extends State<ChatPage> {
   @override
   void dispose() {
     _scrollController.dispose();
+    newMessageSubscription?.cancel();
+    chatSubscription?.cancel();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-
-    final dialogWidth = screenWidth > 1200
-        ? 400.0
-        : screenWidth > 600
-            ? screenWidth * 0.3
-            : screenWidth * 0.8;
-
     return Scaffold(
       appBar: AppBar(
         backgroundColor: NEARColors.blue,
@@ -252,24 +335,34 @@ class _ChatPageState extends State<ChatPage> {
           IconButton(
             onPressed: () {
               print("Start Call");
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (ctx) => RoomScreen(),
+                ),
+              );
             },
-            icon: Icon(Icons.video_call),
-          ),
-          IconButton(
-            onPressed: () {
-              print("Start Call");
-            },
-            icon: Icon(Icons.call),
+            icon: Icon(
+              Icons.call,
+              size: 35,
+            ),
           ),
         ],
       ),
       body: Chat(
+        isAttachmentUploading: false,
         scrollController: _scrollController,
-        onEndReached: () async {
-          print("onEndReached");
-        },
         messages: _messages.reversed.toList(),
         onMessageLongPress: (context, message) {
+          final currentUserAccountID =
+              Modular.get<AuthController>().state.accountId;
+
+          if (message.author.id != currentUserAccountID) {
+            return;
+          }
+
+          final dialogWidth = 500.0;
+
           showDialog(
             context: context,
             builder: (BuildContext context) {
@@ -398,6 +491,71 @@ class _ChatPageState extends State<ChatPage> {
         showUserAvatars: true,
         showUserNames: true,
         user: _user,
+      ),
+    );
+  }
+}
+
+class RoomScreen extends StatefulWidget {
+  @override
+  _RoomScreenState createState() => _RoomScreenState();
+}
+
+class _RoomScreenState extends State<RoomScreen> {
+  final channel = WebSocketChannel.connect(
+    Uri.parse('ws://localhost:8080'),
+  );
+  late Timer timer;
+  List<String> messages = [];
+  final random = Random();
+
+  @override
+  void initState() {
+    super.initState();
+
+    setupWebSocketStream();
+  }
+
+  void setupWebSocketStream() async {
+    // Listen for messages from the server
+    channel.stream.listen((message) {
+      setState(() {
+        messages.add(message);
+      });
+    });
+
+    // Send a random 2D vector every second
+    timer = Timer.periodic(Duration(seconds: 1), (_) {
+      final vector = {
+        'x': random.nextDouble() * 100,
+        'y': random.nextDouble() * 100,
+      };
+      channel.sink.add(jsonEncode(vector));
+    });
+  }
+
+  @override
+  void dispose() {
+    timer.cancel();
+    channel.sink.close();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text('Room')),
+      body: Column(
+        children: [
+          Expanded(
+            child: ListView.builder(
+              itemCount: messages.length,
+              itemBuilder: (context, index) {
+                return ListTile(title: Text(messages[index]));
+              },
+            ),
+          ),
+        ],
       ),
     );
   }

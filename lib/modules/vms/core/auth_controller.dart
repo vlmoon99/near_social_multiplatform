@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:near_social_mobile/modules/home/apis/near_social.dart';
 // import 'package:cloud_functions/cloud_functions.dart';
 
@@ -10,7 +11,9 @@ import 'package:flutterchain/flutterchain_lib/services/chains/near_blockchain_se
 import 'package:near_social_mobile/config/constants.dart';
 import 'package:near_social_mobile/modules/home/apis/models/private_key_info.dart';
 import 'package:near_social_mobile/services/crypto_storage_service.dart';
+import 'package:near_social_mobile/services/cryptography/encryption/encryption_runner_interface.dart';
 import 'package:near_social_mobile/services/cryptography/internal_cryptography_service.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -76,41 +79,95 @@ class AuthController extends Disposable {
               .signMessageForVerification(secretKey);
 
       final uuid = Supabase.instance.client.auth.currentUser!.id;
+      final secureStorage = Modular.get<FlutterSecureStorage>();
+      var keyPair;
+      final keys = await secureStorage.read(key: "session_keys");
+      if (keys == null) {
+        keyPair = await Modular.get<InternalCryptographyService>()
+            .encryptionRunner
+            .generateKeyPair();
+
+        await secureStorage.write(
+            key: "session_keys", value: jsonEncode(keyPair.toJson()));
+      } else {
+        keyPair = KeyPair.fromJson(
+            jsonDecode(await Modular.get<FlutterSecureStorage>().read(
+                  key: "session_keys",
+                ) ??
+                '{}'));
+      }
+
+      // print("Test");
+      // const message = "Hello World";
+
+      // final encodedStr = jsonEncode(keyPair.toJson());
+
+      // final decoded = KeyPair.fromJson(jsonDecode(encodedStr));
+
+      // //1.Encrypt message
+      // final encryptedMessage = await Modular.get<InternalCryptographyService>()
+      //     .encryptionRunner
+      //     .encryptMessage(
+      //       decoded.publicKey.toString(),
+      //       message,
+      //     );
+
+      // print("Test 1  $encryptedMessage");
+      // //2.Decrypt message
+      // final decryptedMessage = await Modular.get<InternalCryptographyService>()
+      //     .encryptionRunner
+      //     .decryptMessage(
+      //       decoded.privateKey,
+      //       encryptedMessage,
+      //     );
+      // print("Test 1 $decryptedMessage");
 
       final res = await verifyTransaction(
         signature: signedMessagedForVerification,
+        encryptionPublicKey: keyPair.publicKey,
         publicKeyStr: base58PubKey,
         uuid: uuid,
         accountId: accountId,
       );
 
-      // final dbRes1 = await Supabase.instance.client.rpc("has_active_session");
-
-      // print("dbRes1 $dbRes1");
-
-      // final dbRes2 = await Supabase.instance.client.rpc(
-      //   "is_user_participant_in_chat",
-      //   params: {
-      //     "chat_data": {
-      //       "id":
-      //           "21bf58783e2fca2828b9e5dcf27a0c8cf16a81c7ac3214d3d9e4e4209b127d9a",
-      //       "metadata": {
-      //         "chat_type": "public",
-      //         "participants": [
-      //           "bosmobile.near",
-      //           "flutterchain.near",
-      //         ],
-      //       },
-      //     }
-      //   },
-      // );
-
-      // print("dbRes2 $dbRes2");
-
       if (!res) {
         throw Exception("Server authenticated error");
       }
 
+      // final userAccount = (await Supabase.instance.client
+      //     .from('User')
+      //     .select('*')
+      //     .eq('id', accountId))[0];
+
+      // print("userAccount $userAccount");
+
+      // final publicKeyFromDB = userAccount['public_key'];
+
+      // final encryptedMessage1 = await Modular.get<InternalCryptographyService>()
+      //     .encryptionRunner
+      //     .encryptMessage(
+      //       publicKeyFromDB,
+      //       message,
+      //     );
+
+      // print("Test 1 encryptedMessage1 $encryptedMessage1");
+
+      // //2.Decrypt message
+      // final decryptedMessage1 = await Modular.get<InternalCryptographyService>()
+      //     .encryptionRunner
+      //     .decryptMessage(
+      //       decoded.privateKey,
+      //       encryptedMessage1,
+      //     );
+      // print("Test 1 decryptedMessage1 $decryptedMessage1");
+
+      if (kIsWeb) {
+        await Permission.notification.onDeniedCallback(() {
+          print("onDeniedCallback");
+        }).onGrantedCallback(() {
+          print("onGrantedCallback");
+        }).request();
+      }
       _streamController.add(state.copyWith(
         accountId: accountId,
         publicKey: publicKey,
@@ -146,6 +203,7 @@ class AuthController extends Disposable {
   Future<bool> verifyTransaction({
     required String signature,
     required String publicKeyStr,
+    required String encryptionPublicKey,
     required String uuid,
     required String accountId,
   }) async {
@@ -159,6 +217,7 @@ class AuthController extends Disposable {
         body: <String, dynamic>{
           'signature': signature,
           'publicKeyStr': publicKeyStr,
+          'encryptionPublicKey': encryptionPublicKey,
           'uuid': uuid,
           'accountId': accountId,
         },
