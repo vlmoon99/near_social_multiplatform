@@ -44,3 +44,9 @@ export const embedding = pgTable("Embedding", {
   embedding: vector("embedding", { dimensions: 384 }).notNull(),
 });
 
+export const aiKeys = pgTable("AIKeys", {
+  id: serial("id").primaryKey(),
+  privateKey: text("private_key").notNull(), 
+  publicKey: text("public_key").notNull(),
+});
+

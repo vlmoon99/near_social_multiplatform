@@ -207,16 +207,16 @@ class _ChatPageState extends State<ChatPage> {
     });
   }
 
-  // void _handleMessageDelete(String messageId) async {
-  //   final pageController = Modular.get<ChatPageController>();
+  void _handleMessageDelete(String messageId) async {
+    final pageController = Modular.get<ChatPageController>();
 
-  //   final res = await pageController.deleteMessage(messageId);
-  //   setState(() {
-  //     _messages.removeWhere((msg) => msg.id == res['updated_message']['id']);
-  //     newMessageSubscription?.cancel();
-  //     _setupNewMessageStream();
-  //   });
-  // }
+    final res = await pageController.deleteMessage(messageId);
+    setState(() {
+      _messages.removeWhere((msg) => msg.id == res['updated_message']['id']);
+      newMessageSubscription?.cancel();
+      _setupNewMessageStream();
+    });
+  }
 
   @override
   void dispose() {

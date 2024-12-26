@@ -33,6 +33,12 @@ CREATE TABLE "Message" (
     FOREIGN KEY (author_id) REFERENCES "User"(id) ON DELETE CASCADE
 );
 
+CREATE TABLE AIKeys (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    private_key TEXT NOT NULL,
+    public_key TEXT NOT NULL 
+);
+
 create extension vector
 with
   schema extensions;
@@ -42,6 +48,7 @@ create table "Embedding" (
   text TEXT NOT NULL,
   embedding vector(384) NOT NULL
 );
+
 
 -- Indexes
 

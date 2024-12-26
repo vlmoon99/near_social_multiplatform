@@ -45,41 +45,57 @@ async function sendPrompt(messages: Array<any>) {
 }
 
 async function validateSession(db, supabaseClient, token: string) {
-  const { data } = await supabaseClient.auth.getUser(token);
-  const supabaseUser = data?.user;
-
-  if (!supabaseUser) throw new Error("Invalid or missing user");
-
-  const [existingSession] = await db
-    .select()
-    .from(session)
-    .where(eq(session.userId, supabaseUser.id));
-
-  if (!existingSession) throw new Error("Session not found. Update your session.");
-
-  return { supabaseUser, existingSession };
+  try{
+    const { data } = await supabaseClient.auth.getUser(token);
+    const supabaseUser = data?.user;
+  
+    if (!supabaseUser) throw new Error("Invalid or missing user");
+  
+    const [existingSession] = await db
+      .select()
+      .from(session)
+      .where(eq(session.userId, supabaseUser.id));
+  
+    if (!existingSession) throw new Error("Session not found. Update your session.");
+  
+    return { supabaseUser, existingSession };
+  
+  } catch(error){
+    console.error("Error validate session:", error);
+    throw new Error("Failed to validate session");
+  }
 }
 
 async function validateUser(db, accountId: string) {
-  const [existingUser] = await db
+  try {
+    const [existingUser] = await db
     .select()
     .from(user)
     .where(eq(user.id, accountId));
 
-  if (!existingUser) throw new Error("User not found in the system.");
-  if (existingUser.isBanned) throw new Error("User is banned.");
+    if (!existingUser) throw new Error("User not found in the system.");
+    if (existingUser.isBanned) throw new Error("User is banned.");
 
-  return existingUser;
+    return existingUser;
+  } catch (error) {
+    console.error("Error validate user:", error);
+    throw new Error("Failed to validate user");
+  }
 }
 
 async function validateChat(db, chatId: string) {
-  const [existingChat] = await db
+  try{
+    const [existingChat] = await db
     .select()
     .from(chat)
     .where(eq(chat.id, chatId));
 
-  if (!existingChat) throw new Error("Chat does not exist.");
-  return existingChat;
+    if (!existingChat) throw new Error("Chat does not exist.");
+    return existingChat;
+  } catch (error) {
+    console.error("Error validate chat:", error);
+    throw new Error("Failed to validate chat");
+  }
 }
 
 async function textToEmbedding(user_query:string) {
@@ -145,17 +161,15 @@ Deno.serve(async (req) => {
     
     jsonBody.message = sql`${userMessage}::jsonb`;
 
-    console.log(jsonBody);
-
     const [insertedMessage] = await db
       .insert(message)
       .values(jsonBody)
       .returning();
 
-    console.log("insertedMessage", insertedMessage);
+      console.log("inserted user message {}", insertedMessage);
 
+    // convert and store user massage embedding
     const inputEmbedding = await textToEmbedding(inputQuery);
-    console.log("inputEmbedding ", inputEmbedding);
 
     const userVectorString = JSON.stringify(inputEmbedding.successful);
 
@@ -171,7 +185,9 @@ Deno.serve(async (req) => {
     .values(valueForUserEmbedding)
     .returning();
 
-    console.log(insertedUserEmbedding);
+    console.log("inserted user embedding {}", insertedUserEmbedding);
+
+
 
     const chatHistory = await db
       .select()
@@ -179,13 +195,11 @@ Deno.serve(async (req) => {
       .where(eq(message.chatId, chatId));
     let aiResponse;
 
-    console.log("chatHistory ", chatHistory);
 
-
+    // send promt to ai
     if(chatHistory.length > 1) {
       const embeddingIdList = chatHistory.map((msg) => (msg.message.embedding_id));
 
-      console.log("embeddingIdList", embeddingIdList);
 
 
       const { data, error } = await supabaseClient.rpc('match_embedding', {
@@ -195,7 +209,6 @@ Deno.serve(async (req) => {
         ids: embeddingIdList,
       });
     
-      console.log(data);
 
       if (error) {
         console.error('Error calling match_embedding:', error);
@@ -220,25 +233,31 @@ Deno.serve(async (req) => {
         content: inputQuery}];
       
       const promtToAI = [...contextChatHistory, ...userPromt];
-      console.log(promtToAI);
+
+      console.log("promt to Ai {}", promtToAi);
 
       aiResponse = await sendPrompt(promtToAI);
-      console.log("aiResponse", aiResponse);
       } else {
       const promtToAi = [{
         role: "user",
         content: inputQuery}];
 
+      console.log("promt to Ai {}", promtToAi);
+
+
       aiResponse = await sendPrompt(promtToAi);
-      console.log("aiResponse", aiResponse);
 
     }
+
+    console.log("AI response {}", aiResponse);
+
+    // convert and store ai massage embedding
+
 
     const aiEmbedding = await textToEmbedding(aiResponse.message.content);
 
     const aiVectorString = JSON.stringify(aiEmbedding.successful);
 
-    console.log("aiVectorString", aiVectorString);
 
     const convertAIEmbedding = sql`${aiVectorString}::vector`;
 
@@ -252,7 +271,6 @@ Deno.serve(async (req) => {
     .values(valueForAIEmbedding)
     .returning();
 
-    console.log("insertedAIEmbedding", insertedAIEmbedding);
 
 
     const aiBodyRequest = {
@@ -269,7 +287,7 @@ Deno.serve(async (req) => {
       .values(aiBodyRequest)
       .returning();
 
-      console.log("insertedAIMessage", insertedAIMessage);
+      console.log("final AI Massage {}", insertedAIMessage);
 
       const updateMeesegeJSON = {
         text: inputQuery,
@@ -285,7 +303,7 @@ Deno.serve(async (req) => {
       .where(eq(message.id, insertedMessage.id))
       .returning();
 
-      console.log("updateUserMassage", updateUserMassage);
+      console.log("final User Massage {}", updateUserMassage);
 
     return new Response(
       JSON.stringify({ message_data: insertedAIMessage }),
