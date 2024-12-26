@@ -16,17 +16,29 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 //Controller
 class ChatPageController {
-  Future<Map<String, dynamic>> addMessage(Map<String, dynamic> message) async {
+  Future<Map<String, dynamic>> addMessage(
+      Map<String, dynamic> message, String chaType) async {
     try {
       late FunctionResponse response;
-      response = await Supabase.instance.client.functions.invoke(
-        'ai_message',
-        headers: {
-          "Accept": "application/json",
-          "Access-Control-Allow-Origin": "*",
-        },
-        body: message,
-      );
+      if (chaType == "ai") {
+        response = await Supabase.instance.client.functions.invoke(
+          'ai_message',
+          headers: {
+            "Accept": "application/json",
+            "Access-Control-Allow-Origin": "*",
+          },
+          body: message,
+        );
+      } else {
+        response = await Supabase.instance.client.functions.invoke(
+          'add_message_to_the_chat',
+          headers: {
+            "Accept": "application/json",
+            "Access-Control-Allow-Origin": "*",
+          },
+          body: message,
+        );
+      }
       return response.data;
     } catch (e) {
       print('Unexpected error: $e');
@@ -151,12 +163,40 @@ class _ChatPageState extends State<ChatPage> {
 
     final pageController = Modular.get<ChatPageController>();
 
-    final res = await pageController.addMessage({
-      'chatId': widget.chat['id'],
-      'authorId': _user.id,
-      'messageType': 'text',
-      'message': {'text': textMessage.text},
-    });
+    late Map<String, dynamic> dataForAddMassage;
+
+    if (widget.chat['metadata']['chat_type'] == 'ai') {
+      dataForAddMassage = {
+        'chatId': widget.chat['id'],
+        'authorId': _user.id,
+        'messageType': 'text',
+        'message': {'text': textMessage.text}
+      };
+    } else {
+      final participants =
+          (widget.chat['metadata']['participants'] as List<dynamic>)
+              .map((e) => e.toString())
+              .toList();
+
+      final participantsMap = {
+        for (int i = 0; i < participants.length; i++) participants[i]: false
+      };
+      final messageMap = {
+        // for (int i = 0; i < participants.length; i++) participants[i]: false
+      };
+      dataForAddMassage = {
+        'chatId': widget.chat['id'],
+        'authorId': _user.id,
+        'messageType': 'text',
+        'delete': participantsMap,
+        'message': {
+          'text': messageMap,
+        },
+      };
+    }
+
+    final res = await pageController.addMessage(
+        dataForAddMassage, widget.chat['metadata']['chat_type']);
 
     final messageData = res['message_data'];
 

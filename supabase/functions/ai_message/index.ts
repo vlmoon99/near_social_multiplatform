@@ -255,9 +255,6 @@ Deno.serve(async (req) => {
     console.log("insertedAIEmbedding", insertedAIEmbedding);
 
 
-
-    // const aiResponse = await sendPrompt(promptForAI);
-
     const aiBodyRequest = {
       messageType: "text",
       message: { text: aiResponse.message.content, embedding_id: insertedAIEmbedding.id },
