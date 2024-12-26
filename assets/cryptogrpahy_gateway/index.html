@@ -6,13 +6,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Crpytography Gateway</title>
   <link rel="icon" href="data:," />
-  <link rel="manifest" href="/manifest.json">
 </head>
 
 <body>
   <h1>Push Notification Demo</h1>
-  <button id="subscribe">Subscribe</button>
-  <button id="unsubscribe">Unsubscribe</button>
+  <!-- <button id="subscribe">Subscribe</button>
+  <button id="unsubscribe">Unsubscribe</button> -->
 
   <button id="recordAudioButton">Start Audio Recording</button>
   <button id="recordVideoButton">Start Video Recording</button>
@@ -55,84 +54,86 @@
     } else {
       console.warn('Push Notifications are not supported in this browser.');
     }
-    // Check if Service Worker and Push Manager are supported
-    if ('serviceWorker' in navigator && 'PushManager' in window) {
-      console.log('Service Worker and Push Manager are supported.');
 
-      // Register the Service Worker
-      navigator.serviceWorker.register('push-notification-service-worker.js')
-        .then(registration => {
-          console.log('Service Worker registered with scope:', registration.scope);
-        })
-        .catch(error => {
-          console.error('Service Worker registration failed:', error);
-        });
-    } else {
-      console.warn('Push notifications are not supported in this browser.');
-    }
+    // // Check if Service Worker and Push Manager are supported
+    // if ('serviceWorker' in navigator && 'PushManager' in window) {
+    //   console.log('Service Worker and Push Manager are supported.');
 
-    // Subscribe to Push Notifications
-    document.getElementById('subscribe').addEventListener('click', async () => {
-      try {
-        const registration = await navigator.serviceWorker.ready;
+    //   // Register the Service Worker
+    //   navigator.serviceWorker.register('push-notification-service-worker.js')
+    //     .then(registration => {
+    //       console.log('Service Worker registered with scope:', registration.scope);
+    //     })
+    //     .catch(error => {
+    //       console.error('Service Worker registration failed:', error);
+    //     });
+    // } else {
+    //   console.warn('Push notifications are not supported in this browser.');
+    // }
 
-        // Fetch the VAPID public key from the server
-        const vapidPublicKey = await fetch('https://rich-ravens-wish.loca.lt/vapidPublicKey').then(response => response.text());
-        console.log('VAPID Public Key:', vapidPublicKey);
+    // // Subscribe to Push Notifications
+    // document.getElementById('subscribe').addEventListener('click', async () => {
+    //   try {
+    //     const registration = await navigator.serviceWorker.ready;
 
-        // Convert the VAPID public key to a Uint8Array
-        const convertedVapidKey = urlBase64ToUint8Array(vapidPublicKey);
+    //     // Fetch the VAPID public key from the server
+    //     const vapidPublicKey = await fetch('https://kind-lamps-cover.loca.lt/vapidPublicKey').then(response => response.text());
+    //     console.log('VAPID Public Key:', vapidPublicKey);
 
-        // Subscribe to push notifications
-        const subscription = await registration.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: convertedVapidKey
-        });
+    //     // Convert the VAPID public key to a Uint8Array
+    //     const convertedVapidKey = urlBase64ToUint8Array(vapidPublicKey);
 
-        console.log('User is subscribed:', subscription);
+    //     // Subscribe to push notifications
+    //     const subscription = await registration.pushManager.subscribe({
+    //       userVisibleOnly: true,
+    //       applicationServerKey: convertedVapidKey
+    //     });
 
-        // Send the subscription to the server
-        await fetch('https://rich-ravens-wish.loca.lt/register', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ subscription }),
-        });
+    //     console.log('User is subscribed:', subscription);
 
-        console.log('Subscription sent to server.');
-      } catch (error) {
-        console.error('Failed to subscribe the user:', error);
-      }
-    });
+    //     // Send the subscription to the server
+    //     await fetch('https://kind-lamps-cover.loca.lt/register', {
+    //       method: 'POST',
+    //       headers: {
+    //         'Content-Type': 'application/json',
+    //       },
+    //       body: JSON.stringify({ subscription }),
+    //     });
 
-    // Unsubscribe from Push Notifications
-    document.getElementById('unsubscribe').addEventListener('click', async () => {
-      try {
-        const registration = await navigator.serviceWorker.ready;
-        const subscription = await registration.pushManager.getSubscription();
+    //     console.log('Subscription sent to server.');
+    //   } catch (error) {
+    //     console.error('Failed to subscribe the user:', error);
+    //   }
+    // });
 
-        if (subscription) {
-          await subscription.unsubscribe();
-          console.log('User is unsubscribed.');
+    // // Unsubscribe from Push Notifications
+    // document.getElementById('unsubscribe').addEventListener('click', async () => {
+    //   try {
+    //     const registration = await navigator.serviceWorker.ready;
+    //     const subscription = await registration.pushManager.getSubscription();
 
-          // Optionally notify the server
-          await fetch('https://rich-ravens-wish.loca.lt/unregister', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ subscription }),
-          });
+    //     if (subscription) {
+    //       await subscription.unsubscribe();
+    //       console.log('User is unsubscribed.');
 
-          console.log('Unsubscription sent to server.');
-        } else {
-          console.warn('No subscription to unsubscribe.');
-        }
-      } catch (error) {
-        console.error('Failed to unsubscribe the user:', error);
-      }
-    });
+    //       // Optionally notify the server
+    //       await fetch('https://kind-lamps-cover.loca.lt/unregister', {
+    //         method: 'POST',
+    //         headers: {
+    //           'Content-Type': 'application/json',
+    //         },
+    //         body: JSON.stringify({ subscription }),
+    //       });
+
+    //       console.log('Unsubscription sent to server.');
+    //     } else {
+    //       console.warn('No subscription to unsubscribe.');
+    //     }
+    //   } catch (error) {
+    //     console.error('Failed to unsubscribe the user:', error);
+    //   }
+    // });
+
 
     document.addEventListener('DOMContentLoaded', () => {
       let isAudioRecording = false;
@@ -143,7 +144,6 @@
       const recordVideoButton = document.getElementById('recordVideoButton');
       const fileList = document.getElementById('fileList');
 
-      // Audio Recording Logic
       recordAudioButton.addEventListener('click', async () => {
         if (isAudioRecording) {
           audioMediaRecorder.stop();
@@ -178,7 +178,6 @@
         }
       });
 
-      // Video Recording Logic
       recordVideoButton.addEventListener('click', async () => {
         if (isVideoRecording) {
           videoMediaRecorder.stop();
@@ -215,7 +214,6 @@
         }
       });
 
-      // Shared Functions
       async function computeHash(blob) {
         const buffer = await blob.arrayBuffer();
         const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
@@ -230,7 +228,6 @@
         return Array.from(uint8Array);
       }
 
-      // Method to convert numbers back to a Blob (for audio and video)
       function numbersToBlob(numbers, type = 'video/webm') {
         const uint8Array = new Uint8Array(numbers);
         const arrayBuffer = uint8Array.buffer;
@@ -264,13 +261,11 @@
           const listItem = document.createElement('li');
           const fileInfo = document.createElement('span');
 
-          // Calculate file size in MB
           const fileSizeInMB = (file.blob.size / (1024 * 1024)).toFixed(2);
           fileInfo.textContent = `File: ${file.fileName}, Hash: ${file.fileHash}, Duration: ${file.duration.toFixed(2)} seconds, Size: ${fileSizeInMB} MB`;
 
           listItem.appendChild(fileInfo);
 
-          // Play button
           const playButton = document.createElement('button');
           playButton.textContent = 'Play';
           playButton.addEventListener('click', () => {
@@ -289,7 +284,6 @@
           });
           listItem.appendChild(playButton);
 
-          // View Numbers button
           const viewNumbersButton = document.createElement('button');
           viewNumbersButton.textContent = 'View Numbers';
           viewNumbersButton.addEventListener('click', () => {
@@ -330,6 +324,7 @@
         });
       }
     });
+
   </script>
 
 </body>

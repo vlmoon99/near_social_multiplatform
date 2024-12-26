@@ -16,7 +16,7 @@ webPush.setVapidDetails(
     vapidKeys.privateKey
 );
 
-app.use(cors({ origin: 'https://0c0e-178-54-185-162.ngrok-free.app' }));
+app.use(cors({ origin: 'http://localhost:46011' }));
 app.use(bodyParser.json());
 
 app.get('/vapidPublicKey', (req, res) => {
