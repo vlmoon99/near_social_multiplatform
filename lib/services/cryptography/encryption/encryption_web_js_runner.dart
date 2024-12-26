@@ -1,11 +1,11 @@
 import 'dart:convert';
 import 'dart:js_interop';
 import 'package:near_social_mobile/services/cryptography/encryption/encryption_runner_interface.dart';
-import 'dart:js' as js;
 
 EncryptionRunner getEncryptionRunner() => WebEncryptionRunner();
 
 class WebEncryptionRunner implements EncryptionRunner {
+  @override
   Future<String> encryptMessage(String publicKey, String message) {
     return Future.value(_encryptMessage(publicKey, message));
   }

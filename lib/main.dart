@@ -10,14 +10,13 @@ import 'package:near_social_mobile/assets/localizations/localizations_strings.da
 import 'package:near_social_mobile/config/theme.dart';
 import 'package:near_social_mobile/exceptions/exceptions.dart';
 import 'package:near_social_mobile/modules/app_module.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'config/setup.dart';
 
 void main() async {
   await Supabase.initialize(
-    url: 'https://2c35-178-54-185-162.ngrok-free.app/',
+    url: 'https://9373-178-54-185-162.ngrok-free.app/',
     anonKey:
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0',
     // authOptions:
