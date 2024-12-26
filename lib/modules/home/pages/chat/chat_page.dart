@@ -24,26 +24,14 @@ class ChatPageController {
   Future<Map<String, dynamic>> addMessage(
       Map<String, dynamic> message, String chaType) async {
     try {
-      late FunctionResponse response;
-      if (chaType == "ai") {
-        response = await Supabase.instance.client.functions.invoke(
-          'ai_message',
-          headers: {
-            "Accept": "application/json",
-            "Access-Control-Allow-Origin": "*",
-          },
-          body: message,
-        );
-      } else {
-        response = await Supabase.instance.client.functions.invoke(
-          'add_message_to_the_chat',
-          headers: {
-            "Accept": "application/json",
-            "Access-Control-Allow-Origin": "*",
-          },
-          body: message,
-        );
-      }
+      final response = await Supabase.instance.client.functions.invoke(
+        chaType == "ai" ? 'ai_message' : 'add_message_to_the_chat',
+        headers: {
+          "Accept": "application/json",
+          "Access-Control-Allow-Origin": "*",
+        },
+        body: message,
+      );
       return response.data;
     } catch (e) {
       print('Unexpected error: $e');
@@ -229,63 +217,49 @@ class _ChatPageState extends State<ChatPage> {
           );
 
       messageMap[accounts[i]['id'].toString()] = encryptedMessage;
+
+      //   final currentUserAccountID =
+      //       Modular.get<AuthController>().state.accountId;
+
+      //   if (accounts[i]['id'].toString() == currentUserAccountID) {
+      //     print(
+      //         "Test 1 Is currentAccountId ${accounts[i]['id'].toString() == currentUserAccountID}");
+
+      //     print("Test 1 encryptedMessage : $encryptedMessage");
+
+      //     final res = KeyPair.fromJson(
+      //         jsonDecode(await Modular.get<FlutterSecureStorage>().read(
+      //               key: "session_keys",
+      //             ) ??
+      //             '{}'));
+
+      //     print("Test 1 res.publicKey ${res.publicKey}");
+      //     print(
+      //         "Test 1 accountPublicKeyForEncryption $accountPublicKeyForEncryption");
+
+      //     print(
+      //         "Test 1 res.publicKey == accountPublicKeyForEncryption ${res.publicKey == accountPublicKeyForEncryption}");
+
+      //     final decryptednMessage =
+      //         await Modular.get<InternalCryptographyService>()
+      //             .encryptionRunner
+      //             .decryptMessage(res.privateKey, encryptedMessage);
+
+      //     print("Test 1 decryptednMessage $decryptednMessage");
+      //   }
     }
-
-    //   final currentUserAccountID =
-    //       Modular.get<AuthController>().state.accountId;
-
-    //   if (accounts[i]['id'].toString() == currentUserAccountID) {
-    //     print(
-    //         "Test 1 Is currentAccountId ${accounts[i]['id'].toString() == currentUserAccountID}");
-
-    //     print("Test 1 encryptedMessage : $encryptedMessage");
-
-    //     final res = KeyPair.fromJson(
-    //         jsonDecode(await Modular.get<FlutterSecureStorage>().read(
-    //               key: "session_keys",
-    //             ) ??
-    //             '{}'));
-
-    //     print("Test 1 res.publicKey ${res.publicKey}");
-    //     print(
-    //         "Test 1 accountPublicKeyForEncryption $accountPublicKeyForEncryption");
-
-    //     print(
-    //         "Test 1 res.publicKey == accountPublicKeyForEncryption ${res.publicKey == accountPublicKeyForEncryption}");
-
-    //     final decryptednMessage =
-    //         await Modular.get<InternalCryptographyService>()
-    //             .encryptionRunner
-    //             .decryptMessage(res.privateKey, encryptedMessage);
-
-    //     print("Test 1 decryptednMessage $decryptednMessage");
-    //   }
 
     final pageController = Modular.get<ChatPageController>();
 
-    late Map<String, dynamic> dataForAddMassage;
-
-    if (widget.chat['metadata']['chat_type'] == 'ai') {
-      dataForAddMassage = {
-        'chatId': widget.chat['id'],
-        'authorId': _user.id,
-        'messageType': 'text',
-        'message': {'text': messageMap}
-      };
-    } else {
-      dataForAddMassage = {
-        'chatId': widget.chat['id'],
-        'authorId': _user.id,
-        'messageType': 'text',
-        'delete': participantsMap,
-        'message': {
-          'text': messageMap,
-        },
-      };
-    }
-
-    final res = await pageController.addMessage(
-        dataForAddMassage, widget.chat['metadata']['chat_type']);
+    final res = await pageController.addMessage({
+      'chatId': widget.chat['id'],
+      'authorId': _user.id,
+      'messageType': 'text',
+      'delete': participantsMap,
+      'message': {
+        'text': messageMap,
+      },
+    }, widget.chat['metadata']['chat_type']);
 
     final messageData = res['message_data'];
     final mappedMessage = await _mapMessage(messageData);
