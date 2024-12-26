@@ -155,6 +155,7 @@
 
           let audioChunks = [];
           audioMediaRecorder.ondataavailable = (event) => {
+            console.log("New data");
             audioChunks.push(event.data);
           };
 
@@ -172,7 +173,7 @@
             audioChunks = [];
           };
 
-          audioMediaRecorder.start();
+          audioMediaRecorder.start(300);
           recordAudioButton.textContent = 'Stop Audio Recording';
           isAudioRecording = true;
         }
