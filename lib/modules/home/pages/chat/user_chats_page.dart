@@ -9,7 +9,6 @@ import 'package:near_social_mobile/config/constants.dart';
 import 'package:near_social_mobile/config/theme.dart';
 import 'package:near_social_mobile/modules/home/pages/chat/chat_page.dart';
 import 'package:near_social_mobile/modules/vms/core/auth_controller.dart';
-import 'package:near_social_mobile/services/cryptography/internal_cryptography_service.dart';
 import 'package:rxdart/rxdart.dart';
 
 import 'package:flutter_svg/flutter_svg.dart';
@@ -142,7 +141,7 @@ class UserChatsPageController {
 
     final metadata = {
       'chat_type': 'ai',
-      'participants': [userId, "AI"],
+      'participants': [userId, "ai"],
     };
 
     try {
@@ -289,47 +288,46 @@ class _UserChatsPageState extends State<UserChatsPage> {
                                 height: 100,
                                 child: Column(
                                   children: [
-                                    // ElevatedButton(
-                                    //   style: ElevatedButton.styleFrom(
-                                    //     backgroundColor:
-                                    //         Colors.grey[200], // Цвет кнопки
-                                    //     padding: const EdgeInsets.all(16),
-                                    //     shape: RoundedRectangleBorder(
-                                    //       borderRadius:
-                                    //           BorderRadius.circular(8),
-                                    //     ),
-                                    //     elevation: 3, // Эффект тени для объема
-                                    //   ),
-                                    //   onPressed: (() {
-                                    //     final pageController = Modular.get<
-                                    //         UserChatsPageController>();
+                                    ElevatedButton(
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.grey[200],
+                                        padding: const EdgeInsets.all(16),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(8),
+                                        ),
+                                        elevation: 3,
+                                      ),
+                                      onPressed: (() {
+                                        final pageController = Modular.get<
+                                            UserChatsPageController>();
 
-                                    //     pageController.pageStateStream.add(
-                                    //         state.copyWith(isAIFolader: true));
-                                    //   }),
-                                    //   child: Column(
-                                    //     children: [
-                                    //       Icon(
-                                    //         Icons.smart_toy_rounded,
-                                    //         size: 48,
-                                    //       ),
-                                    //       const SizedBox(height: 8),
-                                    //       Text(
-                                    //         "label",
-                                    //         style: const TextStyle(
-                                    //           fontSize: 16,
-                                    //           fontWeight: FontWeight.w600,
-                                    //           color: Colors.black,
-                                    //         ),
-                                    //       ),
-                                    //     ],
-                                    //   ),
-                                    // ),
-                                    Flexible(
-                                      child: ChatListBody(
-                                        key: ValueKey('chatListBody'),
+                                        pageController.pageStateStream.add(
+                                            state.copyWith(isAIFolader: true));
+                                      }),
+                                      child: Column(
+                                        children: [
+                                          Icon(
+                                            Icons.smart_toy_rounded,
+                                            size: 48,
+                                          ),
+                                          const SizedBox(height: 8),
+                                          Text(
+                                            "label",
+                                            style: const TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.w600,
+                                              color: Colors.black,
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ),
+                                    // Flexible(
+                                    //   child: ChatListBody(
+                                    //     key: ValueKey('chatListBody'),
+                                    //   ),
+                                    // ),
                                   ],
                                 ));
                           },
@@ -970,7 +968,7 @@ class _AiBodyState extends State<AiBody> {
     final response = await Supabase.instance.client
         .from("Chat")
         .select("*")
-        .eq('metadata->>user_id', currentUserAccountId)
+        .filter('metadata->participants', 'cs', '["$currentUserAccountId"]')
         .eq('metadata->>chat_type', 'ai');
 
     setState(() {
@@ -1018,7 +1016,7 @@ class _AiBodyState extends State<AiBody> {
                     );
                   },
                   title: Text(
-                    metadata['user_id'],
+                    metadata['participants'].toString(),
                     style: TextStyle(fontWeight: FontWeight.bold),
                   ),
                   subtitle: Text(
