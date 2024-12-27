@@ -19,7 +19,6 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:near_social_mobile/config/theme.dart';
 import 'package:near_social_mobile/modules/vms/core/auth_controller.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:web_socket_channel/web_socket_channel.dart';
 
 //Controller
 class ChatPageController {

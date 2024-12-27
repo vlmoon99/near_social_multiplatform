@@ -9,13 +9,13 @@
 </head>
 
 <body>
-  <h1>Push Notification Demo</h1>
+  <!-- <h1>Push Notification Demo</h1> -->
   <!-- <button id="subscribe">Subscribe</button>
   <button id="unsubscribe">Unsubscribe</button> -->
 
-  <button id="recordAudioButton">Start Audio Recording</button>
+  <!-- <button id="recordAudioButton">Start Audio Recording</button>
   <button id="recordVideoButton">Start Video Recording</button>
-  <ul id="fileList"></ul>
+  <ul id="fileList"></ul> -->
   <div id="app"></div>
   <script>window.global = window;</script>
   <script type="module" src="main.js"></script>
@@ -23,37 +23,37 @@
 
   <script>
 
-    function urlBase64ToUint8Array(base64String) {
-      var padding = '='.repeat((4 - base64String.length % 4) % 4);
-      var base64 = (base64String + padding)
-        .replace(/\-/g, '+')
-        .replace(/_/g, '/');
+    // function urlBase64ToUint8Array(base64String) {
+    //   var padding = '='.repeat((4 - base64String.length % 4) % 4);
+    //   var base64 = (base64String + padding)
+    //     .replace(/\-/g, '+')
+    //     .replace(/_/g, '/');
 
-      var rawData = window.atob(base64);
-      var outputArray = new Uint8Array(rawData.length);
+    //   var rawData = window.atob(base64);
+    //   var outputArray = new Uint8Array(rawData.length);
 
-      for (var i = 0; i < rawData.length; ++i) {
-        outputArray[i] = rawData.charCodeAt(i);
-      }
-      return outputArray;
-    }
+    //   for (var i = 0; i < rawData.length; ++i) {
+    //     outputArray[i] = rawData.charCodeAt(i);
+    //   }
+    //   return outputArray;
+    // }
 
-    // Check if Push Notifications and Notification API are supported
-    if ('Notification' in window && 'serviceWorker' in navigator) {
-      // Request permission for push notifications
-      Notification.requestPermission().then(permission => {
-        if (permission === 'granted') {
-          console.log('Notification permission granted.');
-          // You can now proceed to subscribe the user to push notifications
-        } else {
-          console.log('Notification permission denied.');
-        }
-      }).catch(err => {
-        console.error('Error requesting notification permission:', err);
-      });
-    } else {
-      console.warn('Push Notifications are not supported in this browser.');
-    }
+    // // Check if Push Notifications and Notification API are supported
+    // if ('Notification' in window && 'serviceWorker' in navigator) {
+    //   // Request permission for push notifications
+    //   Notification.requestPermission().then(permission => {
+    //     if (permission === 'granted') {
+    //       console.log('Notification permission granted.');
+    //       // You can now proceed to subscribe the user to push notifications
+    //     } else {
+    //       console.log('Notification permission denied.');
+    //     }
+    //   }).catch(err => {
+    //     console.error('Error requesting notification permission:', err);
+    //   });
+    // } else {
+    //   console.warn('Push Notifications are not supported in this browser.');
+    // }
 
     // // Check if Service Worker and Push Manager are supported
     // if ('serviceWorker' in navigator && 'PushManager' in window) {
@@ -135,196 +135,196 @@
     // });
 
 
-    document.addEventListener('DOMContentLoaded', () => {
-      let isAudioRecording = false;
-      let isVideoRecording = false;
-      let audioMediaRecorder, videoMediaRecorder;
-      const files = []; // Array to store file data and hashes
-      const recordAudioButton = document.getElementById('recordAudioButton');
-      const recordVideoButton = document.getElementById('recordVideoButton');
-      const fileList = document.getElementById('fileList');
+    // document.addEventListener('DOMContentLoaded', () => {
+    //   let isAudioRecording = false;
+    //   let isVideoRecording = false;
+    //   let audioMediaRecorder, videoMediaRecorder;
+    //   const files = []; // Array to store file data and hashes
+    //   const recordAudioButton = document.getElementById('recordAudioButton');
+    //   const recordVideoButton = document.getElementById('recordVideoButton');
+    //   const fileList = document.getElementById('fileList');
 
-      recordAudioButton.addEventListener('click', async () => {
-        if (isAudioRecording) {
-          audioMediaRecorder.stop();
-          recordAudioButton.textContent = 'Start Audio Recording';
-          isAudioRecording = false;
-        } else {
-          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-          audioMediaRecorder = new MediaRecorder(stream);
+    //   recordAudioButton.addEventListener('click', async () => {
+    //     if (isAudioRecording) {
+    //       audioMediaRecorder.stop();
+    //       recordAudioButton.textContent = 'Start Audio Recording';
+    //       isAudioRecording = false;
+    //     } else {
+    //       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    //       audioMediaRecorder = new MediaRecorder(stream);
 
-          let audioChunks = [];
-          audioMediaRecorder.ondataavailable = (event) => {
-            console.log("New data");
-            audioChunks.push(event.data);
-          };
+    //       let audioChunks = [];
+    //       audioMediaRecorder.ondataavailable = (event) => {
+    //         console.log("New data");
+    //         audioChunks.push(event.data);
+    //       };
 
-          audioMediaRecorder.onstop = async () => {
-            const blob = new Blob(audioChunks, { type: 'audio/webm' });
-            const fileName = `audio_${Date.now()}.webm`;
+    //       audioMediaRecorder.onstop = async () => {
+    //         const blob = new Blob(audioChunks, { type: 'audio/webm' });
+    //         const fileName = `audio_${Date.now()}.webm`;
 
-            const fileHash = await computeHash(blob);
-            const audioDuration = await getMediaDuration(blob, 'audio');
-            const numericData = await blobToNumbers(blob);
+    //         const fileHash = await computeHash(blob);
+    //         const audioDuration = await getMediaDuration(blob, 'audio');
+    //         const numericData = await blobToNumbers(blob);
 
-            files.push({ fileName, fileHash, blob, numericData, duration: audioDuration });
+    //         files.push({ fileName, fileHash, blob, numericData, duration: audioDuration });
 
-            displayFiles();
-            audioChunks = [];
-          };
+    //         displayFiles();
+    //         audioChunks = [];
+    //       };
 
-          audioMediaRecorder.start(300);
-          recordAudioButton.textContent = 'Stop Audio Recording';
-          isAudioRecording = true;
-        }
-      });
+    //       audioMediaRecorder.start(300);
+    //       recordAudioButton.textContent = 'Stop Audio Recording';
+    //       isAudioRecording = true;
+    //     }
+    //   });
 
-      recordVideoButton.addEventListener('click', async () => {
-        if (isVideoRecording) {
-          videoMediaRecorder.stop();
-          recordVideoButton.textContent = 'Start Video Recording';
-          isVideoRecording = false;
-        } else {
-          const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
-          videoMediaRecorder = new MediaRecorder(stream);
+    //   recordVideoButton.addEventListener('click', async () => {
+    //     if (isVideoRecording) {
+    //       videoMediaRecorder.stop();
+    //       recordVideoButton.textContent = 'Start Video Recording';
+    //       isVideoRecording = false;
+    //     } else {
+    //       const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
+    //       videoMediaRecorder = new MediaRecorder(stream);
 
-          let videoChunks = [];
-          videoMediaRecorder.ondataavailable = (event) => {
-            videoChunks.push(event.data);
-          };
+    //       let videoChunks = [];
+    //       videoMediaRecorder.ondataavailable = (event) => {
+    //         videoChunks.push(event.data);
+    //       };
 
-          videoMediaRecorder.onstop = async () => {
-            const blob = new Blob(videoChunks, { type: 'video/webm' });
-            const fileName = `video_${Date.now()}.webm`;
+    //       videoMediaRecorder.onstop = async () => {
+    //         const blob = new Blob(videoChunks, { type: 'video/webm' });
+    //         const fileName = `video_${Date.now()}.webm`;
 
-            const fileHash = await computeHash(blob);
-            const videoDuration = await getMediaDuration(blob, 'video');
-            const numericData = await blobToNumbers(blob);
+    //         const fileHash = await computeHash(blob);
+    //         const videoDuration = await getMediaDuration(blob, 'video');
+    //         const numericData = await blobToNumbers(blob);
 
-            files.push({ fileName, fileHash, blob, numericData, duration: videoDuration });
+    //         files.push({ fileName, fileHash, blob, numericData, duration: videoDuration });
 
-            displayFiles();
-            videoChunks = [];
+    //         displayFiles();
+    //         videoChunks = [];
 
-            stream.getTracks().forEach(track => track.stop()); // Stop the video stream
-          };
+    //         stream.getTracks().forEach(track => track.stop()); // Stop the video stream
+    //       };
 
-          videoMediaRecorder.start();
-          recordVideoButton.textContent = 'Stop Video Recording';
-          isVideoRecording = true;
-        }
-      });
+    //       videoMediaRecorder.start();
+    //       recordVideoButton.textContent = 'Stop Video Recording';
+    //       isVideoRecording = true;
+    //     }
+    //   });
 
-      async function computeHash(blob) {
-        const buffer = await blob.arrayBuffer();
-        const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
-        return Array.from(new Uint8Array(hashBuffer))
-          .map(b => b.toString(16).padStart(2, '0'))
-          .join('');
-      }
+    //   async function computeHash(blob) {
+    //     const buffer = await blob.arrayBuffer();
+    //     const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
+    //     return Array.from(new Uint8Array(hashBuffer))
+    //       .map(b => b.toString(16).padStart(2, '0'))
+    //       .join('');
+    //   }
 
-      async function blobToNumbers(blob) {
-        const arrayBuffer = await blob.arrayBuffer();
-        const uint8Array = new Uint8Array(arrayBuffer);
-        return Array.from(uint8Array);
-      }
+    //   async function blobToNumbers(blob) {
+    //     const arrayBuffer = await blob.arrayBuffer();
+    //     const uint8Array = new Uint8Array(arrayBuffer);
+    //     return Array.from(uint8Array);
+    //   }
 
-      function numbersToBlob(numbers, type = 'video/webm') {
-        const uint8Array = new Uint8Array(numbers);
-        const arrayBuffer = uint8Array.buffer;
-        return new Blob([arrayBuffer], { type });
-      }
+    //   function numbersToBlob(numbers, type = 'video/webm') {
+    //     const uint8Array = new Uint8Array(numbers);
+    //     const arrayBuffer = uint8Array.buffer;
+    //     return new Blob([arrayBuffer], { type });
+    //   }
 
-      async function getMediaDuration(blob, mediaType) {
-        return new Promise((resolve) => {
-          const media = document.createElement(mediaType);
-          const url = URL.createObjectURL(blob);
+    //   async function getMediaDuration(blob, mediaType) {
+    //     return new Promise((resolve) => {
+    //       const media = document.createElement(mediaType);
+    //       const url = URL.createObjectURL(blob);
 
-          media.src = url;
-          media.addEventListener('loadedmetadata', () => {
-            if (media.duration === Infinity) {
-              media.currentTime = Number.MAX_SAFE_INTEGER;
-              media.addEventListener('timeupdate', () => {
-                resolve(media.duration);
-                URL.revokeObjectURL(url);
-              }, { once: true });
-            } else {
-              resolve(media.duration);
-              URL.revokeObjectURL(url);
-            }
-          });
-        });
-      }
+    //       media.src = url;
+    //       media.addEventListener('loadedmetadata', () => {
+    //         if (media.duration === Infinity) {
+    //           media.currentTime = Number.MAX_SAFE_INTEGER;
+    //           media.addEventListener('timeupdate', () => {
+    //             resolve(media.duration);
+    //             URL.revokeObjectURL(url);
+    //           }, { once: true });
+    //         } else {
+    //           resolve(media.duration);
+    //           URL.revokeObjectURL(url);
+    //         }
+    //       });
+    //     });
+    //   }
 
-      function displayFiles() {
-        fileList.innerHTML = '';
-        files.forEach((file) => {
-          const listItem = document.createElement('li');
-          const fileInfo = document.createElement('span');
+    //   function displayFiles() {
+    //     fileList.innerHTML = '';
+    //     files.forEach((file) => {
+    //       const listItem = document.createElement('li');
+    //       const fileInfo = document.createElement('span');
 
-          const fileSizeInMB = (file.blob.size / (1024 * 1024)).toFixed(2);
-          fileInfo.textContent = `File: ${file.fileName}, Hash: ${file.fileHash}, Duration: ${file.duration.toFixed(2)} seconds, Size: ${fileSizeInMB} MB`;
+    //       const fileSizeInMB = (file.blob.size / (1024 * 1024)).toFixed(2);
+    //       fileInfo.textContent = `File: ${file.fileName}, Hash: ${file.fileHash}, Duration: ${file.duration.toFixed(2)} seconds, Size: ${fileSizeInMB} MB`;
 
-          listItem.appendChild(fileInfo);
+    //       listItem.appendChild(fileInfo);
 
-          const playButton = document.createElement('button');
-          playButton.textContent = 'Play';
-          playButton.addEventListener('click', () => {
-            const mediaURL = URL.createObjectURL(file.blob);
-            if (file.fileName.startsWith('audio')) {
-              const audio = new Audio(mediaURL);
-              audio.play();
-            } else {
-              const video = document.createElement('video');
-              video.src = mediaURL;
-              video.controls = true;
-              video.style.maxWidth = '300px';
-              document.body.appendChild(video);
-              video.play();
-            }
-          });
-          listItem.appendChild(playButton);
+    //       const playButton = document.createElement('button');
+    //       playButton.textContent = 'Play';
+    //       playButton.addEventListener('click', () => {
+    //         const mediaURL = URL.createObjectURL(file.blob);
+    //         if (file.fileName.startsWith('audio')) {
+    //           const audio = new Audio(mediaURL);
+    //           audio.play();
+    //         } else {
+    //           const video = document.createElement('video');
+    //           video.src = mediaURL;
+    //           video.controls = true;
+    //           video.style.maxWidth = '300px';
+    //           document.body.appendChild(video);
+    //           video.play();
+    //         }
+    //       });
+    //       listItem.appendChild(playButton);
 
-          const viewNumbersButton = document.createElement('button');
-          viewNumbersButton.textContent = 'View Numbers';
-          viewNumbersButton.addEventListener('click', () => {
-            console.log(`Numeric Data for ${file.fileName}:`, file.numericData);
-          });
-          listItem.appendChild(viewNumbersButton);
+    //       const viewNumbersButton = document.createElement('button');
+    //       viewNumbersButton.textContent = 'View Numbers';
+    //       viewNumbersButton.addEventListener('click', () => {
+    //         console.log(`Numeric Data for ${file.fileName}:`, file.numericData);
+    //       });
+    //       listItem.appendChild(viewNumbersButton);
 
-          // Convert Blob to Numbers button
-          const blobToNumbersButton = document.createElement('button');
-          blobToNumbersButton.textContent = 'Convert Blob to Numbers';
-          blobToNumbersButton.addEventListener('click', async () => {
-            const numericData = await blobToNumbers(file.blob);
-            console.log(`Blob to Numbers for ${file.fileName}:`, numericData);
-          });
-          listItem.appendChild(blobToNumbersButton);
+    //       // Convert Blob to Numbers button
+    //       const blobToNumbersButton = document.createElement('button');
+    //       blobToNumbersButton.textContent = 'Convert Blob to Numbers';
+    //       blobToNumbersButton.addEventListener('click', async () => {
+    //         const numericData = await blobToNumbers(file.blob);
+    //         console.log(`Blob to Numbers for ${file.fileName}:`, numericData);
+    //       });
+    //       listItem.appendChild(blobToNumbersButton);
 
-          // Reconstruct and Play From Numbers button
-          const reconstructPlayButton = document.createElement('button');
-          reconstructPlayButton.textContent = 'Play From Numbers';
-          reconstructPlayButton.addEventListener('click', () => {
-            const reconstructedBlob = numbersToBlob(file.numericData);
-            const mediaURL = URL.createObjectURL(reconstructedBlob);
-            if (file.fileName.startsWith('audio')) {
-              const audio = new Audio(mediaURL);
-              audio.play();
-            } else {
-              const video = document.createElement('video');
-              video.src = mediaURL;
-              video.controls = true;
-              video.style.maxWidth = '300px';
-              document.body.appendChild(video);
-              video.play();
-            }
-          });
-          listItem.appendChild(reconstructPlayButton);
+    //       // Reconstruct and Play From Numbers button
+    //       const reconstructPlayButton = document.createElement('button');
+    //       reconstructPlayButton.textContent = 'Play From Numbers';
+    //       reconstructPlayButton.addEventListener('click', () => {
+    //         const reconstructedBlob = numbersToBlob(file.numericData);
+    //         const mediaURL = URL.createObjectURL(reconstructedBlob);
+    //         if (file.fileName.startsWith('audio')) {
+    //           const audio = new Audio(mediaURL);
+    //           audio.play();
+    //         } else {
+    //           const video = document.createElement('video');
+    //           video.src = mediaURL;
+    //           video.controls = true;
+    //           video.style.maxWidth = '300px';
+    //           document.body.appendChild(video);
+    //           video.play();
+    //         }
+    //       });
+    //       listItem.appendChild(reconstructPlayButton);
 
-          fileList.appendChild(listItem);
-        });
-      }
-    });
+    //       fileList.appendChild(listItem);
+    //     });
+    //   }
+    // });
 
   </script>
 
