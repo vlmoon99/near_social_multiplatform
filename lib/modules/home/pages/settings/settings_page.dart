@@ -1,192 +1,14 @@
-// import 'package:flutter/material.dart';
-// import 'package:flutter/services.dart';
-// import 'package:flutter_modular/flutter_modular.dart';
-// import 'package:flutter_screenutil/flutter_screenutil.dart';
-// import 'package:flutter_svg/svg.dart';
-// import 'package:near_social_mobile/config/theme.dart';
-// import 'package:near_social_mobile/modules/home/pages/home_menu/widgets/home_menu_list_tile.dart';
-// import 'package:near_social_mobile/modules/home/vms/notifications/notifications_controller.dart';
-// import 'package:near_social_mobile/modules/home/vms/posts/posts_controller.dart';
-// import 'package:near_social_mobile/modules/vms/core/auth_controller.dart';
-// import 'package:near_social_mobile/modules/vms/core/filter_controller.dart';
-// import 'package:near_social_mobile/routes/routes.dart';
-// import 'package:near_social_mobile/shared_widgets/custom_button.dart';
-// import 'package:near_social_mobile/shared_widgets/home_menu_card.dart';
-// import 'package:supabase_flutter/supabase_flutter.dart';
-
-// class SettingsPage extends StatelessWidget {
-//   const SettingsPage({super.key});
-
-//   Future<void> onKeyManagerTap() async {
-//     HapticFeedback.lightImpact();
-//     Modular.to.pushNamed(
-//       ".${Routes.home.keyManagerPage}",
-//     );
-//   }
-
-//   Future<void> onBlockedUsersTap() async {
-//     HapticFeedback.lightImpact();
-//     Modular.to.pushNamed(".${Routes.home.blockedUsersPage}");
-//   }
-
-//   Future<void> onHiddenContentTap() async {
-//     HapticFeedback.lightImpact();
-//     Modular.to.pushNamed(".${Routes.home.hiddenPostsPage}");
-//   }
-
-// Future<void> onLogoutTap(BuildContext context) async {
-//   HapticFeedback.lightImpact();
-//   showDialog(
-//     context: context,
-//     builder: (context) => AlertDialog(
-//       title: const Text(
-//         "Are you sure you want to logout?",
-//         textAlign: TextAlign.center,
-//       ),
-//       actionsAlignment: MainAxisAlignment.spaceEvenly,
-//       actions: [
-//         CustomButton(
-//           primary: true,
-//           onPressed: () {
-//             Modular.to.pop(true);
-//           },
-//           child: const Text(
-//             "Yes",
-//             style: TextStyle(
-//               fontWeight: FontWeight.bold,
-//             ),
-//           ),
-//         ),
-//         CustomButton(
-//           onPressed: () {
-//             Modular.to.pop(false);
-//           },
-//           child: const Text(
-//             "No",
-//             style: TextStyle(
-//               fontWeight: FontWeight.bold,
-//             ),
-//           ),
-//         ),
-//       ],
-//     ),
-//   ).then(
-//     (value) async {
-//       if (value != null && value) {
-//         final authController = Modular.get<AuthController>();
-//         authController.logout();
-//         await Supabase.instance.client.auth.signOut();
-//         Modular.get<NotificationsController>().clear();
-//         Modular.get<FilterController>().clear();
-//         Modular.get<PostsController>().clear();
-//         Modular.to.navigate("/");
-//       }
-//     },
-//   );
-// }
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return Scaffold(
-//       appBar: AppBar(
-//         backgroundColor: NEARColors.blue,
-//         title: const Text(
-//           "Settings",
-//           style: TextStyle(
-//             fontSize: 20,
-//           ),
-//         ),
-//       ),
-//       body: Padding(
-//         padding: const EdgeInsets.all(20).r,
-//         child: MediaQuery.sizeOf(context).width > 600
-//             ? SizedBox(
-//                 width: double.infinity,
-//                 child: Column(
-//                   crossAxisAlignment: CrossAxisAlignment.center,
-//                   children: [
-//                     Expanded(
-//                       child: Wrap(
-//                         alignment: WrapAlignment.center,
-//                         spacing: 20,
-//                         children: [
-//                           // HomeMenuCard(
-//                           //   title: "Key Manager",
-//                           //   icon: SvgPicture.asset(
-//                           //     "assets/media/icons/key-icon.svg",
-//                           //     color: IconTheme.of(context).color,
-//                           //     height: IconTheme.of(context).size,
-//                           //   ),
-//                           //   onTap: onKeyManagerTap,
-//                           // ),
-//                           // HomeMenuCard(
-//                           //   icon: const Icon(Icons.person_off),
-//                           //   title: "Blocked Users",
-//                           //   onTap: onBlockedUsersTap,
-//                           // ),
-//                           // HomeMenuCard(
-//                           //   icon: const Icon(Icons.disabled_visible),
-//                           //   title: "Hidden Content",
-//                           //   onTap: onHiddenContentTap,
-//                           // ),
-//                         ],
-//                       ),
-//                     ),
-//                     HomeMenuCard(
-//                       title: "Logout",
-//                       icon: const Icon(Icons.logout),
-//                       onTap: () => onLogoutTap(context),
-//                     )
-//                   ],
-//                 ),
-//               )
-//             : Column(
-//                 children: [
-//                   HomeMenuListTile(
-//                     title: "Key Manager",
-//                     tile: SvgPicture.asset(
-//                       "assets/media/icons/key-icon.svg",
-//                       color: IconTheme.of(context).color,
-//                       height: IconTheme.of(context).size,
-//                     ),
-//                     onTap: onKeyManagerTap,
-//                   ),
-//                   HomeMenuListTile(
-//                     tile: const Icon(Icons.person_off),
-//                     title: "Blocked Users",
-//                     onTap: onBlockedUsersTap,
-//                   ),
-//                   HomeMenuListTile(
-//                     tile: const Icon(Icons.disabled_visible),
-//                     title: "Hidden Content",
-//                     onTap: onHiddenContentTap,
-//                   ),
-//                   const Spacer(),
-//                   HomeMenuListTile(
-//                     title: "Logout",
-//                     tile: const Icon(Icons.logout),
-//                     onTap: () => onLogoutTap(context),
-//                   ),
-//                 ],
-//               ),
-//       ),
-//     );
-//   }
-// }
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:flutter_svg/svg.dart';
 import 'package:near_social_mobile/config/theme.dart';
 import 'package:near_social_mobile/modules/home/vms/notifications/notifications_controller.dart';
 import 'package:near_social_mobile/modules/home/vms/posts/posts_controller.dart';
 import 'package:near_social_mobile/modules/vms/core/auth_controller.dart';
 import 'package:near_social_mobile/modules/vms/core/filter_controller.dart';
-import 'package:near_social_mobile/routes/routes.dart';
-import 'package:near_social_mobile/shared_widgets/custom_button.dart';
 import 'package:near_social_mobile/shared_widgets/home_menu_card.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class SettingsPage extends StatelessWidget {
@@ -197,39 +19,6 @@ class SettingsPage extends StatelessWidget {
     showDialog(
       context: context,
       builder: (context) => CustomAlertDialog(),
-      // builder: (context) => AlertDialog(
-      //   backgroundColor: NEARColors.white,
-      //   title: const Text(
-      //     "Are you sure you want to logout?",
-      //     textAlign: TextAlign.center,
-      //   ),
-      //   actionsAlignment: MainAxisAlignment.spaceEvenly,
-      //   actions: [
-      //     CustomButton(
-      //       primary: true,
-      //       onPressed: () {
-      //         Modular.to.pop(true);
-      //       },
-      //       child: const Text(
-      //         "Yes",
-      //         style: TextStyle(
-      //           fontWeight: FontWeight.bold,
-      //         ),
-      //       ),
-      //     ),
-      //     CustomButton(
-      //       onPressed: () {
-      //         Modular.to.pop(false);
-      //       },
-      //       child: const Text(
-      //         "No",
-      //         style: TextStyle(
-      //           fontWeight: FontWeight.bold,
-      //         ),
-      //       ),
-      //     ),
-      //   ],
-      // ),
     ).then(
       (value) async {
         if (value != null && value) {
@@ -241,6 +30,188 @@ class SettingsPage extends StatelessWidget {
           Modular.get<PostsController>().clear();
           Modular.to.navigate("/");
         }
+      },
+    );
+  }
+
+  Size defineDialogDimensions(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+
+    if (screenWidth >= 1200) {
+      return Size(screenWidth * 0.6, screenHeight * 0.7);
+    } else if (screenWidth >= 600) {
+      return Size(screenWidth * 0.6, screenHeight * 0.5);
+    } else {
+      return Size(screenWidth * 0.8, screenHeight * 0.6);
+    }
+  }
+
+  void showChatKeysDialog(BuildContext context) {
+    final String chatKey = "chat-key-123456789-demonstration-key-xyz";
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+    final dialogSize = Size(screenWidth * 0.7, screenHeight * 0.5);
+
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (BuildContext context) {
+        return GestureDetector(
+          onTap: () => Navigator.pop(context),
+          child: Dialog(
+            backgroundColor: Colors.transparent,
+            insetPadding: EdgeInsets.all(16.0),
+            child: GestureDetector(
+              onTap: () {},
+              child: Container(
+                width: dialogSize.width,
+                height: dialogSize.height,
+                decoration: BoxDecoration(
+                  color: NEARColors.white,
+                  borderRadius: BorderRadius.circular(16.0),
+                  border: Border.all(color: Colors.black, width: 2.0),
+                ),
+                padding: EdgeInsets.all(16.0),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        IconButton(
+                          icon: Icon(Icons.arrow_back, color: NEARColors.blue),
+                          onPressed: () => Navigator.pop(context),
+                        ),
+                        Text(
+                          'Chat Keys',
+                          style: TextStyle(
+                            fontSize: 24.0,
+                            fontWeight: FontWeight.bold,
+                            color: NEARColors.blue,
+                          ),
+                        ),
+                        SizedBox(width: 48.0),
+                      ],
+                    ),
+                    SizedBox(height: 16.0),
+                    Container(
+                      padding: EdgeInsets.all(16.0),
+                      decoration: BoxDecoration(
+                        color: Colors.grey[200],
+                        borderRadius: BorderRadius.circular(8.0),
+                        border: Border.all(color: Colors.black, width: 1.0),
+                      ),
+                      child: Text(
+                        chatKey,
+                        style: TextStyle(fontSize: 16.0, color: Colors.black),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                    SizedBox(height: 16.0),
+                    ElevatedButton(
+                      onPressed: () {
+                        Clipboard.setData(ClipboardData(text: chatKey));
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Key copied to clipboard!'),
+                          ),
+                        );
+                        Navigator.pop(context);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        padding: EdgeInsets.symmetric(vertical: 16.0),
+                        backgroundColor: NEARColors.blue,
+                        textStyle: TextStyle(
+                          fontSize: 20.0,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      child: Text('Copy Key'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void showNearSocialKeysDialog(BuildContext context) {
+    const String publicKey = "near-social-public-key-123456789-xyz";
+    final screenWidth = MediaQuery.of(context).size.width;
+
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (BuildContext context) {
+        final dialogSize = defineDialogDimensions(context);
+        double qrSize = screenWidth < 600
+            ? dialogSize.width * 0.8
+            : screenWidth < 900
+                ? dialogSize.width * 0.6
+                : dialogSize.width * 0.4;
+
+        return GestureDetector(
+          onTap: () => Navigator.pop(context),
+          child: Dialog(
+            backgroundColor: Colors.transparent,
+            insetPadding: EdgeInsets.all(16.0),
+            child: GestureDetector(
+              onTap: () {},
+              child: Container(
+                width: dialogSize.width,
+                height: dialogSize.height,
+                decoration: BoxDecoration(
+                  color: NEARColors.white,
+                  borderRadius: BorderRadius.circular(16.0),
+                  border: Border.all(color: Colors.black, width: 2.0),
+                ),
+                padding: EdgeInsets.all(16.0),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        IconButton(
+                          icon: Icon(Icons.arrow_back, color: NEARColors.blue),
+                          onPressed: () => Navigator.pop(context),
+                        ),
+                        Text(
+                          'Near Social Keys',
+                          style: TextStyle(
+                            fontSize: 24.0,
+                            fontWeight: FontWeight.bold,
+                            color: NEARColors.blue,
+                          ),
+                        ),
+                        SizedBox(width: 48.0),
+                      ],
+                    ),
+                    SizedBox(height: 16.0),
+                    QrImageView(
+                      data: publicKey,
+                      version: QrVersions.auto,
+                      size: qrSize,
+                      backgroundColor: Colors.white,
+                    ),
+                    SizedBox(height: 16.0),
+                    Text(
+                      'Tap anywhere to go back.',
+                      style: TextStyle(fontSize: 20.0, color: Colors.black),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
       },
     );
   }
@@ -323,7 +294,7 @@ class SettingsPage extends StatelessWidget {
                 ),
                 'callback': () {
                   HapticFeedback.lightImpact();
-                  // Modular.to.pushNamed(Routes.settings.chatKeysPage);
+                  showChatKeysDialog(context);
                 },
               },
               {
@@ -335,6 +306,7 @@ class SettingsPage extends StatelessWidget {
                 ),
                 'callback': () {
                   HapticFeedback.lightImpact();
+                  showNearSocialKeysDialog(context);
                   // Modular.to.pushNamed(Routes.settings.nearSocialKeyPage);
                 },
               },

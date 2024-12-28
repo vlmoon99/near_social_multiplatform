@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:near_social_mobile/modules/home/pages/home_menu/subpages/settings/sub_pages/widgets/bloked_user_tile.dart';
+import 'package:near_social_mobile/modules/home/pages/settings/sub_pages/widgets/bloked_user_tile.dart';
 import 'package:near_social_mobile/modules/vms/core/auth_controller.dart';
 import 'package:near_social_mobile/modules/vms/core/filter_controller.dart';
 import 'package:near_social_mobile/shared_widgets/custom_button.dart';
 
-class BlockedUsersPage extends StatelessWidget {
-  const BlockedUsersPage({super.key});
+class HiddenPostsUsersPage extends StatelessWidget {
+  const HiddenPostsUsersPage({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -15,7 +15,7 @@ class BlockedUsersPage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text(
-          "Blocked Users",
+          "Hidden posts users",
           style: TextStyle(
             fontSize: 20,
           ),
@@ -27,20 +27,22 @@ class BlockedUsersPage extends StatelessWidget {
       body: StreamBuilder(
         stream: filterController.stream,
         builder: (context, snapshot) {
-          final blockedUsers = filterController.state.blockedAccounts;
-          if (blockedUsers.isEmpty) {
+          if (filterController.state.allHiddenPostsUsers.isEmpty) {
             return const Center(
-              child: Text("No blocked users",
+              child: Text("No hidden posts",
                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
             );
           }
           return ListView.builder(
             padding: const EdgeInsets.all(15).r,
-            itemCount: blockedUsers.length,
+            itemCount: filterController.state.allHiddenPostsUsers.length,
             itemBuilder: (context, index) {
               return BlockedUserTile(
-                accountIdOfBlockedUser: blockedUsers[index],
-                actionToDoTile: "Unblock",
+                key: ValueKey(filterController.state.allHiddenPostsUsers
+                    .elementAt(index)),
+                accountIdOfBlockedUser:
+                    filterController.state.allHiddenPostsUsers.elementAt(index),
+                actionToDoTile: "Restore",
                 actionToDoOnPressed: () {
                   showDialog(
                     context:
@@ -48,7 +50,7 @@ class BlockedUsersPage extends StatelessWidget {
                     builder: (context) {
                       return AlertDialog(
                         title: Text(
-                            "Are you sure you want to unblock @${blockedUsers[index]} ?",
+                            "Are you sure you want to restore all post of @${filterController.state.allHiddenPostsUsers.elementAt(index)} ?",
                             style: const TextStyle(fontSize: 22)),
                         actionsAlignment: MainAxisAlignment.spaceEvenly,
                         actions: [
@@ -57,9 +59,12 @@ class BlockedUsersPage extends StatelessWidget {
                             onPressed: () async {
                               final AuthController authController =
                                   Modular.get<AuthController>();
-                              Modular.get<FilterController>().unblockUser(
+                              Modular.get<FilterController>()
+                                  .restorePostsOfUser(
                                 accountId: authController.state.accountId,
-                                blockedAccountId: blockedUsers[index],
+                                accountIdToRestore: filterController
+                                    .state.allHiddenPostsUsers
+                                    .elementAt(index),
                               );
                               Modular.to.pop();
                             },

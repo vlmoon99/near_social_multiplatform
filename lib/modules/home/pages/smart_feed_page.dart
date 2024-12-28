@@ -1,10 +1,8 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:near_social_mobile/config/constants.dart';
 import 'package:near_social_mobile/config/theme.dart';
 import 'package:near_social_mobile/modules/home/pages/posts_page/widgets/post_card.dart';
 import 'package:near_social_mobile/modules/home/vms/posts/posts_controller.dart';
@@ -29,8 +27,6 @@ class _SmartFeedPageState extends State<SmartFeedPage> {
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-
     return Scaffold(
       appBar: AppBar(
         title: Row(
@@ -108,59 +104,6 @@ class _SmartFeedPageState extends State<SmartFeedPage> {
                       },
                       itemCount: posts.length,
                     ),
-                    ValueListenableBuilder(
-                      valueListenable: currentPage,
-                      builder: (context, value, child) {
-                        if (kIsWeb &&
-                            defaultTargetPlatform != TargetPlatform.android &&
-                            defaultTargetPlatform != TargetPlatform.iOS &&
-                            value > 0) {
-                          return child!;
-                        } else {
-                          return const SizedBox.shrink();
-                        }
-                      },
-                      child: Align(
-                        alignment: Alignment.topCenter,
-                        child: Padding(
-                          padding: const EdgeInsets.only(top: 20).r,
-                          child: NavigationButton(
-                            icon: const Icon(
-                              Icons.keyboard_arrow_up,
-                              color: NEARColors.black,
-                            ),
-                            onPressed: () {
-                              pageController.animateToPage(
-                                  currentPage.value - 1,
-                                  duration: const Duration(milliseconds: 400),
-                                  curve: Curves.easeInOut);
-                            },
-                          ),
-                        ),
-                      ),
-                    ),
-                    if (kIsWeb &&
-                        defaultTargetPlatform != TargetPlatform.android &&
-                        defaultTargetPlatform != TargetPlatform.iOS) ...[
-                      Align(
-                        alignment: Alignment.bottomCenter,
-                        child: Padding(
-                          padding: const EdgeInsets.only(bottom: 20).r,
-                          child: NavigationButton(
-                            icon: const Icon(
-                              Icons.keyboard_arrow_down,
-                              color: NEARColors.black,
-                            ),
-                            onPressed: () {
-                              pageController.animateToPage(
-                                  currentPage.value + 1,
-                                  duration: const Duration(milliseconds: 400),
-                                  curve: Curves.easeInOut);
-                            },
-                          ),
-                        ),
-                      ),
-                    ]
                   ],
                 );
               });
@@ -176,34 +119,6 @@ class _SmartFeedPageState extends State<SmartFeedPage> {
           "assets/media/icons/feather-icon.svg",
           height: 24,
           color: NEARColors.white,
-        ),
-      ),
-    );
-  }
-}
-
-class NavigationButton extends StatelessWidget {
-  const NavigationButton(
-      {super.key, required this.icon, required this.onPressed});
-  final Icon icon;
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: MediaQuery.of(context).size.width < 600 ? 100.w : 50.w,
-      child: IconButton(
-        onPressed: onPressed,
-        icon: icon,
-        style: IconButton.styleFrom(
-          backgroundColor: NEARColors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(28.0),
-            side: const BorderSide(
-              color: NEARColors.black,
-              width: 2,
-            ),
-          ),
         ),
       ),
     );

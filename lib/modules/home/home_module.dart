@@ -5,8 +5,8 @@ import 'package:near_social_mobile/modules/home/pages/chat/user_chats_page.dart'
 import 'package:near_social_mobile/modules/home/pages/home_menu/home_menu_page.dart';
 import 'package:near_social_mobile/modules/home/pages/home_menu/subpages/mint_manager/mintbase_module.dart';
 import 'package:near_social_mobile/modules/home/pages/home_menu/subpages/mint_manager/vm/mintbase_controller.dart';
-import 'package:near_social_mobile/modules/home/pages/home_menu/subpages/settings/sub_pages/blocked_users/blocked_users_page.dart';
-import 'package:near_social_mobile/modules/home/pages/home_menu/subpages/settings/sub_pages/hided_posts_users/hidden_posts_users_page.dart';
+import 'package:near_social_mobile/modules/home/pages/settings/sub_pages/blocked_users/blocked_users_page.dart';
+import 'package:near_social_mobile/modules/home/pages/settings/sub_pages/hided_posts_users/hidden_posts_users_page.dart';
 import 'package:near_social_mobile/modules/home/pages/home_page.dart';
 import 'package:near_social_mobile/modules/home/pages/home_menu/subpages/key_manager/key_manager_page.dart';
 import 'package:near_social_mobile/modules/home/pages/near_widgets/widget_app_page.dart';
@@ -15,7 +15,7 @@ import 'package:near_social_mobile/modules/home/pages/notifications/notification
 import 'package:near_social_mobile/modules/home/pages/people/people_list_page.dart';
 import 'package:near_social_mobile/modules/home/pages/people/user_page.dart';
 import 'package:near_social_mobile/modules/home/pages/posts_page/posts_feed_page.dart';
-import 'package:near_social_mobile/modules/home/pages/home_menu/subpages/settings/settings_page.dart';
+import 'package:near_social_mobile/modules/home/pages/settings/settings_page.dart';
 import 'package:near_social_mobile/modules/home/pages/smart_feed_page.dart';
 import 'package:near_social_mobile/modules/home/vms/chats/chat_page_controller.dart';
 import 'package:near_social_mobile/modules/home/vms/chats/user_chats_page_controller.dart';

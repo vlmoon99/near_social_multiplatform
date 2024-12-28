@@ -82,6 +82,7 @@ dependencies:
   webcrypto: ^0.5.7
   permission_handler: ^11.3.1
   web_socket_channel: ^3.0.1
+  qr_flutter: ^4.1.0
 
 
 # dependency_overrides:
