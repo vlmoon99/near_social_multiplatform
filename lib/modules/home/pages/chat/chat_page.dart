@@ -251,6 +251,14 @@ class _ChatPageState extends State<ChatPage> {
 
     final pageController = Modular.get<ChatPageController>();
 
+    //ai
+    //   final res = await pageController.addMessage({
+    //   'chatId': widget.chat['id'],
+    //   'authorId': _user.id,
+    //   'messageType': 'text',
+    //   'message': {'text': textMessage.text},
+    // });
+
     final res = await pageController.addMessage({
       'chatId': widget.chat['id'],
       'authorId': _user.id,
