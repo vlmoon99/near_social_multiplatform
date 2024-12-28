@@ -2,9 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:near_social_mobile/modules/home/apis/near_social.dart';
-// import 'package:cloud_functions/cloud_functions.dart';
 
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutterchain/flutterchain_lib/services/chains/near_blockchain_service.dart';
@@ -300,7 +298,6 @@ class AuthController extends Disposable {
 
   Future<void> logout() async {
     try {
-      await FirebaseAuth.instance.signOut();
       await _secureStorage.delete(key: StorageKeys.authInfo);
       await _secureStorage.delete(key: StorageKeys.additionalCryptographicKeys);
       _streamController.add(const AuthInfo());

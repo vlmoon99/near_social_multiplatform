@@ -1,32 +1,4 @@
 {
-  "emulators": {
-    "auth": {
-      "port": 3333
-    },
-    "functions": {
-      "port": 2222
-    },
-    "firestore": {
-      "port": 1111
-    },
-    "ui": {
-      "enabled": true
-    },
-    "singleProjectMode": true
-  },
-  "functions": [
-    {
-      "source": "functions",
-      "codebase": "default",
-      "ignore": [
-        "node_modules",
-        ".git",
-        "firebase-debug.log",
-        "firebase-debug.*.log",
-        "*.local"
-      ]
-    }
-  ],
   "hosting": {
     "public": "./build/web",
     "ignore": [

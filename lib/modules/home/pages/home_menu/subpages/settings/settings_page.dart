@@ -1,4 +1,3 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -11,7 +10,6 @@ import 'package:near_social_mobile/modules/home/vms/posts/posts_controller.dart'
 import 'package:near_social_mobile/modules/vms/core/auth_controller.dart';
 import 'package:near_social_mobile/modules/vms/core/filter_controller.dart';
 import 'package:near_social_mobile/routes/routes.dart';
-import 'package:near_social_mobile/services/notification_subscription_service.dart';
 import 'package:near_social_mobile/shared_widgets/custom_button.dart';
 import 'package:near_social_mobile/shared_widgets/home_menu_card.dart';
 
@@ -75,12 +73,7 @@ class SettingsPage extends StatelessWidget {
       (value) async {
         if (value != null && value) {
           final authController = Modular.get<AuthController>();
-          if (!kIsWeb) {
-            Modular.get<NotificationSubscriptionService>()
-                .unsubscribeFromNotifications(authController.state.accountId);
-          }
           authController.logout();
-          await FirebaseAuth.instance.signOut();
           Modular.get<NotificationsController>().clear();
           Modular.get<FilterController>().clear();
           Modular.get<PostsController>().clear();
