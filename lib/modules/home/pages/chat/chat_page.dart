@@ -6,8 +6,10 @@ import 'package:flutter/material.dart';
 // ignore: depend_on_referenced_packages
 import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:near_social_mobile/modules/home/pages/chat/call_room_page.dart';
 import 'package:near_social_mobile/services/cryptography/encryption/encryption_runner_interface.dart';
 import 'package:near_social_mobile/services/cryptography/internal_cryptography_service.dart';
+import 'package:permission_handler/permission_handler.dart';
 // ignore: depend_on_referenced_packages
 import 'package:scroll_to_index/scroll_to_index.dart';
 
@@ -17,7 +19,6 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:near_social_mobile/config/theme.dart';
 import 'package:near_social_mobile/modules/vms/core/auth_controller.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:web_socket_channel/web_socket_channel.dart';
 
 //Controller
 class ChatPageController {
@@ -463,71 +464,6 @@ class _ChatPageState extends State<ChatPage> {
         showUserAvatars: true,
         showUserNames: true,
         user: _user,
-      ),
-    );
-  }
-}
-
-class RoomScreen extends StatefulWidget {
-  @override
-  _RoomScreenState createState() => _RoomScreenState();
-}
-
-class _RoomScreenState extends State<RoomScreen> {
-  final channel = WebSocketChannel.connect(
-    Uri.parse('ws://localhost:8080'),
-  );
-  late Timer timer;
-  List<String> messages = [];
-  final random = Random();
-
-  @override
-  void initState() {
-    super.initState();
-
-    setupWebSocketStream();
-  }
-
-  void setupWebSocketStream() async {
-    // Listen for messages from the server
-    channel.stream.listen((message) {
-      setState(() {
-        messages.add(message);
-      });
-    });
-
-    // Send a random 2D vector every second
-    timer = Timer.periodic(Duration(seconds: 1), (_) {
-      final vector = {
-        'x': random.nextDouble() * 100,
-        'y': random.nextDouble() * 100,
-      };
-      channel.sink.add(jsonEncode(vector));
-    });
-  }
-
-  @override
-  void dispose() {
-    timer.cancel();
-    channel.sink.close();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text('Room')),
-      body: Column(
-        children: [
-          Expanded(
-            child: ListView.builder(
-              itemCount: messages.length,
-              itemBuilder: (context, index) {
-                return ListTile(title: Text(messages[index]));
-              },
-            ),
-          ),
-        ],
       ),
     );
   }

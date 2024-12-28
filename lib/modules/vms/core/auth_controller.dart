@@ -162,7 +162,7 @@ class AuthController extends Disposable {
       // print("Test 1 decryptedMessage1 $decryptedMessage1");
 
       if (kIsWeb) {
-        await Permission.notification.onDeniedCallback(() {
+        Permission.notification.onDeniedCallback(() {
           print("onDeniedCallback");
         }).onGrantedCallback(() {
           print("onGrantedCallback");
