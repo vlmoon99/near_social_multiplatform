@@ -105,7 +105,7 @@ Deno.serve(async (req) => {
 
   let chatHash;
 
-  if (chatType == "private") {
+  if (chatType == "private" || chatType == "ai") {
     chatHash = await generateChatHash(participants[0], participants[1], chatType);
     reqJsonBody.metadata.delete = {[participants[0]]: false,[participants[1]] : false};
   }

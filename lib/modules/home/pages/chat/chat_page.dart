@@ -22,10 +22,11 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 //Controller
 class ChatPageController {
-  Future<Map<String, dynamic>> addMessage(Map<String, dynamic> message) async {
+  Future<Map<String, dynamic>> addMessage(
+      Map<String, dynamic> message, String chaType) async {
     try {
       final response = await Supabase.instance.client.functions.invoke(
-        'add_message_to_the_chat',
+        chaType == "ai" ? 'ai_message' : 'add_message_to_the_chat',
         headers: {
           "Accept": "application/json",
           "Access-Control-Allow-Origin": "*",
@@ -86,6 +87,7 @@ class _ChatPageState extends State<ChatPage> {
   @override
   void initState() {
     super.initState();
+    print(widget.chat);
     final currentUserAccountID = Modular.get<AuthController>().state.accountId;
     _user = types.User(id: currentUserAccountID);
     _setupNewMessageStream();
@@ -250,6 +252,14 @@ class _ChatPageState extends State<ChatPage> {
 
     final pageController = Modular.get<ChatPageController>();
 
+    //ai
+    //   final res = await pageController.addMessage({
+    //   'chatId': widget.chat['id'],
+    //   'authorId': _user.id,
+    //   'messageType': 'text',
+    //   'message': {'text': textMessage.text},
+    // });
+
     final res = await pageController.addMessage({
       'chatId': widget.chat['id'],
       'authorId': _user.id,
@@ -258,7 +268,7 @@ class _ChatPageState extends State<ChatPage> {
       'message': {
         'text': messageMap,
       },
-    });
+    }, widget.chat['metadata']['chat_type']);
 
     final messageData = res['message_data'];
     final mappedMessage = await _mapMessage(messageData);
@@ -412,36 +422,36 @@ class _ChatPageState extends State<ChatPage> {
                             ),
                           ),
                           SizedBox(width: 16.w),
-                          Expanded(
-                            child: ElevatedButton(
-                              onPressed: () {
-                                _handleMessageDelete(
-                                  message.id,
-                                );
-                                Navigator.of(context).pop();
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: NEARColors.red,
-                                padding: EdgeInsets.symmetric(
-                                  vertical: 12.h,
-                                ),
-                                minimumSize: Size(100.w, 44.h),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8.r),
-                                ),
-                              ),
-                              child: Text(
-                                'Yes',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .labelLarge
-                                    ?.copyWith(
-                                      color: NEARColors.white,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                              ),
-                            ),
-                          ),
+                          // Expanded(
+                          //   child: ElevatedButton(
+                          //     onPressed: () {
+                          //       _handleMessageDelete(
+                          //         message.id,
+                          //       );
+                          //       Navigator.of(context).pop();
+                          //     },
+                          //     style: ElevatedButton.styleFrom(
+                          //       backgroundColor: NEARColors.red,
+                          //       padding: EdgeInsets.symmetric(
+                          //         vertical: 12.h,
+                          //       ),
+                          //       minimumSize: Size(100.w, 44.h),
+                          //       shape: RoundedRectangleBorder(
+                          //         borderRadius: BorderRadius.circular(8.r),
+                          //       ),
+                          //     ),
+                          //     child: Text(
+                          //       'Yes',
+                          //       style: Theme.of(context)
+                          //           .textTheme
+                          //           .labelLarge
+                          //           ?.copyWith(
+                          //             color: NEARColors.white,
+                          //             fontWeight: FontWeight.w600,
+                          //           ),
+                          //     ),
+                          //   ),
+                          // ),
                         ],
                       ),
                     ],

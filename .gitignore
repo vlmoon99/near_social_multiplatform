@@ -49,3 +49,10 @@ cryptography_project/target/
 local_gateway/node_modules/
 web-push-notification-service/node_modules
 real-time-calls-server/node_modules
+
+to_ai_embedding/venv
+
+
+node_modules/
+
+to_ai_embedding/__pycache__

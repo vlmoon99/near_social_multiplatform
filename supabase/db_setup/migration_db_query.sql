@@ -35,6 +35,23 @@ CREATE TABLE "Message" (
     FOREIGN KEY (author_id) REFERENCES "User"(id) ON DELETE CASCADE
 );
 
+CREATE TABLE AIKeys (
+    id SERIAL PRIMARY KEY,
+    private_key TEXT NOT NULL,
+    public_key TEXT NOT NULL 
+);
+
+create extension vector
+with
+  schema extensions;
+
+CREATE TABLE "Embedding" (
+    id SERIAL PRIMARY KEY,
+    text TEXT NOT NULL,
+    embedding vector(384) NOT NULL
+);
+
+
 -- Indexes
 
 CREATE INDEX idx_chat_metadata_delete ON "Chat" USING GIN ((metadata->'delete'));
@@ -243,3 +260,32 @@ using (
 
 
 -- Policies End
+
+--Postgres Func 
+
+create or replace function match_embedding(
+  query_embedding vector(384),
+  match_threshold float,
+  match_count int,
+  ids bigint[]
+)
+returns table (
+  id bigint,
+  text text,
+  embedding vector(384),
+  similarity float
+)
+language sql stable
+as $$
+  select
+    "Embedding".id,
+    "Embedding".text,
+    "Embedding".embedding,
+    1 - ("Embedding".embedding <=> query_embedding) as similarity
+  from "Embedding"
+  where 
+    "Embedding".id = ANY(ids) 
+    and 1 - ("Embedding".embedding <=> query_embedding) > match_threshold
+  order by similarity desc
+  limit match_count;
+$$;
