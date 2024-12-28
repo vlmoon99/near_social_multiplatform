@@ -12,6 +12,7 @@ import 'package:near_social_mobile/modules/vms/core/filter_controller.dart';
 import 'package:near_social_mobile/routes/routes.dart';
 import 'package:near_social_mobile/shared_widgets/custom_button.dart';
 import 'package:near_social_mobile/shared_widgets/home_menu_card.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
@@ -74,6 +75,7 @@ class SettingsPage extends StatelessWidget {
         if (value != null && value) {
           final authController = Modular.get<AuthController>();
           authController.logout();
+          await Supabase.instance.client.auth.signOut();
           Modular.get<NotificationsController>().clear();
           Modular.get<FilterController>().clear();
           Modular.get<PostsController>().clear();

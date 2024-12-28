@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:near_social_mobile/modules/core_module.dart';
-import 'package:near_social_mobile/modules/home/pages/chat/chat_page.dart';
 import 'package:near_social_mobile/modules/home/pages/chat/user_chats_page.dart';
 import 'package:near_social_mobile/modules/home/pages/home_menu/home_menu_page.dart';
 import 'package:near_social_mobile/modules/home/pages/home_menu/subpages/mint_manager/mintbase_module.dart';
@@ -18,6 +17,8 @@ import 'package:near_social_mobile/modules/home/pages/people/user_page.dart';
 import 'package:near_social_mobile/modules/home/pages/posts_page/posts_feed_page.dart';
 import 'package:near_social_mobile/modules/home/pages/home_menu/subpages/settings/settings_page.dart';
 import 'package:near_social_mobile/modules/home/pages/smart_posts_page.dart';
+import 'package:near_social_mobile/modules/home/vms/chats/chat_page_controller.dart';
+import 'package:near_social_mobile/modules/home/vms/chats/user_chats_page_controller.dart';
 import 'package:near_social_mobile/modules/home/vms/near_widgets/near_widgets_controller.dart';
 import 'package:near_social_mobile/modules/home/vms/notifications/notifications_controller.dart';
 import 'package:near_social_mobile/modules/home/vms/posts/posts_controller.dart';

@@ -1,15 +1,14 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:math';
 
 import 'package:flutter/material.dart';
 // ignore: depend_on_referenced_packages
 import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:near_social_mobile/modules/home/pages/chat/call_room_page.dart';
+import 'package:near_social_mobile/modules/home/vms/chats/chat_page_controller.dart';
 import 'package:near_social_mobile/services/cryptography/encryption/encryption_runner_interface.dart';
 import 'package:near_social_mobile/services/cryptography/internal_cryptography_service.dart';
-import 'package:permission_handler/permission_handler.dart';
 // ignore: depend_on_referenced_packages
 import 'package:scroll_to_index/scroll_to_index.dart';
 
@@ -19,50 +18,6 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:near_social_mobile/config/theme.dart';
 import 'package:near_social_mobile/modules/vms/core/auth_controller.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-
-//Controller
-class ChatPageController {
-  Future<Map<String, dynamic>> addMessage(Map<String, dynamic> message) async {
-    try {
-      final response = await Supabase.instance.client.functions.invoke(
-        'add_message_to_the_chat',
-        headers: {
-          "Accept": "application/json",
-          "Access-Control-Allow-Origin": "*",
-        },
-        body: message,
-      );
-      return response.data;
-    } catch (e) {
-      print('Unexpected error: $e');
-      return {
-        'result': 'error',
-        'operation_message': 'Unexpected error',
-      };
-    }
-  }
-
-  Future<Map<String, dynamic>> deleteMessage(String messageId) async {
-    try {
-      final response = await Supabase.instance.client.functions.invoke(
-        'delete_message_from_the_chat',
-        headers: {
-          "Accept": "application/json",
-          "Access-Control-Allow-Origin": "*",
-        },
-        body: {"messageId": messageId},
-      );
-      return response.data;
-    } catch (e) {
-      return {
-        'result': 'error',
-        'operation_message': 'Unexpected error',
-      };
-    }
-  }
-}
-
-//Page
 
 class ChatPage extends StatefulWidget {
   const ChatPage({
@@ -89,7 +44,6 @@ class _ChatPageState extends State<ChatPage> {
     final currentUserAccountID = Modular.get<AuthController>().state.accountId;
     _user = types.User(id: currentUserAccountID);
     _setupNewMessageStream();
-    _scrollController.addListener(_onScroll);
   }
 
   Future<void> _setupNewMessageStream() async {
@@ -151,8 +105,6 @@ class _ChatPageState extends State<ChatPage> {
             DateTime.parse(rawMessage['created_at']).millisecondsSinceEpoch,
         author: types.User(id: rawMessage['author_id']),
       );
-      print("TEST 1 decryptedMessage $decryptedMessage");
-
       return parsedMessage;
     } catch (e) {
       return types.TextMessage(
@@ -165,27 +117,7 @@ class _ChatPageState extends State<ChatPage> {
     }
   }
 
-  void _onScroll() {
-    final comparsion1 = _scrollController.position.pixels ==
-        _scrollController.position.minScrollExtent;
-    final comparsion2 = _scrollController.position.pixels ==
-        _scrollController.position.maxScrollExtent;
-
-    if (comparsion1) {
-      print("comparsion1 $comparsion1");
-    } else if (comparsion2) {
-      print("comparsion2 $comparsion2");
-    }
-  }
-
   Future<void> _handleSendPressed(types.PartialText message) async {
-    // final textMessage = types.TextMessage(
-    //   author: _user,
-    //   createdAt: DateTime.now().millisecondsSinceEpoch,
-    //   id: Random().nextInt(1000000).toString(),
-    //   text: message.text,
-    // );
-
     final participants =
         (widget.chat['metadata']['participants'] as List<dynamic>)
             .map((e) => e.toString())
@@ -195,9 +127,7 @@ class _ChatPageState extends State<ChatPage> {
       for (int i = 0; i < participants.length; i++) participants[i]: false
     };
 
-    final messageMap = {
-      // for (int i = 0; i < participants.length; i++) participants[i]: false
-    };
+    final messageMap = {};
 
     final data = Supabase.instance.client.from('User').select();
     for (final id in participants) {
@@ -216,36 +146,6 @@ class _ChatPageState extends State<ChatPage> {
           );
 
       messageMap[accounts[i]['id'].toString()] = encryptedMessage;
-
-      //   final currentUserAccountID =
-      //       Modular.get<AuthController>().state.accountId;
-
-      //   if (accounts[i]['id'].toString() == currentUserAccountID) {
-      //     print(
-      //         "Test 1 Is currentAccountId ${accounts[i]['id'].toString() == currentUserAccountID}");
-
-      //     print("Test 1 encryptedMessage : $encryptedMessage");
-
-      //     final res = KeyPair.fromJson(
-      //         jsonDecode(await Modular.get<FlutterSecureStorage>().read(
-      //               key: "session_keys",
-      //             ) ??
-      //             '{}'));
-
-      //     print("Test 1 res.publicKey ${res.publicKey}");
-      //     print(
-      //         "Test 1 accountPublicKeyForEncryption $accountPublicKeyForEncryption");
-
-      //     print(
-      //         "Test 1 res.publicKey == accountPublicKeyForEncryption ${res.publicKey == accountPublicKeyForEncryption}");
-
-      //     final decryptednMessage =
-      //         await Modular.get<InternalCryptographyService>()
-      //             .encryptionRunner
-      //             .decryptMessage(res.privateKey, encryptedMessage);
-
-      //     print("Test 1 decryptednMessage $decryptednMessage");
-      //   }
     }
 
     final pageController = Modular.get<ChatPageController>();
@@ -308,12 +208,12 @@ class _ChatPageState extends State<ChatPage> {
           IconButton(
             onPressed: () {
               print("Start Call");
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (ctx) => RoomScreen(),
-                ),
-              );
+              // Navigator.push(
+              //   context,
+              //   MaterialPageRoute(
+              //     builder: (ctx) => RoomScreen(),
+              //   ),
+              // );
             },
             icon: Icon(
               Icons.call,
@@ -405,7 +305,6 @@ class _ChatPageState extends State<ChatPage> {
                                     .labelLarge
                                     ?.copyWith(
                                       color: NEARColors.grey,
-                                      // fontSize: 16.sp,
                                       fontWeight: FontWeight.w600,
                                     ),
                               ),
