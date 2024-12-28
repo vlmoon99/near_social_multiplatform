@@ -48,6 +48,27 @@ function urlBase64ToUint8Array(base64String) {
     return outputArray;
 }
 
+async function startAudioStream() {
+    let audioMediaRecorder;
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        audioMediaRecorder = new MediaRecorder(stream);
+
+        audioMediaRecorder.ondataavailable =async (event) => {
+            const bytes = await event.data.arrayBuffer();
+            globalThis.captureMicrophone(bytes);
+            console.log("New data {}",bytes);
+        };
+
+        audioMediaRecorder.onstop = async () => {
+        };
+
+        audioMediaRecorder.start(300);
+
+    } catch (error) {
+        console.error("Error accessing microphone or starting stream:", error);
+    }
+}
 
 window.urlBase64ToUint8Array = urlBase64ToUint8Array;
 
@@ -61,9 +82,12 @@ window.encrypt_message = encrypt_message;
 
 window.decrypt_message = decrypt_message;
 
+window.startAudioStream = startAudioStream;
 
 initSync().then(() => {
     console.log("Cryptography module was intied sucsessfully");
 });
+
+
 
 
