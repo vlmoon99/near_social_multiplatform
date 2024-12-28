@@ -61,8 +61,13 @@ class SettingsPage extends StatelessWidget {
 
     final String chatKey = keys.toJson().toString();
     final screenWidth = MediaQuery.of(context).size.width;
-    final screenHeight = MediaQuery.of(context).size.height;
-    final dialogSize = Size(screenWidth * 0.7, screenHeight * 0.5);
+    // final screenHeight = MediaQuery.of(context).size.height;
+    final dialogSize = defineDialogDimensions(context);
+    double keysSize = screenWidth < 600
+        ? dialogSize.width * 0.8
+        : screenWidth < 900
+            ? dialogSize.width * 0.6
+            : dialogSize.width * 0.4;
 
     showDialog(
       context: context,
@@ -109,15 +114,15 @@ class SettingsPage extends StatelessWidget {
                     SizedBox(height: 16.0),
                     Container(
                       padding: EdgeInsets.all(16.0),
-                      width: dialogSize.width * 0.3,
-                      height: dialogSize.height * 0.3,
+                      width: keysSize,
+                      height: keysSize,
                       decoration: BoxDecoration(
                         color: Colors.grey[200],
                         borderRadius: BorderRadius.circular(8.0),
                         border: Border.all(color: Colors.black, width: 1.0),
                       ),
                       child: Text(
-                        "${chatKey.substring(0, 50)}....",
+                        "${chatKey.substring(0, 200)}....",
                         style: TextStyle(fontSize: 16.0, color: Colors.black),
                         textAlign: TextAlign.center,
                       ),
