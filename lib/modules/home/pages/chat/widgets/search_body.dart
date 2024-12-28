@@ -2,27 +2,16 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:flutter_svg/svg.dart';
-import 'package:intl/intl.dart';
 import 'package:near_social_mobile/config/constants.dart';
 import 'package:near_social_mobile/config/theme.dart';
 import 'package:near_social_mobile/modules/home/pages/chat/chat_page.dart';
-import 'package:near_social_mobile/modules/home/pages/chat/user_chats_page.dart';
 import 'package:near_social_mobile/modules/home/pages/chat/widgets/chat_creation_result_modal.dart';
 import 'package:near_social_mobile/modules/home/pages/chat/widgets/chat_type_selection_modal.dart';
 import 'package:near_social_mobile/modules/home/vms/chats/models/chat_model.dart';
 import 'package:near_social_mobile/modules/home/vms/chats/user_chats_page_controller.dart';
 import 'package:near_social_mobile/modules/vms/core/auth_controller.dart';
-import 'package:rxdart/rxdart.dart';
 
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-
-// ignore: depend_on_referenced_packages
-import 'package:crypto/crypto.dart';
-
-import 'dart:convert';
 
 class SearchBody extends StatefulWidget {
   final TextEditingController searchController;

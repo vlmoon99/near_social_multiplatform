@@ -4,25 +4,49 @@ import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:near_social_mobile/config/constants.dart';
 import 'package:near_social_mobile/config/theme.dart';
 import 'package:near_social_mobile/modules/home/pages/posts_page/widgets/post_card.dart';
 import 'package:near_social_mobile/modules/home/vms/posts/posts_controller.dart';
 
-class SmartPostsPage extends StatefulWidget {
-  const SmartPostsPage({super.key});
+class SmartFeedPage extends StatefulWidget {
+  const SmartFeedPage({super.key});
 
   @override
-  State<SmartPostsPage> createState() => _SmartPostsPageState();
+  State<SmartFeedPage> createState() => _SmartFeedPageState();
 }
 
-class _SmartPostsPageState extends State<SmartPostsPage> {
+class _SmartFeedPageState extends State<SmartFeedPage> {
   final PostsController postsController = Modular.get<PostsController>();
   final PageController pageController = PageController();
   final ValueNotifier<int> currentPage = ValueNotifier(0);
 
   @override
+  void initState() {
+    super.initState();
+    postsController.loadPosts(postsViewMode: PostsViewMode.main);
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+
     return Scaffold(
+      appBar: AppBar(
+        title: Row(
+          children: [
+            Text(
+              'Smart Feed',
+              style: Theme.of(context)
+                  .textTheme
+                  .titleLarge
+                  ?.copyWith(color: NEARColors.white),
+            ),
+          ],
+        ),
+        centerTitle: true,
+        backgroundColor: NEARColors.blue,
+      ),
       body: SafeArea(
         child: LayoutBuilder(builder: (_, constraints) {
           return StreamBuilder(
@@ -30,6 +54,9 @@ class _SmartPostsPageState extends State<SmartPostsPage> {
                 (previous, next) => previous.posts.length == next.posts.length,
               ),
               builder: (_, snapshot) {
+                if (!snapshot.hasData) {
+                  return CircularProgressIndicator.adaptive();
+                }
                 final posts = postsController.state.posts;
                 return Stack(
                   children: [
@@ -46,7 +73,12 @@ class _SmartPostsPageState extends State<SmartPostsPage> {
                       itemBuilder: (_, index) {
                         final post = posts[index];
                         return Padding(
-                          padding: const EdgeInsets.all(20).r,
+                          padding: EdgeInsets.only(
+                            top: 10.w,
+                            right: 20.w,
+                            left: 20.w,
+                            bottom: 10.w,
+                          ),
                           child: Center(
                             child: Column(
                               mainAxisSize: MainAxisSize.min,

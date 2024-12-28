@@ -18,8 +18,6 @@ class _UserChatsPageState extends State<UserChatsPage> {
 
   @override
   void dispose() {
-    final pageController = Modular.get<UserChatsPageController>();
-    pageController.pageStateStream.close();
     searchController.dispose();
     super.dispose();
   }

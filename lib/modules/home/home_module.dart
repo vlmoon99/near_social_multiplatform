@@ -16,7 +16,7 @@ import 'package:near_social_mobile/modules/home/pages/people/people_list_page.da
 import 'package:near_social_mobile/modules/home/pages/people/user_page.dart';
 import 'package:near_social_mobile/modules/home/pages/posts_page/posts_feed_page.dart';
 import 'package:near_social_mobile/modules/home/pages/home_menu/subpages/settings/settings_page.dart';
-import 'package:near_social_mobile/modules/home/pages/smart_posts_page.dart';
+import 'package:near_social_mobile/modules/home/pages/smart_feed_page.dart';
 import 'package:near_social_mobile/modules/home/vms/chats/chat_page_controller.dart';
 import 'package:near_social_mobile/modules/home/vms/chats/user_chats_page_controller.dart';
 import 'package:near_social_mobile/modules/home/vms/near_widgets/near_widgets_controller.dart';
@@ -48,6 +48,10 @@ class HomeModule extends Module {
 
   @override
   void routes(RouteManager r) {
+    r.child(
+      Routes.home.chatsPage,
+      child: (context) => const UserChatsPage(),
+    );
     r.child(
       Routes.home.startPage,
       child: (context) => const HomePage(),
@@ -117,7 +121,7 @@ class HomeModule extends Module {
     r.child(Routes.home.hiddenPostsPage,
         child: (context) => const HiddenPostsUsersPage());
     r.module(Routes.home.mintManager, module: MintbaseModule());
-    r.child(Routes.home.smartPostsPage,
-        child: (context) => const SmartPostsPage());
+    r.child(Routes.home.smartFeedPage,
+        child: (context) => const SmartFeedPage());
   }
 }

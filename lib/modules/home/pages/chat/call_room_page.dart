@@ -7,9 +7,6 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
-@JS()
-external set captureMicrophone(JSFunction value);
-
 class RoomScreen extends StatefulWidget {
   @override
   _RoomScreenState createState() => _RoomScreenState();
@@ -30,7 +27,6 @@ class _RoomScreenState extends State<RoomScreen> {
 
   Future<void> startHeadlessAudioStream() async {
     try {
-      captureMicrophone = printVec.toJS;
       print('Headless audio streaming started!');
     } catch (e) {
       print('Error starting headless audio stream: $e');

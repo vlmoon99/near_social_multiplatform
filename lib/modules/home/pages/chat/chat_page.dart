@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 // ignore: depend_on_referenced_packages
 import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:near_social_mobile/modules/home/pages/chat/call_room_page.dart';
 import 'package:near_social_mobile/modules/home/vms/chats/chat_page_controller.dart';
 import 'package:near_social_mobile/services/cryptography/encryption/encryption_runner_interface.dart';
 import 'package:near_social_mobile/services/cryptography/internal_cryptography_service.dart';
