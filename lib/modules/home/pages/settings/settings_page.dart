@@ -1,12 +1,17 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:near_social_mobile/config/theme.dart';
 import 'package:near_social_mobile/modules/home/vms/notifications/notifications_controller.dart';
 import 'package:near_social_mobile/modules/home/vms/posts/posts_controller.dart';
 import 'package:near_social_mobile/modules/vms/core/auth_controller.dart';
 import 'package:near_social_mobile/modules/vms/core/filter_controller.dart';
+import 'package:near_social_mobile/routes/routes.dart';
+import 'package:near_social_mobile/services/cryptography/encryption/encryption_runner_interface.dart';
 import 'package:near_social_mobile/shared_widgets/home_menu_card.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -47,8 +52,14 @@ class SettingsPage extends StatelessWidget {
     }
   }
 
-  void showChatKeysDialog(BuildContext context) {
-    final String chatKey = "chat-key-123456789-demonstration-key-xyz";
+  Future<void> showChatKeysDialog(BuildContext context) async {
+    final keys = KeyPair.fromJson(
+        jsonDecode(await Modular.get<FlutterSecureStorage>().read(
+              key: "session_keys",
+            ) ??
+            '{}'));
+
+    final String chatKey = keys.toJson().toString();
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
     final dialogSize = Size(screenWidth * 0.7, screenHeight * 0.5);
@@ -98,37 +109,46 @@ class SettingsPage extends StatelessWidget {
                     SizedBox(height: 16.0),
                     Container(
                       padding: EdgeInsets.all(16.0),
+                      width: dialogSize.width * 0.3,
+                      height: dialogSize.height * 0.3,
                       decoration: BoxDecoration(
                         color: Colors.grey[200],
                         borderRadius: BorderRadius.circular(8.0),
                         border: Border.all(color: Colors.black, width: 1.0),
                       ),
                       child: Text(
-                        chatKey,
+                        "${chatKey.substring(0, 50)}....",
                         style: TextStyle(fontSize: 16.0, color: Colors.black),
                         textAlign: TextAlign.center,
                       ),
                     ),
                     SizedBox(height: 16.0),
-                    ElevatedButton(
-                      onPressed: () {
-                        Clipboard.setData(ClipboardData(text: chatKey));
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('Key copied to clipboard!'),
+                    SizedBox(
+                      height: 80,
+                      width: 80,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          Clipboard.setData(ClipboardData(text: chatKey));
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Key copied to clipboard!'),
+                            ),
+                          );
+                          Navigator.pop(context);
+                        },
+                        style: ElevatedButton.styleFrom(
+                          padding: EdgeInsets.symmetric(vertical: 16.0),
+                          backgroundColor: NEARColors.blue,
+                          textStyle: TextStyle(
+                            fontSize: 18.0,
+                            fontWeight: FontWeight.bold,
                           ),
-                        );
-                        Navigator.pop(context);
-                      },
-                      style: ElevatedButton.styleFrom(
-                        padding: EdgeInsets.symmetric(vertical: 16.0),
-                        backgroundColor: NEARColors.blue,
-                        textStyle: TextStyle(
-                          fontSize: 20.0,
-                          fontWeight: FontWeight.bold,
+                        ),
+                        child: Icon(
+                          Icons.copy,
+                          color: Colors.white,
                         ),
                       ),
-                      child: Text('Copy Key'),
                     ),
                   ],
                 ),
@@ -140,9 +160,13 @@ class SettingsPage extends StatelessWidget {
     );
   }
 
-  void showNearSocialKeysDialog(BuildContext context) {
-    const String publicKey = "near-social-public-key-123456789-xyz";
+  Future<void> showNearSocialKeysDialog(BuildContext context) async {
+    final authSecretKey = Modular.get<AuthController>().state.secretKey;
+    final accountId = Modular.get<AuthController>().state.accountId;
+
     final screenWidth = MediaQuery.of(context).size.width;
+
+    final link = "https://near.social/signin#?a=$accountId&k=$authSecretKey";
 
     showDialog(
       context: context,
@@ -183,7 +207,7 @@ class SettingsPage extends StatelessWidget {
                           onPressed: () => Navigator.pop(context),
                         ),
                         Text(
-                          'Near Social Keys',
+                          'Near Social Key',
                           style: TextStyle(
                             fontSize: 24.0,
                             fontWeight: FontWeight.bold,
@@ -195,7 +219,7 @@ class SettingsPage extends StatelessWidget {
                     ),
                     SizedBox(height: 16.0),
                     QrImageView(
-                      data: publicKey,
+                      data: link,
                       version: QrVersions.auto,
                       size: qrSize,
                       backgroundColor: Colors.white,
@@ -307,7 +331,6 @@ class SettingsPage extends StatelessWidget {
                 'callback': () {
                   HapticFeedback.lightImpact();
                   showNearSocialKeysDialog(context);
-                  // Modular.to.pushNamed(Routes.settings.nearSocialKeyPage);
                 },
               },
               {
@@ -319,7 +342,7 @@ class SettingsPage extends StatelessWidget {
                 ),
                 'callback': () {
                   HapticFeedback.lightImpact();
-                  // Modular.to.pushNamed(Routes.settings.systemManagementPage);
+                  Modular.to.pushNamed(".${Routes.home.systemsManagmentPage}");
                 },
               },
             ];
