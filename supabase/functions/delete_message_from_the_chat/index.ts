@@ -88,7 +88,7 @@ Deno.serve(async (req) => {
 
   existingMessage.delete[existingUserSession.accountId] = true
 
-  existingMessage.delete = sql`${existingMessage.delete}::jsonb`;
+  // existingMessage.delete = sql`${existingMessage.delete}::jsonb`;
 
   console.log("existingMessage {}", existingMessage);
 

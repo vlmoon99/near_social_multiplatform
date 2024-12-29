@@ -39,7 +39,24 @@ class SmartHomePage extends StatelessWidget {
         backgroundColor: NEARColors.blue,
       ),
       body: Container(
-        color: AppColors.background,
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color(0xFFF0F9FF),
+              Color(0xFFF8F9FF),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
         padding: EdgeInsets.only(
           top: 5.w,
           right: 20.w,

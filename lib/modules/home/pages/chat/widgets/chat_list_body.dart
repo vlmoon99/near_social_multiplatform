@@ -29,7 +29,6 @@ class _ChatListBodyState extends State<ChatListBody> {
   void initState() {
     super.initState();
     _setupInitialStream();
-    print("uid ${Supabase.instance.client.auth.currentUser!.id}");
   }
 
   void _setupInitialStream() async {

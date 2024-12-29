@@ -136,7 +136,7 @@ Deno.serve(async (req) => {
 
     console.log("reqJsonBody {}",reqJsonBody);
 
-    reqJsonBody.metadata = sql`${reqJsonBody.metadata}::jsonb`;
+    // reqJsonBody.metadata = sql`${reqJsonBody.metadata}::jsonb`;
   
     const [insertedChat] = await db
       .insert(chat)
@@ -156,7 +156,7 @@ Deno.serve(async (req) => {
     console.log("Chat is alredy exist");
     if(existingChat.metadata.delete[existingUserSession.accountId] == true){
       existingChat.metadata.delete[existingUserSession.accountId] = false;
-      existingChat.metadata = sql`${existingChat.metadata}::jsonb`;
+      // existingChat.metadata = sql`${existingChat.metadata}::jsonb`;
 
       const [updatedChat] = await db
         .update(chat)

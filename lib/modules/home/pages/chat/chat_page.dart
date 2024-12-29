@@ -221,147 +221,169 @@ class _ChatPageState extends State<ChatPage> {
           ),
         ],
       ),
-      body: Chat(
-        isAttachmentUploading: false,
-        scrollController: _scrollController,
-        messages: _messages.reversed.toList(),
-        onMessageLongPress: (context, message) {
-          final currentUserAccountID =
-              Modular.get<AuthController>().state.accountId;
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color(0xFFF0F9FF),
+              Color(0xFFF8F9FF),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Chat(
+          isAttachmentUploading: false,
+          scrollController: _scrollController,
+          messages: _messages.reversed.toList(),
+          onMessageLongPress: (context, message) {
+            final currentUserAccountID =
+                Modular.get<AuthController>().state.accountId;
 
-          if (message.author.id != currentUserAccountID) {
-            return;
-          }
+            if (message.author.id != currentUserAccountID) {
+              return;
+            }
 
-          final dialogWidth = 500.0;
+            final dialogWidth = 500.0;
 
-          showDialog(
-            context: context,
-            builder: (BuildContext context) {
-              return Dialog(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12.r),
-                ),
-                child: Container(
-                  constraints: BoxConstraints(
-                    maxWidth: dialogWidth,
-                    minWidth: 280.0,
+            showDialog(
+              context: context,
+              builder: (BuildContext context) {
+                return Dialog(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12.r),
                   ),
-                  padding: EdgeInsets.symmetric(
-                    horizontal: 20.w,
-                    vertical: 24.h,
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.delete_outline,
-                        size: 32.r,
-                        color: NEARColors.red,
-                      ),
-                      SizedBox(height: 16.h),
-                      Text(
-                        'Delete Message',
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              color: NEARColors.black,
-                              fontWeight: FontWeight.bold,
+                  child: Container(
+                    constraints: BoxConstraints(
+                      maxWidth: dialogWidth,
+                      minWidth: 280.0,
+                    ),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 20.w,
+                      vertical: 24.h,
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.delete_outline,
+                          size: 32.r,
+                          color: NEARColors.red,
+                        ),
+                        SizedBox(height: 16.h),
+                        Text(
+                          'Delete Message',
+                          style:
+                              Theme.of(context).textTheme.titleLarge?.copyWith(
+                                    color: NEARColors.black,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                        ),
+                        SizedBox(height: 12.h),
+                        Text(
+                          'Are you sure you want to delete this message?',
+                          style:
+                              Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                    color: NEARColors.black,
+                                  ),
+                          textAlign: TextAlign.center,
+                        ),
+                        SizedBox(height: 24.h),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Expanded(
+                              child: TextButton(
+                                onPressed: () {
+                                  Navigator.of(context).pop();
+                                },
+                                style: TextButton.styleFrom(
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8.r),
+                                    side: BorderSide(
+                                      color: NEARColors.grey,
+                                      width: 1.0,
+                                    ),
+                                  ),
+                                  padding: EdgeInsets.symmetric(
+                                    vertical: 12.h,
+                                  ),
+                                  minimumSize: Size(100.w, 44.h),
+                                ),
+                                child: Text(
+                                  'No',
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .labelLarge
+                                      ?.copyWith(
+                                        color: NEARColors.grey,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                ),
+                              ),
                             ),
-                      ),
-                      SizedBox(height: 12.h),
-                      Text(
-                        'Are you sure you want to delete this message?',
-                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                              color: NEARColors.black,
-                            ),
-                        textAlign: TextAlign.center,
-                      ),
-                      SizedBox(height: 24.h),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Expanded(
-                            child: TextButton(
-                              onPressed: () {
-                                Navigator.of(context).pop();
-                              },
-                              style: TextButton.styleFrom(
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8.r),
-                                  side: BorderSide(
-                                    color: NEARColors.grey,
-                                    width: 1.0,
+                            SizedBox(width: 16.w),
+                            Expanded(
+                              child: ElevatedButton(
+                                onPressed: () {
+                                  _handleMessageDelete(
+                                    message.id,
+                                  );
+                                  Navigator.of(context).pop();
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: NEARColors.red,
+                                  padding: EdgeInsets.symmetric(
+                                    vertical: 12.h,
+                                  ),
+                                  minimumSize: Size(100.w, 44.h),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8.r),
                                   ),
                                 ),
-                                padding: EdgeInsets.symmetric(
-                                  vertical: 12.h,
+                                child: Text(
+                                  'Yes',
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .labelLarge
+                                      ?.copyWith(
+                                        color: NEARColors.white,
+                                        fontWeight: FontWeight.w600,
+                                      ),
                                 ),
-                                minimumSize: Size(100.w, 44.h),
-                              ),
-                              child: Text(
-                                'No',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .labelLarge
-                                    ?.copyWith(
-                                      color: NEARColors.grey,
-                                      fontWeight: FontWeight.w600,
-                                    ),
                               ),
                             ),
-                          ),
-                          SizedBox(width: 16.w),
-                          Expanded(
-                            child: ElevatedButton(
-                              onPressed: () {
-                                _handleMessageDelete(
-                                  message.id,
-                                );
-                                Navigator.of(context).pop();
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: NEARColors.red,
-                                padding: EdgeInsets.symmetric(
-                                  vertical: 12.h,
-                                ),
-                                minimumSize: Size(100.w, 44.h),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8.r),
-                                ),
-                              ),
-                              child: Text(
-                                'Yes',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .labelLarge
-                                    ?.copyWith(
-                                      color: NEARColors.white,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              );
-            },
-          );
-        },
-        onAttachmentPressed: () {
-          print("_handleAttachmentPressed");
-        },
-        onMessageTap: (context, msg) {
-          print('_handleMessageTap');
-        },
-        onPreviewDataFetched: (text, preview) {
-          print('_handlePreviewDataFetched');
-        },
-        onSendPressed: _handleSendPressed,
-        showUserAvatars: true,
-        showUserNames: true,
-        user: _user,
+                );
+              },
+            );
+          },
+          onAttachmentPressed: () {
+            print("_handleAttachmentPressed");
+          },
+          onMessageTap: (context, msg) {
+            print('_handleMessageTap');
+          },
+          onPreviewDataFetched: (text, preview) {
+            print('_handlePreviewDataFetched');
+          },
+          onSendPressed: _handleSendPressed,
+          showUserAvatars: true,
+          showUserNames: true,
+          user: _user,
+        ),
       ),
     );
   }

@@ -1,3 +1,7 @@
+delete from auth.users
+where is_anonymous is true and created_at < now() - interval '30 days';
+
+
 CREATE TABLE "User" (
     id TEXT PRIMARY KEY,
     public_key TEXT NOT NULL,

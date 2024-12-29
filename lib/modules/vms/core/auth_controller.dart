@@ -76,6 +76,7 @@ class AuthController extends Disposable {
               .encryptionRunner
               .signMessageForVerification(secretKey);
 
+      await Supabase.instance.client.auth.signInAnonymously();
       final uuid = Supabase.instance.client.auth.currentUser!.id;
       final secureStorage = Modular.get<FlutterSecureStorage>();
       var keyPair;
@@ -95,31 +96,6 @@ class AuthController extends Disposable {
                 '{}'));
       }
 
-      // print("Test");
-      // const message = "Hello World";
-
-      // final encodedStr = jsonEncode(keyPair.toJson());
-
-      // final decoded = KeyPair.fromJson(jsonDecode(encodedStr));
-
-      // //1.Encrypt message
-      // final encryptedMessage = await Modular.get<InternalCryptographyService>()
-      //     .encryptionRunner
-      //     .encryptMessage(
-      //       decoded.publicKey.toString(),
-      //       message,
-      //     );
-
-      // print("Test 1  $encryptedMessage");
-      // //2.Decrypt message
-      // final decryptedMessage = await Modular.get<InternalCryptographyService>()
-      //     .encryptionRunner
-      //     .decryptMessage(
-      //       decoded.privateKey,
-      //       encryptedMessage,
-      //     );
-      // print("Test 1 $decryptedMessage");
-
       final res = await verifyTransaction(
         signature: signedMessagedForVerification,
         encryptionPublicKey: keyPair.publicKey,
@@ -129,35 +105,10 @@ class AuthController extends Disposable {
       );
 
       if (!res) {
+        await Supabase.instance.client.auth.signOut();
+        await logout();
         throw Exception("Server authenticated error");
       }
-
-      // final userAccount = (await Supabase.instance.client
-      //     .from('User')
-      //     .select('*')
-      //     .eq('id', accountId))[0];
-
-      // print("userAccount $userAccount");
-
-      // final publicKeyFromDB = userAccount['public_key'];
-
-      // final encryptedMessage1 = await Modular.get<InternalCryptographyService>()
-      //     .encryptionRunner
-      //     .encryptMessage(
-      //       publicKeyFromDB,
-      //       message,
-      //     );
-
-      // print("Test 1 encryptedMessage1 $encryptedMessage1");
-
-      // //2.Decrypt message
-      // final decryptedMessage1 = await Modular.get<InternalCryptographyService>()
-      //     .encryptionRunner
-      //     .decryptMessage(
-      //       decoded.privateKey,
-      //       encryptedMessage1,
-      //     );
-      // print("Test 1 decryptedMessage1 $decryptedMessage1");
 
       if (kIsWeb) {
         Permission.notification.onDeniedCallback(() {

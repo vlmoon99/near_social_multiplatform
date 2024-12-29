@@ -103,7 +103,7 @@ Deno.serve(async (req) => {
     );
   }
 
-  jsonBody.message = sql`${jsonBody.message}::jsonb`;
+  // jsonBody.message = sql`${jsonBody.message}::jsonb`;
 
 
  const participants = existingChat['metadata']['participants'];
@@ -117,7 +117,7 @@ Deno.serve(async (req) => {
 
   }
 
-  jsonBody.delete = sql`${jsonBody.delete}::jsonb`;
+  // jsonBody.delete = sql`${jsonBody.delete}::jsonb`;
 
   console.log("jsonBody 2 {}", jsonBody);
 

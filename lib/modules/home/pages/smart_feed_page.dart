@@ -44,70 +44,91 @@ class _SmartFeedPageState extends State<SmartFeedPage> {
         backgroundColor: NEARColors.blue,
       ),
       body: SafeArea(
-        child: LayoutBuilder(builder: (_, constraints) {
-          return StreamBuilder(
-              stream: postsController.stream.distinct(
-                (previous, next) => previous.posts.length == next.posts.length,
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Color(0xFFF0F9FF),
+                Color(0xFFF8F9FF),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
               ),
-              builder: (_, snapshot) {
-                if (!snapshot.hasData) {
-                  return CircularProgressIndicator.adaptive();
-                }
-                final posts = postsController.state.posts;
-                return Stack(
-                  children: [
-                    PageView.builder(
-                      controller: pageController,
-                      scrollBehavior: const ScrollBehavior()
-                          .copyWith(scrollbars: false, dragDevices: {
-                        PointerDeviceKind.touch,
-                        PointerDeviceKind.mouse,
-                        PointerDeviceKind.stylus,
-                        PointerDeviceKind.trackpad,
-                      }),
-                      scrollDirection: Axis.vertical,
-                      itemBuilder: (_, index) {
-                        final post = posts[index];
-                        return Padding(
-                          padding: EdgeInsets.only(
-                            top: 10.w,
-                            right: 20.w,
-                            left: 20.w,
-                            bottom: 10.w,
-                          ),
-                          child: Center(
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              mainAxisAlignment: MainAxisAlignment.start,
-                              children: [
-                                PostCard(
-                                  post: post,
-                                  postsViewMode: PostsViewMode.main,
-                                  maxContentHeight:
-                                      constraints.maxHeight * 0.55,
-                                ),
-                              ],
+            ],
+          ),
+          child: LayoutBuilder(builder: (_, constraints) {
+            return StreamBuilder(
+                stream: postsController.stream.distinct(
+                  (previous, next) =>
+                      previous.posts.length == next.posts.length,
+                ),
+                builder: (_, snapshot) {
+                  if (!snapshot.hasData) {
+                    return CircularProgressIndicator.adaptive();
+                  }
+                  final posts = postsController.state.posts;
+                  return Stack(
+                    children: [
+                      PageView.builder(
+                        controller: pageController,
+                        scrollBehavior: const ScrollBehavior()
+                            .copyWith(scrollbars: false, dragDevices: {
+                          PointerDeviceKind.touch,
+                          PointerDeviceKind.mouse,
+                          PointerDeviceKind.stylus,
+                          PointerDeviceKind.trackpad,
+                        }),
+                        scrollDirection: Axis.vertical,
+                        itemBuilder: (_, index) {
+                          final post = posts[index];
+                          return Padding(
+                            padding: EdgeInsets.only(
+                              top: 10.w,
+                              right: 20.w,
+                              left: 20.w,
+                              bottom: 10.w,
                             ),
-                          ),
-                        );
-                      },
-                      onPageChanged: (value) {
-                        currentPage.value = value;
-                        if (value ==
-                                (postsController.state.posts.length * 2 / 3)
-                                    .round() &&
-                            postsController.state.status !=
-                                PostLoadingStatus.loadingMorePosts) {
-                          postsController.loadMorePosts(
-                              postsViewMode: PostsViewMode.main);
-                        }
-                      },
-                      itemCount: posts.length,
-                    ),
-                  ],
-                );
-              });
-        }),
+                            child: Center(
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                mainAxisAlignment: MainAxisAlignment.start,
+                                children: [
+                                  PostCard(
+                                    post: post,
+                                    postsViewMode: PostsViewMode.main,
+                                    maxContentHeight:
+                                        constraints.maxHeight * 0.55,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                        onPageChanged: (value) {
+                          currentPage.value = value;
+                          if (value ==
+                                  (postsController.state.posts.length * 2 / 3)
+                                      .round() &&
+                              postsController.state.status !=
+                                  PostLoadingStatus.loadingMorePosts) {
+                            postsController.loadMorePosts(
+                                postsViewMode: PostsViewMode.main);
+                          }
+                        },
+                        itemCount: posts.length,
+                      ),
+                    ],
+                  );
+                });
+          }),
+        ),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:near_social_mobile/config/theme.dart';
 import 'package:qr_code_scanner/qr_code_scanner.dart';
 import 'package:qrcode_reader_web/qrcode_reader_web.dart';
 
@@ -43,59 +44,66 @@ class _SystemsManagmentPageState extends State<SystemsManagmentPage> {
         title: const Text('Systems Management'),
         backgroundColor: Colors.blue,
       ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Container(
-              padding: const EdgeInsets.all(12.0),
-              decoration: BoxDecoration(
-                color: Colors.blue.shade50,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.blue.shade200, width: 2),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    "Main System",
-                    style: TextStyle(
-                      fontSize: 20.0,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.blueAccent,
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color(0xFFF0F9FF),
+              Color(0xFFF8F9FF),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Container(
+                padding: const EdgeInsets.all(12.0),
+                decoration: BoxDecoration(
+                  color: Colors.blue.shade50,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.blue.shade200, width: 2),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      "Main System",
+                      style: TextStyle(
+                        fontSize: 20.0,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.blueAccent,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 8.0),
-                  Text(
-                    mainSystem ?? "No Main System",
-                    style: const TextStyle(fontSize: 16.0),
-                  ),
-                ],
+                    const SizedBox(height: 8.0),
+                    Text(
+                      mainSystem ?? "No Main System",
+                      style: const TextStyle(fontSize: 16.0),
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
-          Expanded(
-            child: ListView.builder(
-              itemCount: systems.length,
-              itemBuilder: (context, index) {
-                return ListTile(
-                  title: Text(
-                    systems[index],
-                    style: const TextStyle(fontSize: 16.0),
-                  ),
-                  trailing: IconButton(
-                    icon: const Icon(Icons.delete, color: Colors.red),
-                    onPressed: () {
-                      setState(() {
-                        systems.removeAt(index);
-                      });
-                    },
-                  ),
-                );
+            NearStyledList(
+              systems: systems,
+              onDelete: (index) {
+                setState(() {
+                  systems.removeAt(index);
+                });
               },
             ),
-          ),
-        ],
+          ],
+        ),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
@@ -219,6 +227,8 @@ class _SystemsManagmentPageState extends State<SystemsManagmentPage> {
             },
           );
         },
+        backgroundColor: NEARColors.blue,
+        foregroundColor: NEARColors.white,
         child: const Icon(Icons.add),
       ),
     );
@@ -286,6 +296,72 @@ class _QRReaderScreenState extends State<QRReaderScreen> {
           onDetect: (QRCodeCapture capture) =>
               webQRReaderController.add(capture.raw),
           size: 300.h,
+        ),
+      ),
+    );
+  }
+}
+
+class NearStyledList extends StatelessWidget {
+  final List<String> systems;
+  final Function(int) onDelete;
+
+  const NearStyledList({
+    Key? key,
+    required this.systems,
+    required this.onDelete,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Container(
+        margin: const EdgeInsets.all(16),
+        child: ListView.builder(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          itemCount: systems.length,
+          itemBuilder: (context, index) {
+            return Container(
+              margin: const EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 6,
+              ),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: const Color(0xFFE5E8EB),
+                  width: 1,
+                ),
+              ),
+              child: ListTile(
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 4,
+                ),
+                title: Text(
+                  systems[index],
+                  style: const TextStyle(
+                    fontSize: 16.0,
+                    fontWeight: FontWeight.w500,
+                    color: Color(0xFF1D1D1D),
+                    letterSpacing: 0.15,
+                  ),
+                ),
+                trailing: IconButton(
+                  icon: const Icon(
+                    Icons.delete_outline_rounded,
+                    color: Color(0xFFFF585D), // Near's red
+                  ),
+                  onPressed: () => onDelete(index),
+                  style: IconButton.styleFrom(
+                    backgroundColor: const Color(0xFFFFEEEE),
+                    padding: const EdgeInsets.all(8),
+                  ),
+                ),
+              ),
+            );
+          },
         ),
       ),
     );

@@ -30,17 +30,6 @@ Future<void> encryptDataAndLogin(
   await Modular.get<FlutterSecureStorage>()
       .write(key: StorageKeys.networkType, value: "mainnet");
 
-  await Supabase.instance.client.auth.signInAnonymously();
-
-  UserResponse user = await Supabase.instance.client.auth.getUser();
-  print(user.user?.toJson().toString() ?? "no data");
-
-  print(
-      "Supabase.instance.client.auth.headers ${Supabase.instance.client.auth.headers}");
-
-  // Supabase.instance.client.auth.headers
-  //     .putIfAbsent("accountId", () => authorizationCredentials.accountId);
-
   final authController = Modular.get<AuthController>();
   await authController.login(
     accountId: authorizationCredentials.accountId,

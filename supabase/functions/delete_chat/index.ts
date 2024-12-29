@@ -119,7 +119,7 @@ Deno.serve(async (req) => {
   console.log("existingChat.metadata {}", existingChat.metadata);
 
   
-  existingChat.metadata = sql`${existingChat.metadata}::jsonb`;
+  // existingChat.metadata = sql`${existingChat.metadata}::jsonb`;
 
   const [updatedChat] = await db
     .update(chat)
@@ -148,7 +148,8 @@ Deno.serve(async (req) => {
   await db
     .update(message)
     .set({
-      delete: sql`${updatedDelete}::jsonb`,
+      delete: updatedDelete,
+      // delete: sql`${updatedDelete}::jsonb`,
     })
     // .where(and(eq(message.authorId, existingUserSession.accountId),eq(message.chatId, updatedChat.id)))
     .where(eq(message.chatId, updatedChat.id))

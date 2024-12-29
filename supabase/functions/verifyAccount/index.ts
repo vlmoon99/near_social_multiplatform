@@ -1,12 +1,14 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts"
 
-import bs58 from "bs58";
-import nearApi from "near-api-js";
-import { drizzle } from "drizzle-orm/postgres-js";
-import postgres from "postgres";
-import { user, session } from "../_shared/schema.ts";
-import { eq } from 'drizzle-orm';
+
+import bs58 from "npm:bs58@6.0.0";
+import nearApi from "npm:near-api-js@5.0.1";
+import postgres from "npm:postgres@3.4.5";
+
 import { createClient } from 'jsr:@supabase/supabase-js@2'
+import { eq } from 'npm:drizzle-orm@0.38.3';
+import { drizzle } from "npm:drizzle-orm@0.38.3/postgres-js";
+import { user, session } from "../_shared/schema.ts";
 
 const connectionString = Deno.env.get("SUPABASE_DB_URL")!;
 
