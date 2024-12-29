@@ -17,8 +17,8 @@ import 'config/setup.dart';
 
 void main() async {
   await Supabase.initialize(
-    url: SystemsManagmentConstans.secondarySystemLink,
-    anonKey: SystemsManagmentConstans.secondarySystemAnonKey,
+    url: SystemsManagmentConstans.mainSystemLink,
+    anonKey: SystemsManagmentConstans.mainSystemAnonKey,
   );
 
   WidgetsFlutterBinding.ensureInitialized();

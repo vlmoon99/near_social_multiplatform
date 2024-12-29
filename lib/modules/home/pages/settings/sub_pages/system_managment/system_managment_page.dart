@@ -20,6 +20,25 @@ class SystemModel {
   final String anonKey;
 
   SystemModel({required this.link, required this.anonKey});
+
+  @override
+  String toString() {
+    return 'SystemModel(link: $link, anonKey: $anonKey)';
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'link': link,
+      'anonKey': anonKey,
+    };
+  }
+
+  factory SystemModel.fromJson(Map<String, dynamic> json) {
+    return SystemModel(
+      link: json['link'] as String,
+      anonKey: json['anonKey'] as String,
+    );
+  }
 }
 
 class SystemsManagmentPage extends StatefulWidget {
@@ -30,12 +49,13 @@ class SystemsManagmentPage extends StatefulWidget {
 }
 
 class _SystemsManagmentPageState extends State<SystemsManagmentPage> {
-  String mainSystem = SystemsManagmentConstans.mainSystemLink;
+  SystemModel? mainSystem;
+
   final List<SystemModel> systems = [
-    SystemModel(
-      link: SystemsManagmentConstans.secondarySystemLink,
-      anonKey: SystemsManagmentConstans.secondarySystemAnonKey,
-    )
+    // SystemModel(
+    //   link: SystemsManagmentConstans.secondarySystemLink,
+    //   anonKey: SystemsManagmentConstans.secondarySystemAnonKey,
+    // )
   ];
 
   void scanQRCode(BuildContext context) async {
@@ -43,10 +63,55 @@ class _SystemsManagmentPageState extends State<SystemsManagmentPage> {
       context,
       MaterialPageRoute(
         builder: (context) => QRReaderScreen(onProcess: (code) {
+          try {
+            setState(() {
+              final res = jsonDecode(code);
+              if (res is Map) {
+                final SystemModel systemModel = SystemModel(
+                  link: res['link'].toString(),
+                  anonKey: res['anonKey'].toString(),
+                );
+                systems.add(systemModel);
+                Modular.get<FlutterSecureStorage>().write(
+                  key: "systems",
+                  value: jsonEncode(
+                    systems.map((system) => system.toJson()).toList(),
+                  ),
+                );
+              }
+            });
+          } catch (e) {}
           Navigator.pop(context);
         }),
       ),
     );
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    initSystemsSettings();
+  }
+
+  Future<void> initSystemsSettings() async {
+    final systemsFromStorage =
+        (jsonDecode(await Modular.get<FlutterSecureStorage>().read(
+                  key: "systems",
+                ) ??
+                '[]') as List<dynamic>)
+            .map((system) => SystemModel.fromJson(system))
+            .toList();
+
+    systems.addAll(systemsFromStorage);
+
+    final mainSystemFromLocalStorage = SystemModel.fromJson(
+        jsonDecode(await Modular.get<FlutterSecureStorage>().read(
+              key: "mainSystem",
+            ) ??
+            '{}'));
+    setState(() {
+      mainSystem = mainSystemFromLocalStorage;
+    });
   }
 
   @override
@@ -99,7 +164,7 @@ class _SystemsManagmentPageState extends State<SystemsManagmentPage> {
                     ),
                     const SizedBox(height: 8.0),
                     Text(
-                      mainSystem ?? "No Main System",
+                      mainSystem?.link ?? "No main System",
                       style: const TextStyle(fontSize: 16.0),
                     ),
                   ],
@@ -279,47 +344,107 @@ class NearStyledList extends StatelessWidget {
               ),
               child: ListTile(
                 onTap: () async {
-                  final system = systems[index];
-                  print("system.link : ${system.link}");
-                  print("system.anonKey : ${system.anonKey}");
-                  await Supabase.instance.client.auth.signOut();
-                  await Supabase.instance.dispose();
-                  await Supabase.initialize(
-                    url: SystemsManagmentConstans.mainSystemLink,
-                    anonKey: SystemsManagmentConstans.mainSystemAnonKey,
+                  final shouldSwitch = await showDialog<bool>(
+                    barrierColor: Colors.transparent,
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      backgroundColor: NEARColors.purple,
+                      title: const Text('Switch System'),
+                      content: const Text(
+                          'Are you sure that you want to switch to another system?'),
+                      actions: [
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: NEARColors.red,
+                            ),
+                            onPressed: () => Navigator.of(context).pop(false),
+                            child: Text(
+                              'No',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .titleMedium
+                                  ?.copyWith(
+                                    color: NEARColors.white,
+                                  ),
+                            ),
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: NEARColors.blue,
+                            ),
+                            onPressed: () => Navigator.of(context).pop(true),
+                            child: Text(
+                              'Yes',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .titleMedium
+                                  ?.copyWith(
+                                    color: NEARColors.white,
+                                  ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   );
-                  String signedMessagedForVerification =
-                      await Modular.get<InternalCryptographyService>()
-                          .encryptionRunner
-                          .signMessageForVerification(
-                              Modular.get<AuthController>().state.secretKey);
 
-                  await Supabase.instance.client.auth.signInAnonymously();
-                  final uuid = Supabase.instance.client.auth.currentUser!.id;
-                  final keys = KeyPair.fromJson(
-                      jsonDecode(await Modular.get<FlutterSecureStorage>().read(
-                            key: "session_keys",
-                          ) ??
-                          '{}'));
+                  if (shouldSwitch == true) {
+                    try {
+                      final system = systems[index];
+                      await Supabase.instance.client.auth.signOut();
+                      await Supabase.instance.dispose();
+                      await Supabase.initialize(
+                        url: system.link,
+                        anonKey: system.anonKey,
+                      );
 
-                  final base58PubKey =
-                      await Modular.get<NearBlockChainService>()
-                          .getBase58PubKeyFromHexValue(
-                              hexEncodedPubKey: Modular.get<AuthController>()
-                                  .state
-                                  .publicKey);
+                      String signedMessagedForVerification =
+                          await Modular.get<InternalCryptographyService>()
+                              .encryptionRunner
+                              .signMessageForVerification(
+                                  Modular.get<AuthController>()
+                                      .state
+                                      .secretKey);
 
-                  final res = await verifyTransaction(
-                    signature: signedMessagedForVerification,
-                    encryptionPublicKey: keys.publicKey,
-                    publicKeyStr: base58PubKey,
-                    uuid: uuid,
-                    accountId: Modular.get<AuthController>().state.accountId,
-                  );
+                      await Supabase.instance.client.auth.signInAnonymously();
+                      final uuid =
+                          Supabase.instance.client.auth.currentUser!.id;
+                      final keys = KeyPair.fromJson(jsonDecode(
+                          await Modular.get<FlutterSecureStorage>().read(
+                                key: "session_keys",
+                              ) ??
+                              '{}'));
 
-                  if (!res) {
-                    await Supabase.instance.client.auth.signOut();
-                    throw Exception("Server authenticated error");
+                      final base58PubKey =
+                          await Modular.get<NearBlockChainService>()
+                              .getBase58PubKeyFromHexValue(
+                                  hexEncodedPubKey:
+                                      Modular.get<AuthController>()
+                                          .state
+                                          .publicKey);
+
+                      final res =
+                          await Modular.get<AuthController>().verifyTransaction(
+                        signature: signedMessagedForVerification,
+                        encryptionPublicKey: keys.publicKey,
+                        publicKeyStr: base58PubKey,
+                        uuid: uuid,
+                        accountId:
+                            Modular.get<AuthController>().state.accountId,
+                      );
+
+                      if (!res) {
+                        await Supabase.instance.client.auth.signOut();
+                        throw Exception("Server authenticated error");
+                      }
+                    } catch (e) {
+                      print("Error while switching,switch back");
+                    }
                   }
                 },
                 contentPadding: const EdgeInsets.symmetric(
@@ -352,34 +477,5 @@ class NearStyledList extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  Future<bool> verifyTransaction({
-    required String signature,
-    required String publicKeyStr,
-    required String encryptionPublicKey,
-    required String uuid,
-    required String accountId,
-  }) async {
-    try {
-      final response = await Supabase.instance.client.functions.invoke(
-        'verifyAccount',
-        headers: {
-          "Accept": "application/json",
-          "Access-Control-Allow-Origin": "*",
-        },
-        body: <String, dynamic>{
-          'signature': signature,
-          'publicKeyStr': publicKeyStr,
-          'encryptionPublicKey': encryptionPublicKey,
-          'uuid': uuid,
-          'accountId': accountId,
-        },
-      );
-      return response.data['success'] == true;
-    } catch (e) {
-      print('Unexpected error: $e');
-      return false;
-    }
   }
 }
