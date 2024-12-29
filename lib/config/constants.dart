@@ -42,7 +42,7 @@ const String appLink = "nearsocialmultiplatform://redirect.to.app";
 
 class SystemsManagmentConstans {
   static const String mainSystemLink =
-      "https://8bff-178-54-185-162.ngrok-free.app/";
+      "https://8799-178-54-185-162.ngrok-free.app/";
 
   // static const String mainSystemAnonKey =
   //     "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0";

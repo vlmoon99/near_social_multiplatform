@@ -1,8 +1,8 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts"
 import { user, session, chat } from "../_shared/schema.ts";
-import { drizzle } from "drizzle-orm/postgres-js";
-import postgres from "postgres";
-import { eq , sql } from 'drizzle-orm';
+import { drizzle } from "npm:drizzle-orm@0.38.3/postgres-js";
+import postgres from "npm:postgres@3.4.5";
+import { eq , sql } from 'npm:drizzle-orm@0.38.3';
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 
 

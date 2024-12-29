@@ -1,9 +1,9 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts"
 
 import { user, session, chat, message } from "../_shared/schema.ts";
-import { drizzle } from "drizzle-orm/postgres-js";
-import postgres from "postgres";
-import { eq, sql, and } from "drizzle-orm";
+import { drizzle } from "npm:drizzle-orm@0.38.3/postgres-js";
+import postgres from "npm:postgres@3.4.5";
+import { eq, sql, and } from "npm:drizzle-orm@0.38.3";
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 
 const connectionString = Deno.env.get("SUPABASE_DB_URL")!;

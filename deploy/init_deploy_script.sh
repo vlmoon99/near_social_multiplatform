@@ -23,6 +23,10 @@ cd docker
 echo "Setting up the environment variables..."
 cp .env.example .env
 
+#Enable anonymus authorization
+sed -i 's/GOTRUE_EXTERNAL_ANONYMOUS_USERS_ENABLED: ${ENABLE_ANONYMOUS_USERS}/GOTRUE_EXTERNAL_ANONYMOUS_USERS_ENABLED: true/' docker-compose.yml
+
+
 # Copy functions to the volume
 SOURCE_DIR="../../../supabase/functions"
 DEST_DIR="./volumes/functions"
