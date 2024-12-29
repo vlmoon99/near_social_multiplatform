@@ -106,6 +106,7 @@ class AuthController extends Disposable {
 
       if (!res) {
         await Supabase.instance.client.auth.signOut();
+
         await logout();
         throw Exception("Server authenticated error");
       }

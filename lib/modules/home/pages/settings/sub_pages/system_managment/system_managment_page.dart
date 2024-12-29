@@ -1,10 +1,26 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:flutterchain/flutterchain_lib/services/chains/near_blockchain_service.dart';
+import 'package:near_social_mobile/config/constants.dart';
 import 'package:near_social_mobile/config/theme.dart';
+import 'package:near_social_mobile/modules/vms/core/auth_controller.dart';
+import 'package:near_social_mobile/services/cryptography/encryption/encryption_runner_interface.dart';
+import 'package:near_social_mobile/services/cryptography/internal_cryptography_service.dart';
 import 'package:qr_code_scanner/qr_code_scanner.dart';
 import 'package:qrcode_reader_web/qrcode_reader_web.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+class SystemModel {
+  final String link;
+  final String anonKey;
+
+  SystemModel({required this.link, required this.anonKey});
+}
 
 class SystemsManagmentPage extends StatefulWidget {
   const SystemsManagmentPage({super.key});
@@ -14,23 +30,19 @@ class SystemsManagmentPage extends StatefulWidget {
 }
 
 class _SystemsManagmentPageState extends State<SystemsManagmentPage> {
-  String? mainSystem = "https://main.system.com";
-  final List<String> systems = ["https://example1.com", "https://example2.com"];
-
-  void addNewSystem(String url) {
-    if (url.isNotEmpty) {
-      setState(() {
-        systems.add(url);
-      });
-    }
-  }
+  String mainSystem = SystemsManagmentConstans.mainSystemLink;
+  final List<SystemModel> systems = [
+    SystemModel(
+      link: SystemsManagmentConstans.secondarySystemLink,
+      anonKey: SystemsManagmentConstans.secondarySystemAnonKey,
+    )
+  ];
 
   void scanQRCode(BuildContext context) async {
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => QRReaderScreen(onProcess: (code) {
-          addNewSystem(code);
           Navigator.pop(context);
         }),
       ),
@@ -140,7 +152,6 @@ class _SystemsManagmentPageState extends State<SystemsManagmentPage> {
                                   color: Colors.blueAccent,
                                 ),
                           ),
-                          const SizedBox(height: 20.0),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
@@ -169,54 +180,7 @@ class _SystemsManagmentPageState extends State<SystemsManagmentPage> {
                                 ),
                               ),
                               const SizedBox(width: 20.0),
-                              const Text("or"),
-                              const SizedBox(width: 20.0),
-                              Flexible(
-                                child: SizedBox(
-                                  width: 200,
-                                  child: TextField(
-                                    decoration: const InputDecoration(
-                                      hintText: "Enter system URL",
-                                      border: OutlineInputBorder(),
-                                    ),
-                                    onSubmitted: (value) {
-                                      addNewSystem(value);
-                                      Navigator.pop(context);
-                                    },
-                                  ),
-                                ),
-                              ),
                             ],
-                          ),
-                          const SizedBox(height: 20.0),
-                          Tooltip(
-                            message: "Add new system",
-                            child: InkWell(
-                              onTap: () {
-                                const String defaultLink =
-                                    "https://default-system.com";
-                                addNewSystem(defaultLink);
-                                Navigator.pop(context);
-                              },
-                              borderRadius: BorderRadius.circular(100),
-                              child: Container(
-                                width: 80,
-                                height: 80,
-                                decoration: BoxDecoration(
-                                  color: Colors.blue.shade50,
-                                  borderRadius: BorderRadius.circular(100),
-                                  border: Border.all(
-                                    color: Colors.blueAccent,
-                                    width: 2,
-                                  ),
-                                ),
-                                child: const Icon(
-                                  Icons.add,
-                                  color: Colors.blueAccent,
-                                  size: 50,
-                                ),
-                              ),
-                            ),
                           ),
                         ],
                       ),
@@ -257,27 +221,6 @@ class _QRReaderScreenState extends State<QRReaderScreen> {
     webQRReaderController.stream.distinct().listen(widget.onProcess);
   }
 
-  Future<void> _processQRCode(String code) async {
-    try {
-      print("code $code");
-    } catch (error) {
-      if (mounted) {
-        _showErrorSnackBar(error.toString());
-      }
-    }
-  }
-
-  void _showErrorSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(15)),
-        ),
-      ),
-    );
-  }
-
   @override
   void dispose() {
     controller?.dispose();
@@ -303,14 +246,14 @@ class _QRReaderScreenState extends State<QRReaderScreen> {
 }
 
 class NearStyledList extends StatelessWidget {
-  final List<String> systems;
+  final List<SystemModel> systems;
   final Function(int) onDelete;
 
   const NearStyledList({
-    Key? key,
+    super.key,
     required this.systems,
     required this.onDelete,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -335,12 +278,56 @@ class NearStyledList extends StatelessWidget {
                 ),
               ),
               child: ListTile(
+                onTap: () async {
+                  final system = systems[index];
+                  print("system.link : ${system.link}");
+                  print("system.anonKey : ${system.anonKey}");
+                  await Supabase.instance.client.auth.signOut();
+                  await Supabase.instance.dispose();
+                  await Supabase.initialize(
+                    url: SystemsManagmentConstans.mainSystemLink,
+                    anonKey: SystemsManagmentConstans.mainSystemAnonKey,
+                  );
+                  String signedMessagedForVerification =
+                      await Modular.get<InternalCryptographyService>()
+                          .encryptionRunner
+                          .signMessageForVerification(
+                              Modular.get<AuthController>().state.secretKey);
+
+                  await Supabase.instance.client.auth.signInAnonymously();
+                  final uuid = Supabase.instance.client.auth.currentUser!.id;
+                  final keys = KeyPair.fromJson(
+                      jsonDecode(await Modular.get<FlutterSecureStorage>().read(
+                            key: "session_keys",
+                          ) ??
+                          '{}'));
+
+                  final base58PubKey =
+                      await Modular.get<NearBlockChainService>()
+                          .getBase58PubKeyFromHexValue(
+                              hexEncodedPubKey: Modular.get<AuthController>()
+                                  .state
+                                  .publicKey);
+
+                  final res = await verifyTransaction(
+                    signature: signedMessagedForVerification,
+                    encryptionPublicKey: keys.publicKey,
+                    publicKeyStr: base58PubKey,
+                    uuid: uuid,
+                    accountId: Modular.get<AuthController>().state.accountId,
+                  );
+
+                  if (!res) {
+                    await Supabase.instance.client.auth.signOut();
+                    throw Exception("Server authenticated error");
+                  }
+                },
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: 16,
                   vertical: 4,
                 ),
                 title: Text(
-                  systems[index],
+                  systems[index].link,
                   style: const TextStyle(
                     fontSize: 16.0,
                     fontWeight: FontWeight.w500,
@@ -351,7 +338,7 @@ class NearStyledList extends StatelessWidget {
                 trailing: IconButton(
                   icon: const Icon(
                     Icons.delete_outline_rounded,
-                    color: Color(0xFFFF585D), // Near's red
+                    color: Color(0xFFFF585D),
                   ),
                   onPressed: () => onDelete(index),
                   style: IconButton.styleFrom(
@@ -365,5 +352,34 @@ class NearStyledList extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Future<bool> verifyTransaction({
+    required String signature,
+    required String publicKeyStr,
+    required String encryptionPublicKey,
+    required String uuid,
+    required String accountId,
+  }) async {
+    try {
+      final response = await Supabase.instance.client.functions.invoke(
+        'verifyAccount',
+        headers: {
+          "Accept": "application/json",
+          "Access-Control-Allow-Origin": "*",
+        },
+        body: <String, dynamic>{
+          'signature': signature,
+          'publicKeyStr': publicKeyStr,
+          'encryptionPublicKey': encryptionPublicKey,
+          'uuid': uuid,
+          'accountId': accountId,
+        },
+      );
+      return response.data['success'] == true;
+    } catch (e) {
+      print('Unexpected error: $e');
+      return false;
+    }
   }
 }
