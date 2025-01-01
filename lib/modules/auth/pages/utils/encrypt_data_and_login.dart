@@ -9,7 +9,6 @@ import 'package:near_social_mobile/modules/vms/core/models/authorization_credent
 import 'package:near_social_mobile/services/crypto_service.dart';
 import 'package:near_social_mobile/services/crypto_storage_service.dart';
 import 'package:near_wallet_selector/near_wallet_selector.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 Future<void> encryptDataAndLogin(
     AuthorizationCredentials authorizationCredentials) async {
