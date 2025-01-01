@@ -1,10 +1,10 @@
 {
-    "imports": {
-      "bs58": "https://esm.sh/bs58@6.0.0",
-      "near-api-js": "https://esm.sh/near-api-js@5.0.1",
-      "drizzle-orm": "npm:drizzle-orm@0.29.1",
-      "drizzle-orm/": "npm:/drizzle-orm@0.29.1/",
-      "postgres": "npm:postgres@3.4.3"
-    }
+  "imports": {
+    "bs58": "npm:bs58@6.0.0",
+    "near-api-js": "npm:near-api-js@5.0.1",
+    "postgres": "npm:postgres@3.4.5",
+    "drizzle-orm": "npm:drizzle-orm@0.38.3",
+    "drizzle-orm/postgres-js": "npm:drizzle-orm@0.38.3/postgres-js",
+    "drizzle-orm/pg-core": "npm:drizzle-orm@0.38.3/pg-core"
+  }
 }
-  

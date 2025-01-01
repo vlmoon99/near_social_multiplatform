@@ -2,9 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:near_social_mobile/modules/home/apis/near_social.dart';
-// import 'package:cloud_functions/cloud_functions.dart';
 
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutterchain/flutterchain_lib/services/chains/near_blockchain_service.dart';
@@ -78,6 +76,7 @@ class AuthController extends Disposable {
               .encryptionRunner
               .signMessageForVerification(secretKey);
 
+      await Supabase.instance.client.auth.signInAnonymously();
       final uuid = Supabase.instance.client.auth.currentUser!.id;
       final secureStorage = Modular.get<FlutterSecureStorage>();
       var keyPair;
@@ -97,31 +96,6 @@ class AuthController extends Disposable {
                 '{}'));
       }
 
-      // print("Test");
-      // const message = "Hello World";
-
-      // final encodedStr = jsonEncode(keyPair.toJson());
-
-      // final decoded = KeyPair.fromJson(jsonDecode(encodedStr));
-
-      // //1.Encrypt message
-      // final encryptedMessage = await Modular.get<InternalCryptographyService>()
-      //     .encryptionRunner
-      //     .encryptMessage(
-      //       decoded.publicKey.toString(),
-      //       message,
-      //     );
-
-      // print("Test 1  $encryptedMessage");
-      // //2.Decrypt message
-      // final decryptedMessage = await Modular.get<InternalCryptographyService>()
-      //     .encryptionRunner
-      //     .decryptMessage(
-      //       decoded.privateKey,
-      //       encryptedMessage,
-      //     );
-      // print("Test 1 $decryptedMessage");
-
       final res = await verifyTransaction(
         signature: signedMessagedForVerification,
         encryptionPublicKey: keyPair.publicKey,
@@ -131,35 +105,11 @@ class AuthController extends Disposable {
       );
 
       if (!res) {
+        await Supabase.instance.client.auth.signOut();
+
+        await logout();
         throw Exception("Server authenticated error");
       }
-
-      // final userAccount = (await Supabase.instance.client
-      //     .from('User')
-      //     .select('*')
-      //     .eq('id', accountId))[0];
-
-      // print("userAccount $userAccount");
-
-      // final publicKeyFromDB = userAccount['public_key'];
-
-      // final encryptedMessage1 = await Modular.get<InternalCryptographyService>()
-      //     .encryptionRunner
-      //     .encryptMessage(
-      //       publicKeyFromDB,
-      //       message,
-      //     );
-
-      // print("Test 1 encryptedMessage1 $encryptedMessage1");
-
-      // //2.Decrypt message
-      // final decryptedMessage1 = await Modular.get<InternalCryptographyService>()
-      //     .encryptionRunner
-      //     .decryptMessage(
-      //       decoded.privateKey,
-      //       encryptedMessage1,
-      //     );
-      // print("Test 1 decryptedMessage1 $decryptedMessage1");
 
       if (kIsWeb) {
         Permission.notification.onDeniedCallback(() {
@@ -300,7 +250,6 @@ class AuthController extends Disposable {
 
   Future<void> logout() async {
     try {
-      await FirebaseAuth.instance.signOut();
       await _secureStorage.delete(key: StorageKeys.authInfo);
       await _secureStorage.delete(key: StorageKeys.additionalCryptographicKeys);
       _streamController.add(const AuthInfo());

@@ -64,7 +64,7 @@ class HomeMenuPage extends StatelessWidget {
                   title: "Smart Posts",
                   onTap: () {
                     HapticFeedback.lightImpact();
-                    Modular.to.pushNamed(".${Routes.home.smartPostsPage}");
+                    Modular.to.pushNamed(".${Routes.home.smartFeedPage}");
                   },
                 ),
                 HomeMenuListTile(

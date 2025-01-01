@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:near_social_mobile/assets/localizations/localizations_strings.dart';
+import 'package:near_social_mobile/config/constants.dart';
 import 'package:near_social_mobile/config/theme.dart';
 import 'package:near_social_mobile/exceptions/exceptions.dart';
 import 'package:near_social_mobile/modules/app_module.dart';
@@ -16,15 +17,8 @@ import 'config/setup.dart';
 
 void main() async {
   await Supabase.initialize(
-    url: 'https://1ff6-178-54-185-162.ngrok-free.app/',
-    anonKey:
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0',
-    // authOptions:
-    //     const FlutterAuthClientOptions(authFlowType: AuthFlowType.implicit),
-    // storageOptions: const StorageClientOptions(retryAttempts: 10),
-    // realtimeClientOptions: const RealtimeClientOptions(
-    //   logLevel: RealtimeLogLevel.info,
-    // ),
+    url: SystemsManagmentConstans.mainSystemLink,
+    anonKey: SystemsManagmentConstans.mainSystemAnonKey,
   );
 
   WidgetsFlutterBinding.ensureInitialized();
@@ -41,7 +35,6 @@ void main() async {
     ),
   );
 
-  // for debug purposes don't catch exceptions
   if (kDebugMode) {
     WidgetsFlutterBinding.ensureInitialized();
     await initOfApp();
@@ -73,8 +66,6 @@ class AppWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Modular.setInitialRoute(Routes.home.getModule());
-    // ScreenUtil.init(context);
     return ScreenUtilInit(
       builder: (_, __) {
         return MaterialApp.router(

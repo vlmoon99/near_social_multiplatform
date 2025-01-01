@@ -31,7 +31,7 @@ dependencies:
   animated_text_kit: 4.2.2
   bos_gateway_viewer: 0.0.5
   cached_network_image: 3.3.1
-  cloud_firestore: ^5.5.1
+  # cloud_firestore: ^5.5.1
   # cloud_functions: ^4.7.6
   collection: ^1.17.2
   connectivity_plus: 6.1.0
@@ -42,14 +42,14 @@ dependencies:
   easy_localization: 3.0.5
   encrypt: 5.0.3
   equatable: ^2.0.7
-  firebase_auth: ^5.3.4
-  firebase_core: ^3.8.1
-  firebase_messaging: ^15.1.6
+  # firebase_auth: ^5.3.4
+  # firebase_core: ^3.8.1
+  # firebase_messaging: ^15.1.6
   flutter:
     sdk: flutter
   flutter_cache_manager: 3.4.1
   flutter_chat_ui: ^1.6.15
-  flutter_firebase_chat_core: ^1.6.7
+  # flutter_firebase_chat_core: ^1.6.7
   flutter_jailbreak_detection: 1.10.0
   flutter_local_notifications: ^18.0.1
   flutter_markdown: ^0.7.4+3
@@ -82,6 +82,7 @@ dependencies:
   webcrypto: ^0.5.7
   permission_handler: ^11.3.1
   web_socket_channel: ^3.0.1
+  qr_flutter: ^4.1.0
 
 
 # dependency_overrides:

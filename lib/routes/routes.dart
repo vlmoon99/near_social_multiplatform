@@ -35,7 +35,8 @@ class _Home extends RouteClass {
   String mintbaseCollectionsPage = '/mintbase_collections';
   String mintersControlPage = '/minters_control';
   String mintNftPage = '/mint_nft';
-  String smartPostsPage = '/smart_posts';
+  String smartFeedPage = '/smart_feed';
+  String systemsManagmentPage = '/systems_managment';
 }
 
 abstract class RouteClass {

@@ -1,8 +1,8 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts"
 import { user, session, chat } from "../_shared/schema.ts";
-import { drizzle } from "drizzle-orm/postgres-js";
-import postgres from "postgres";
-import { eq , sql } from 'drizzle-orm';
+import { drizzle } from "npm:drizzle-orm@0.38.3/postgres-js";
+import postgres from "npm:postgres@3.4.5";
+import { eq , sql } from 'npm:drizzle-orm@0.38.3';
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 
 
@@ -136,7 +136,7 @@ Deno.serve(async (req) => {
 
     console.log("reqJsonBody {}",reqJsonBody);
 
-    reqJsonBody.metadata = sql`${reqJsonBody.metadata}::jsonb`;
+    // reqJsonBody.metadata = sql`${reqJsonBody.metadata}::jsonb`;
   
     const [insertedChat] = await db
       .insert(chat)
@@ -156,7 +156,7 @@ Deno.serve(async (req) => {
     console.log("Chat is alredy exist");
     if(existingChat.metadata.delete[existingUserSession.accountId] == true){
       existingChat.metadata.delete[existingUserSession.accountId] = false;
-      existingChat.metadata = sql`${existingChat.metadata}::jsonb`;
+      // existingChat.metadata = sql`${existingChat.metadata}::jsonb`;
 
       const [updatedChat] = await db
         .update(chat)

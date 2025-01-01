@@ -6,19 +6,6 @@ abstract class EncryptionRunner {
   Future<KeyPair> generateKeyPair();
 }
 
-// class KeyPair {
-//   final String publicKey;
-
-//   final String privateKey;
-
-//   KeyPair({required this.publicKey, required this.privateKey});
-
-// @override
-// String toString() {
-//   return "KeyPair(publicKey : $publicKey , privateKey : $privateKey)";
-// }
-// }
-
 class KeyPair {
   final String publicKey;
   final String privateKey;

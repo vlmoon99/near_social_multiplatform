@@ -14,32 +14,53 @@ class HomeMenuCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(14),
-      child: SizedBox(
-        width: 180,
-        height: 130,
-        child: Card(
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                icon,
-                SizedBox(height: 10.h),
-                Text(
+    final screenWidth = MediaQuery.of(context).size.width;
+
+    double titleFontSize = screenWidth < 600
+        ? 35.sp
+        : // mobile
+        screenWidth < 900
+            ? 13.sp
+            : // tablet
+            9.sp; // desktop
+
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16.r),
+        side: const BorderSide(
+          color: Colors.black,
+          width: 2.0,
+        ),
+      ),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16.r),
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16.r),
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              icon,
+              SizedBox(height: 9.h),
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Text(
                   title,
                   style: TextStyle(
-                    fontSize: 16,
+                    color: Colors.black,
+                    fontSize: titleFontSize,
+                    fontWeight: FontWeight.bold,
                   ),
                   textAlign: TextAlign.center,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
