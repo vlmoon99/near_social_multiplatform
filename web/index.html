@@ -1,8 +1,7 @@
 <!DOCTYPE html>
 <html>
-
-<head>
-  <!--
+  <head>
+    <!--
     If you are serving your web app in a path other than the root, change the
     href value below to reflect the base path you are serving from.
 
@@ -15,72 +14,192 @@
     This is a placeholder for base href that will be replaced by the value of
     the `--base-href` argument provided to `flutter build`.
   -->
-  <base href="/" />
+    <base href="/" />
 
-  <meta charset="UTF-8" />
-  <meta content="IE=Edge" http-equiv="X-UA-Compatible" />
-  <meta name="description" content="Near Social Multiplatform Web App" />
-  <!-- iOS meta tags & icons -->
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black" />
-  <meta name="apple-mobile-web-app-title" content="Near Social Multiplatform" />
-  <link rel="apple-touch-icon" href="icons/Icon-192.png" />
+    <meta charset="UTF-8" />
+    <meta content="IE=Edge" http-equiv="X-UA-Compatible" />
+    <meta name="description" content="Near Social Multiplatform Web App" />
+    <!-- iOS meta tags & icons -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+    <meta
+      name="apple-mobile-web-app-title"
+      content="Near Social Multiplatform"
+    />
+    <link rel="apple-touch-icon" href="icons/Icon-192.png" />
 
-  <!-- Favicon -->
-  <link rel="icon" type="image/png" href="favicon.png" />
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="favicon.png" />
 
-  <title>Near Social Multiplatform</title>
-  <link rel="manifest" href="manifest.json" />
+    <title>Near Social Multiplatform</title>
+    <link rel="manifest" href="manifest.json" />
 
-  <script type="application/javascript" src="flutter.js" defer></script>
-  <script type="application/javascript" src="/assets/packages/flutter_inappwebview_web/assets/web/web_support.js"
-    defer></script>
-  <script type="module" src="/assets/packages/flutterchain/assets/crypto-lib/dist/bundle.js"></script>
-  <script type="application/javascript"
-    src="/assets/packages/flutterchain/assets/crypto-lib/dist/dop_bundle.js"></script>
-  <link rel="modulepreload" crossorigin href="/assets/packages/flutterchain/assets/crypto-lib/dist/bundle2.js">
-  <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
-  
-  <script type="module" src="/assets/packages/near_wallet_selector/assets/wallet-selector/dist/bundle.js"
-    defer></script>
+    <script type="application/javascript" src="flutter.js" defer></script>
+    <script
+      type="application/javascript"
+      src="/assets/packages/flutter_inappwebview_web/assets/web/web_support.js"
+      defer
+    ></script>
+    <script
+      type="module"
+      src="/assets/packages/flutterchain/assets/crypto-lib/dist/bundle.js"
+    ></script>
+    <script
+      type="application/javascript"
+      src="/assets/packages/flutterchain/assets/crypto-lib/dist/dop_bundle.js"
+    ></script>
+    <link
+      rel="modulepreload"
+      crossorigin
+      href="/assets/packages/flutterchain/assets/crypto-lib/dist/bundle2.js"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
 
-  <script type="module" type="application/javascript"
-    src="/assets/cryptogrpahy_gateway/dist/bundle.js"></script>
+    <script
+      type="module"
+      src="/assets/packages/near_wallet_selector/assets/wallet-selector/dist/bundle.js"
+      defer
+    ></script>
 
-</head>
+    <script
+      type="module"
+      type="application/javascript"
+      src="/assets/cryptogrpahy_gateway/dist/bundle.js"
+    ></script>
+  </head>
 
-<body>
-  <style>
-    .firebase-emulator-warning {
-      display: none;
-    }
-  </style>
-  <script>
-    var serviceWorkerVersion = null;
-    var scriptLoaded = false;
-    function loadMainDartJs() {
-      if (scriptLoaded) {
-        return;
+  <body>
+    <style>
+      .firebase-emulator-warning {
+        display: none;
       }
-      scriptLoaded = true;
-      var scriptTag = document.createElement('script');
-      scriptTag.src = 'main.dart.js';
-      scriptTag.type = 'application/javascript';
-      document.body.append(scriptTag);
-    }
+    </style>
+    <script>
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", function () {
+          if ("serviceWorker" in navigator && "PushManager" in window) {
+            console.log("Service Worker and Push Manager are supported.");
 
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', function () {
-        // Wait for registration to finish before dropping the <script> tag.
-        // Otherwise, the browser will load the script multiple times,
-        // potentially different versions.
-        var serviceWorkerUrl = 'flutter_service_worker.js?v=' + serviceWorkerVersion;
-        navigator.serviceWorker.register(serviceWorkerUrl)
-          .then((reg) => {
+            // Register the Service Worker
+            navigator.serviceWorker
+              .register("/push-notification-service-worker.js")
+              .then((registration) => {
+                console.log(
+                  "Service Worker registered with scope:",
+                  registration.scope
+                );
+                navigator.serviceWorker.addEventListener("message", (event) => {
+                  // console.log('Message from Service Worker:', event.data);
+                  window.postMessage(event.data, "*");
+                });
+              })
+              .catch((error) => {
+                console.error("Service Worker registration failed:", error);
+              });
+          } else {
+            console.warn(
+              "Push notifications are not supported in this browser."
+            );
+          }
+        });
+      }
+    </script>
+    <script>
+      function urlBase64ToUint8Array(base64String) {
+        var padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+        var base64 = (base64String + padding)
+          .replace(/\-/g, "+")
+          .replace(/_/g, "/");
+
+        var rawData = window.atob(base64);
+        var outputArray = new Uint8Array(rawData.length);
+
+        for (var i = 0; i < rawData.length; ++i) {
+          outputArray[i] = rawData.charCodeAt(i);
+        }
+        return outputArray;
+      }
+      async function subscribeToPushNotifications(vapidPublicKey) {
+        try {
+          const registration = await navigator.serviceWorker.ready;
+
+          // Convert the VAPID public key to a Uint8Array
+          const convertedVapidKey = urlBase64ToUint8Array(vapidPublicKey);
+
+          // Subscribe to push notifications
+          const subscription = await registration.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: convertedVapidKey,
+          });
+
+          console.log("Subscription created.", subscription);
+          return JSON.stringify(subscription);
+        } catch (error) {
+          console.error("Failed to subscribe the user:", error);
+        }
+      }
+
+      function getNotificationStatus() {
+        return Notification.permission.toString(); // default if not asked, then granted, denied
+      }
+
+      async function isSubscriptionCreated() {
+        const registration = await navigator.serviceWorker.ready;
+        const subscription = await registration.pushManager.getSubscription();
+        if (subscription) {
+          return true;
+        } else {
+          return false;
+        }
+      }
+
+      async function unsubscribeFromPushNotifications() {
+        try {
+          const registration = await navigator.serviceWorker.ready;
+          const subscription = await registration.pushManager.getSubscription();
+
+          if (subscription) {
+            await subscription.unsubscribe();
+            console.log("User unsubscribed from push notifications.");
+          } else {
+            console.log("No active subscription found.");
+          }
+        } catch (error) {
+          console.error("Error unsubscribing:", error);
+        }
+      }
+
+      window.subscribeToPushNotifications = subscribeToPushNotifications;
+      window.getNotificationStatus = getNotificationStatus;
+      window.unsubscribeFromPushNotifications =
+        unsubscribeFromPushNotifications;
+    </script>
+    <script>
+      var serviceWorkerVersion = null;
+      var scriptLoaded = false;
+      function loadMainDartJs() {
+        if (scriptLoaded) {
+          return;
+        }
+        scriptLoaded = true;
+        var scriptTag = document.createElement("script");
+        scriptTag.src = "main.dart.js";
+        scriptTag.type = "application/javascript";
+        document.body.append(scriptTag);
+      }
+
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", function () {
+          // Wait for registration to finish before dropping the <script> tag.
+          // Otherwise, the browser will load the script multiple times,
+          // potentially different versions.
+          var serviceWorkerUrl =
+            "flutter_service_worker.js?v=" + serviceWorkerVersion;
+          navigator.serviceWorker.register(serviceWorkerUrl).then((reg) => {
             function waitForActivation(serviceWorker) {
-              serviceWorker.addEventListener('statechange', () => {
-                if (serviceWorker.state == 'activated') {
-                  console.log('Installed new service worker.');
+              serviceWorker.addEventListener("statechange", () => {
+                if (serviceWorker.state == "activated") {
+                  console.log("Installed new service worker.");
                   loadMainDartJs();
                 }
               });
@@ -92,32 +211,31 @@
             } else if (!reg.active.scriptURL.endsWith(serviceWorkerVersion)) {
               // When the app updates the serviceWorkerVersion changes, so we
               // need to ask the service worker to update.
-              console.log('New service worker available.');
+              console.log("New service worker available.");
               reg.update();
               waitForActivation(reg.installing);
             } else {
               // Existing service worker is still good.
-              console.log('Loading app from service worker.');
+              console.log("Loading app from service worker.");
               loadMainDartJs();
             }
           });
 
-        // If service worker doesn't succeed in a reasonable amount of time,
-        // fallback to plaint <script> tag.
-        setTimeout(() => {
-          if (!scriptLoaded) {
-            console.warn(
-              'Failed to load app from service worker. Falling back to plain <script> tag.',
-            );
-            loadMainDartJs();
-          }
-        }, 4000);
-      });
-    } else {
-      // Service workers not supported. Just drop the <script> tag.
-      loadMainDartJs();
-    }
-  </script>
-</body>
-
+          // If service worker doesn't succeed in a reasonable amount of time,
+          // fallback to plaint <script> tag.
+          setTimeout(() => {
+            if (!scriptLoaded) {
+              console.warn(
+                "Failed to load app from service worker. Falling back to plain <script> tag."
+              );
+              loadMainDartJs();
+            }
+          }, 4000);
+        });
+      } else {
+        // Service workers not supported. Just drop the <script> tag.
+        loadMainDartJs();
+      }
+    </script>
+  </body>
 </html>

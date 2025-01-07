@@ -16,7 +16,7 @@ webPush.setVapidDetails(
     vapidKeys.privateKey
 );
 
-app.use(cors({ origin: 'http://localhost:46011' }));
+app.use(cors({ origin: '*' }));
 app.use(bodyParser.json());
 
 app.get('/vapidPublicKey', (req, res) => {
@@ -35,7 +35,7 @@ app.post('/register', (req, res) => {
     const payload = JSON.stringify({ title: 'Welcome!', body: 'Thank you for subscribing to notifications!' });
     const options = { TTL: 60 }; 
 
-    const notificationCount = 10;
+    const notificationCount = 5;
     const notificationDelay = 10 * 1000;
 
     for (let i = 0; i < notificationCount; i++) {
