@@ -39,7 +39,7 @@ dependencies:
   cupertino_icons: ^1.0.2
   dio: ^5.7.0
   dio_smart_retry: 6.0.0
-  easy_localization: 3.0.5
+  easy_localization: ^3.0.8
   encrypt: 5.0.3
   equatable: ^2.0.7
   # firebase_auth: ^5.3.4
@@ -64,7 +64,7 @@ dependencies:
   google_fonts: 6.2.1
   html: ^0.15.5
   image_picker: ^1.1.2
-  intl: 0.19.0
+  intl: 0.20.2
   json_annotation: ^4.8.1
   local_auth: ^2.3.0
   mockito: 5.4.4
@@ -73,8 +73,6 @@ dependencies:
       url: https://github.com/ArturLevchuk/near_wallet_selector.git
   photo_view: 0.15.0
   pointycastle: ^3.9.1
-  qr_code_scanner: 1.0.1
-  qrcode_reader_web: 1.1.1
   rxdart: 0.27.7
   supabase_flutter: ^2.8.1
   tap_debouncer: ^2.2.0
@@ -83,6 +81,7 @@ dependencies:
   permission_handler: ^11.3.1
   web_socket_channel: ^3.0.1
   qr_flutter: ^4.1.0
+  mobile_scanner: ^7.1.4
 
 
 # dependency_overrides:

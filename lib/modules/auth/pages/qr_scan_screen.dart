@@ -1,15 +1,12 @@
 import 'dart:async';
-import 'dart:io';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:near_social_mobile/formatters/qr_formatter.dart';
 import 'package:near_social_mobile/modules/auth/pages/utils/encrypt_data_and_login.dart';
 import 'package:near_social_mobile/routes/routes.dart';
-import 'package:qr_code_scanner/qr_code_scanner.dart';
-import 'package:qrcode_reader_web/qrcode_reader_web.dart';
 
 class QRReaderScreen extends StatefulWidget {
   const QRReaderScreen({super.key});
@@ -19,45 +16,36 @@ class QRReaderScreen extends StatefulWidget {
 }
 
 class _QRReaderScreenState extends State<QRReaderScreen> {
-  final GlobalKey qrKey = GlobalKey(debugLabel: 'QR');
-  QRViewController? controller;
-  final StreamController<String> _webQRReaderController = StreamController();
+  final MobileScannerController controller = MobileScannerController();
+  bool _isProcessing = false;
 
   @override
-  void initState() {
-    super.initState();
-    _webQRReaderController.stream.distinct().listen(checkIfQRCodeIsValid);
+  void dispose() {
+    controller.dispose();
+    super.dispose();
   }
 
-  @override
-  void reassemble() {
-    super.reassemble();
-    if (Platform.isAndroid) {
-      controller?.pauseCamera();
-    } else if (Platform.isIOS) {
-      controller?.resumeCamera();
+  void _onDetect(BarcodeCapture capture) async {
+    if (_isProcessing) return;
+
+    final List<Barcode> barcodes = capture.barcodes;
+    for (final barcode in barcodes) {
+      if (barcode.rawValue != null) {
+        _isProcessing = true;
+        await checkIfQRCodeIsValid(barcode.rawValue!);
+        break;
+      }
     }
   }
 
-  void _onQRViewCreated(QRViewController controller) {
-    this.controller = controller;
-    controller.scannedDataStream
-        .distinct(
-      (prev, next) => prev.code == next.code,
-    )
-        .listen((scanData) {
-      if (scanData.code == null) return;
-      checkIfQRCodeIsValid(scanData.code!);
-    });
-  }
-
-  checkIfQRCodeIsValid(String code) async {
+  Future<void> checkIfQRCodeIsValid(String code) async {
     try {
       final authorizationCredentials =
           QRFormatter.convertURLToAuthorizationCredentials(code);
       await encryptDataAndLogin(authorizationCredentials);
       Modular.to.navigate(Routes.home.getModule());
     } catch (err) {
+      _isProcessing = false;
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -72,38 +60,31 @@ class _QRReaderScreenState extends State<QRReaderScreen> {
   }
 
   @override
-  void dispose() {
-    controller?.dispose();
-    _webQRReaderController.close();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
         top: false,
-        child: kIsWeb
-            ? QRCodeReaderSquareWidget(
-                borderRadius: BorderRadius.circular(10),
-                targetColor: Theme.of(context).primaryColor,
-                onDetect: (QRCodeCapture capture) async {
-                  _webQRReaderController.add(capture.raw);
-                },
-                size: 300.h,
-              )
-            : QRView(
-                key: qrKey,
-                onQRViewCreated: _onQRViewCreated,
-                formatsAllowed: const [BarcodeFormat.qrcode],
-                overlay: QrScannerOverlayShape(
-                  borderColor: Theme.of(context).primaryColor,
-                  borderRadius: 10,
-                  borderLength: 30,
-                  borderWidth: 10,
-                  cutOutSize: 300.h,
+        child: Stack(
+          children: [
+            MobileScanner(
+              controller: controller,
+              onDetect: _onDetect,
+            ),
+            Center(
+              child: Container(
+                width: 300.h,
+                height: 300.h,
+                decoration: BoxDecoration(
+                  border: Border.all(
+                    color: Theme.of(context).primaryColor,
+                    width: 3,
+                  ),
+                  borderRadius: BorderRadius.circular(10),
                 ),
               ),
+            ),
+          ],
+        ),
       ),
     );
   }

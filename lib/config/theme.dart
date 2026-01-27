@@ -62,7 +62,7 @@ ThemeData get appTheme => ThemeData(
           enableFeedback: true,
         ),
       ),
-      bottomAppBarTheme: const BottomAppBarTheme(
+      bottomAppBarTheme: const BottomAppBarThemeData(
         color: NEARColors.black,
         surfaceTintColor: Colors.transparent,
       ),

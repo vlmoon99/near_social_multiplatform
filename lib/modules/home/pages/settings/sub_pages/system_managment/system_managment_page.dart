@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -6,13 +5,12 @@ import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutterchain/flutterchain_lib/services/chains/near_blockchain_service.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:near_social_mobile/config/constants.dart';
 import 'package:near_social_mobile/config/theme.dart';
 import 'package:near_social_mobile/modules/vms/core/auth_controller.dart';
 import 'package:near_social_mobile/services/cryptography/encryption/encryption_runner_interface.dart';
 import 'package:near_social_mobile/services/cryptography/internal_cryptography_service.dart';
-import 'package:qr_code_scanner/qr_code_scanner.dart';
-import 'package:qrcode_reader_web/qrcode_reader_web.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class SystemModel {
@@ -276,21 +274,26 @@ class QRReaderScreen extends StatefulWidget {
 }
 
 class _QRReaderScreenState extends State<QRReaderScreen> {
-  final GlobalKey qrKey = GlobalKey(debugLabel: 'QR');
-  QRViewController? controller;
-  final StreamController<String> webQRReaderController = StreamController();
-
-  @override
-  void initState() {
-    super.initState();
-    webQRReaderController.stream.distinct().listen(widget.onProcess);
-  }
+  final MobileScannerController controller = MobileScannerController();
+  bool _isProcessing = false;
 
   @override
   void dispose() {
-    controller?.dispose();
-    webQRReaderController.close();
+    controller.dispose();
     super.dispose();
+  }
+
+  void _onDetect(BarcodeCapture capture) {
+    if (_isProcessing) return;
+
+    final List<Barcode> barcodes = capture.barcodes;
+    for (final barcode in barcodes) {
+      if (barcode.rawValue != null) {
+        _isProcessing = true;
+        widget.onProcess(barcode.rawValue!);
+        break;
+      }
+    }
   }
 
   @override
@@ -298,12 +301,26 @@ class _QRReaderScreenState extends State<QRReaderScreen> {
     return Scaffold(
       body: SafeArea(
         top: false,
-        child: QRCodeReaderSquareWidget(
-          borderRadius: BorderRadius.circular(10),
-          targetColor: Theme.of(context).primaryColor,
-          onDetect: (QRCodeCapture capture) =>
-              webQRReaderController.add(capture.raw),
-          size: 300.h,
+        child: Stack(
+          children: [
+            MobileScanner(
+              controller: controller,
+              onDetect: _onDetect,
+            ),
+            Center(
+              child: Container(
+                width: 300.h,
+                height: 300.h,
+                decoration: BoxDecoration(
+                  border: Border.all(
+                    color: Theme.of(context).primaryColor,
+                    width: 3,
+                  ),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
