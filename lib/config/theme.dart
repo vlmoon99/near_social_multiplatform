@@ -37,8 +37,8 @@ ThemeData get appTheme => ThemeData(
         onPrimary: AppColors.onPrimary,
         secondary: AppColors.secondary,
         onSecondary: AppColors.onSecondary,
-        background: AppColors.background,
-        onBackground: AppColors.onBackground,
+        surface: AppColors.background,
+        onSurface: AppColors.onBackground,
       ),
       appBarTheme: const AppBarTheme(
         surfaceTintColor: Colors.transparent,
@@ -68,7 +68,7 @@ ThemeData get appTheme => ThemeData(
       ),
       iconButtonTheme: const IconButtonThemeData(
         style: ButtonStyle(
-          foregroundColor: MaterialStatePropertyAll(NEARColors.white),
+          foregroundColor: WidgetStatePropertyAll(NEARColors.white),
         ),
       ),
     );
