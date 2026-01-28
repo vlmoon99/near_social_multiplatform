@@ -1,0 +1,549 @@
+========================================
+FILE: lib/utils/checkAppPolicyAccepted.dart
+========================================
+
+import 'package:flutter_modular/flutter_modular.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:near_social_mobile/config/constants.dart';
+
+Future<bool> checkAppPolicyAccepted() async {
+  final secureStorage = Modular.get<FlutterSecureStorage>();
+  String? value = await secureStorage.read(key: StorageKeys.appPolicyAccepted);
+  if (value?.isNotEmpty ?? false) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
+
+
+========================================
+FILE: lib/utils/checkAuthenticationOnDevice.dart
+========================================
+
+import 'package:flutter_modular/flutter_modular.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:near_social_mobile/config/constants.dart';
+
+Future<bool> checkAuthenticationOnDevice() async {
+  final secureStorage = Modular.get<FlutterSecureStorage>();
+  String? value = await secureStorage.read(key: StorageKeys.authInfo);
+  if (value?.isNotEmpty ?? false) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
+
+
+========================================
+FILE: lib/utils/check_for_jailbreak.dart
+========================================
+
+import 'dart:io';
+
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_jailbreak_detection/flutter_jailbreak_detection.dart';
+import 'package:flutter_modular/flutter_modular.dart';
+import 'package:near_social_mobile/shared_widgets/custom_button.dart';
+
+Future<void> checkForJailbreak() async {
+  final jailBreakedDevice = await FlutterJailbreakDetection.jailbroken;
+  if (jailBreakedDevice) {
+    showDialog(
+      builder: (context) => AlertDialog(
+        title: const Text('Error'),
+        content: Text(
+          "This device is ${Platform.isIOS ? 'jailbroken' : 'rooted'}. The security of the data in this application is not guaranteed.",
+        ),
+        actionsAlignment: MainAxisAlignment.center,
+        actions: [
+          CustomButton(
+            primary: true,
+            onPressed: () {
+              Navigator.pop(context);
+            },
+            child: const Text(
+              'OK',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
+      context: Modular.routerDelegate.navigatorKey.currentContext!,
+    );
+  }
+}
+
+
+
+========================================
+FILE: lib/utils/date_to_string.dart
+========================================
+
+  import 'package:intl/intl.dart';
+
+String formatDateDependingOnCurrentTime(DateTime date) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+
+    if (date.isAfter(today)) {
+      return DateFormat("hh:mm a").format(date);
+    } else if (date.year == now.year) {
+      return DateFormat('hh:mm a MMM dd').format(date);
+    } else {
+      return DateFormat('hh:mm a MMM dd, yyyy').format(date);
+    }
+  }
+
+
+========================================
+FILE: lib/utils/future_queue.dart
+========================================
+
+import 'dart:async';
+import 'dart:collection';
+
+class FutureQueue {
+  final Duration timeout;
+  final _controller = StreamController<_QueuedFunction>();
+  final Queue<_QueuedFunction> _queue = Queue<_QueuedFunction>();
+  bool _isProcessing = false;
+
+  FutureQueue({this.timeout = Duration.zero}) {
+    _controller.stream.listen(
+      (task) {
+        _queue.add(task);
+        if (!_isProcessing) {
+          _processQueue();
+        }
+      },
+    );
+  }
+
+  Future<dynamic> addToQueue(Future<void> Function() function) {
+    final completer = Completer<dynamic>();
+    _controller.add(
+      _QueuedFunction(
+        function,
+        completer,
+      ),
+    );
+    return completer.future;
+  }
+
+  Future<void> _processQueue() async {
+    if (_isProcessing) return;
+    _isProcessing = true;
+
+    final queuedFunction = _queue.removeFirst();
+    final function = queuedFunction.function;
+    await Future.delayed(timeout);
+
+    try {
+      final res = await function();
+      queuedFunction.completer.complete(res);
+    } catch (err) {
+      queuedFunction.completer.completeError(err);
+    }
+
+    _isProcessing = false;
+
+    if (_queue.isNotEmpty) {
+      _processQueue();
+    }
+  }
+
+  void dispose() {
+    _controller.close();
+  }
+}
+
+class _QueuedFunction {
+  final Function function;
+  final Completer<dynamic> completer;
+
+  _QueuedFunction(this.function, this.completer);
+}
+
+
+
+========================================
+FILE: lib/utils/get_network_type.dart
+========================================
+
+import 'package:flutter_modular/flutter_modular.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:near_social_mobile/config/constants.dart';
+
+enum NearNetworkType { testnet, mainnet }
+
+Future<NearNetworkType> getNearNetworkType() async {
+  final secureStorage = Modular.get<FlutterSecureStorage>();
+  final networkType = await secureStorage.read(key: StorageKeys.networkType);
+  if (networkType == "mainnet") {
+    return NearNetworkType.mainnet;
+  } else {
+    return NearNetworkType.testnet;
+  }
+}
+
+
+
+========================================
+FILE: lib/utils/is_web_image_avaliable.dart
+========================================
+
+import 'package:dio/dio.dart';
+
+Future<bool> isWebImageAvailable(String imageUrl) async {
+  try {
+    final dio = Dio();
+    final response = await dio.head(imageUrl);
+
+    if (response.statusCode == 200) {
+      final contentType = response.headers.value('content-type');
+      return contentType != null && contentType.startsWith('image/');
+    }
+  } catch (e) {
+    return false;
+  }
+  return false;
+}
+
+
+
+========================================
+FILE: lib/utils/near_widget_opener_interface.dart
+========================================
+
+import 'package:bos_gateway_viewer/bos_gateway_viewer.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_modular/flutter_modular.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:near_social_mobile/modules/home/pages/near_widgets/widget_app_page.dart';
+import 'package:near_social_mobile/modules/home/pages/near_widgets/widgets/widgets_props_settings_dialog_body.dart';
+import 'package:near_social_mobile/routes/routes.dart';
+
+Future<dynamic> openNearWidget(
+    {required String widgetPath, String? initWidgetProps}) async {
+  return showDialog(
+    context: Modular.routerDelegate.navigatorKey.currentContext!,
+    builder: (context) {
+      return Dialog(
+        insetPadding: REdgeInsets.symmetric(horizontal: 20),
+        child: WidgetsPropsSettingsDialogBody(
+            initWidgetProps: initWidgetProps,
+            navigateFunction: (widgetprops, privateKeyInfo) async {
+              final NearWidgetSetupCredentials nearWidgetSetupCredentials =
+                  NearWidgetSetupCredentials(
+                network: NearNetwork.mainnet,
+                privateKeyInfo: privateKeyInfo,
+                widgetSettings: WidgetSettings(
+                  widgetSrc: widgetPath,
+                  widgetProps: widgetprops,
+                ),
+              );
+              Modular.to.pushNamed(
+                ".${Routes.home.widgetPage}",
+                arguments: nearWidgetSetupCredentials,
+              );
+            }),
+      );
+    },
+  );
+}
+
+
+
+========================================
+FILE: lib/utils/no_scrollbar_behavior.dart
+========================================
+
+import 'package:flutter/material.dart';
+
+class NoScrollbarScrollBehavior extends ScrollBehavior {
+  @override
+  Widget buildScrollbar(
+      BuildContext context, Widget child, ScrollableDetails details) {
+    return child;
+  }
+}
+
+
+========================================
+FILE: lib/utils/show_confirm_action_dialog.dart
+========================================
+
+import 'package:flutter/material.dart';
+import 'package:flutter_modular/flutter_modular.dart';
+import 'package:near_social_mobile/shared_widgets/custom_button.dart';
+
+Future<bool> askToConfirmAction(
+    {required String title, String? content}) async {
+  final confirm = await showDialog<bool>(
+    context: Modular.routerDelegate.navigatorKey.currentContext!,
+    builder: (context) {
+      return AlertDialog(
+        title: Text(
+          title,
+          style: const TextStyle(
+            fontSize: 18,
+          ),
+          textAlign: TextAlign.center,
+        ),
+        content: content == null
+            ? null
+            : Text(
+                content,
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+        actions: [
+          CustomButton(
+            primary: true,
+            onPressed: () {
+              Modular.to.pop(true);
+            },
+            child: const Text("Yes"),
+          ),
+          CustomButton(
+            primary: false,
+            onPressed: () {
+              Modular.to.pop(false);
+            },
+            child: const Text("No"),
+          ),
+        ],
+        actionsAlignment: MainAxisAlignment.spaceEvenly,
+      );
+    },
+  );
+
+  return confirm ?? false;
+}
+
+
+
+========================================
+FILE: lib/utils/show_success_dialog.dart
+========================================
+
+import 'package:flutter/gestures.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_modular/flutter_modular.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:url_launcher/url_launcher.dart';
+
+Future<void> showSuccessDialog({
+  required String txHash,
+  required String title,
+}) async {
+  await showDialog(
+    context: Modular.routerDelegate.navigatorKey.currentContext!,
+    builder: (context) {
+      return Dialog(
+        insetPadding: REdgeInsets.symmetric(horizontal: 20),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0).r,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Align(
+                alignment: Alignment.center,
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+              SizedBox(height: 3.h),
+              Text.rich(
+                TextSpan(
+                  style: const TextStyle(
+                    fontSize: 16,
+                  ),
+                  children: [
+                    const TextSpan(
+                      text: "Txn Hash: ",
+                    ),
+                    TextSpan(
+                      recognizer: TapGestureRecognizer()
+                        ..onTap = () {
+                          launchUrl(
+                              Uri.parse("https://nearblocks.io/txns/$txHash"));
+                        },
+                      text: txHash,
+                      style: const TextStyle(
+                        color: Colors.blue,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    },
+  );
+}
+
+
+
+========================================
+FILE: lib/utils/web/is_pwa.dart
+========================================
+
+import 'dart:html' as html;
+
+bool get isPWA {
+  if (html.window.matchMedia('(display-mode: standalone)').matches) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
+
+
+========================================
+FILE: lib/utils/web/is_pwa_stub.dart
+========================================
+
+bool get isPWA {
+  return false;
+}
+
+
+
+========================================
+FILE: lib/main.dart
+========================================
+
+import 'dart:async';
+
+import 'package:easy_localization/easy_localization.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_modular/flutter_modular.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:near_social_mobile/assets/localizations/localizations_strings.dart';
+import 'package:near_social_mobile/config/theme.dart';
+import 'package:near_social_mobile/exceptions/exceptions.dart';
+import 'package:near_social_mobile/modules/app_module.dart';
+
+import 'config/setup.dart';
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  final app = EasyLocalization(
+    supportedLocales: const [
+      Locale('en'),
+    ],
+    path: LocalizationsStrings.localizationPath,
+    fallbackLocale: const Locale('en'),
+    saveLocale: false,
+    child: ModularApp(
+      module: AppModule(),
+      child: const AppWidget(),
+    ),
+  );
+
+  if (kDebugMode) {
+    WidgetsFlutterBinding.ensureInitialized();
+    await initOfApp();
+    runApp(app);
+  } else {
+    runZonedGuarded(() async {
+      WidgetsFlutterBinding.ensureInitialized();
+      await initOfApp();
+      FlutterError.onError = (FlutterErrorDetails details) {
+        final catcher = Catcher();
+        catcher.showDialogForError(details.exception);
+      };
+
+      SystemChrome.setPreferredOrientations([
+        DeviceOrientation.portraitUp,
+        DeviceOrientation.portraitDown,
+      ]).then((_) {
+        runApp(app);
+      });
+    }, (error, stack) {
+      final catcher = Catcher();
+      catcher.showDialogForError(error);
+    });
+  }
+}
+
+class AppWidget extends StatelessWidget {
+  const AppWidget({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return ScreenUtilInit(
+      builder: (_, __) {
+        return MaterialApp.router(
+          title: 'Near Social Multiplatform',
+          debugShowCheckedModeBanner: false,
+          routerConfig: Modular.routerConfig,
+          localizationsDelegates: context.localizationDelegates,
+          supportedLocales: context.supportedLocales,
+          locale: context.locale,
+          theme: appTheme,
+        );
+      },
+    );
+  }
+}
+
+
+
+
+################################################################################
+# #
+# 🤖 LLM INSTRUCTIONS #
+# #
+################################################################################
+
+Rules of writing code:
+1. Ensure that the 'Legacy' colors and textstyles are strictly avoided in new widgets.
+2. Do not change anything in app_theme file
+3. Return the full code for the modified files only in the formatted dart way with 1 click copy paste mode in google ai studio I must to have this copy button.
+4. Dont use any hardcoded, use strictly text and colors from localization and colors and text styles, only in the situation when u stuck - u can use hardcode
+5. Make sure u are using the same way of creating sizes of the widgets and make my ui responsive, but at the same time semi adapted(because on the laptops and tablets right now I see the mobile version)
+6. Make sure u dont write any comments inside code
+7. Dont use private values (variables,functions,classes with underscore like this one -> _value; _function(), _BlocStateClass), all parts of the code must be public.
+
+Main logic of Evolut app :
+1.User can login with email and phone
+2.User can create his profile and this profile must be sync with the server, the latest data update is priority between devices.
+3.User can have create LifeSpehres and insdie LifeSpheres he can create LifeSphersActivity (by the very simialr rules and UI as with LifeSpheres).
+4.Each LifeSphersActivity has : 1.day of the task (some day of the week from 1 to 7), 2.time to execute (how much time user will spend on this task).
+5.Each LifeSphersActivity will be converted in the ExecutedTask insdie user Calendar , and each ExecutedTask can have the real time executed (becuase user can plan 30min , but execute 10min, so it's 30% of his planned execution), and mark (done or not done)
+6.After all this lan creation with  LifeSpheres and LifeSphersActivity, we mark our tasks (ExecutedTask) on the calendar , and after that we can see the analysis. In the app we will have a few types of analysis which user can see localy on his devices(it's becuase we are gonna enrypt his data on hte server and only his device can calculate his analytics) :
+  - First type of analysis is a Calendar on which he can see a next diaposons of the time : day,week,month,year , in case of the day he can see each life sphere corelation with planned life spheres and real execution from the planned in %.(If he will tap on the life sphere he will see the similar info but for each LifeSphersActivity the same % corelations).
+    On the week, month, year Calendar menu he will see the days like in the std mobiel app calendar mode with each day circled in the colorful border , which will show the corelation betwee planned/executed in %.(He will also have an option to filter it by LifeSpheres and LifeSphersActivity).
+  - Second type of analysis is a Graph on which he can see a next diaposons of the time : week,month,year,all, all this screens will ahve teh similar ui and it will shwo the chart of total points earned, each task from planned can give u some amount of points, and this chart will no have any downside, if u do nothing - the chart will stay on one place or horizontal,
+    if u perform some task - u can earn some amount of the points on the chart. So each time u will execute some task this chart will grow a little bit. Also there will be filters by LifeSpheres/LifeSphersActivity , by which user can filtred his tasks and see his progress on the bar in according to the corresponding filters.
+
+
+Instructions:
+1.Read and Analyze ALL Context Code
+2.Make sure the DoItChart is the same size as PlannedLifeChart, becuase right now DoItChart looks smaller than PlannedLifeChart also
+DoItChart must be optimized in order to not go outise my background icon photo, I dont wanna see out of circle colors at all
+3.I wanna to make DoITTaskItem more area to tpa in order to done/undone, right now it's only a little cirle, I anna maek more sapce (excpetd the plcae wher icon of ediitng is located, it must the open the same modal as right now, but also the biggest are of opening the editing modal will be better).
+4.Make sure that in inner done it screen on week date frame i will have the day spitter as on inner planned page with planned activities but on do it screen it must be for done it activities, also just synchronize them with planned activities page, make sure they are synchronized at 1 to 1 what i can see on planned side as well on done it side
