@@ -49,16 +49,17 @@ class HomeMenuPage extends StatelessWidget {
                     );
                   },
                 ),
-                HomeMenuListTile(
-                  tile: const Icon(Icons.message),
-                  title: "Chats",
-                  onTap: () {
-                    HapticFeedback.lightImpact();
-                    Modular.to.pushNamed(
-                      ".${Routes.home.chatsPage}",
-                    );
-                  },
-                ),
+                // Chat functionality temporarily disabled for decentralization
+                // HomeMenuListTile(
+                //   tile: const Icon(Icons.message),
+                //   title: "Chats",
+                //   onTap: () {
+                //     HapticFeedback.lightImpact();
+                //     Modular.to.pushNamed(
+                //       ".${Routes.home.chatsPage}",
+                //     );
+                //   },
+                // ),
                 HomeMenuListTile(
                   tile: const Icon(Icons.feed),
                   title: "Smart Posts",

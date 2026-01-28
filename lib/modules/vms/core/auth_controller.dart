@@ -7,13 +7,13 @@ import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutterchain/flutterchain_lib/services/chains/near_blockchain_service.dart';
 import 'package:near_social_mobile/config/constants.dart';
+import 'package:near_social_mobile/data/repositories/repositories.dart';
 import 'package:near_social_mobile/modules/home/apis/models/private_key_info.dart';
 import 'package:near_social_mobile/services/crypto_storage_service.dart';
 import 'package:near_social_mobile/services/cryptography/encryption/encryption_runner_interface.dart';
 import 'package:near_social_mobile/services/cryptography/internal_cryptography_service.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:rxdart/rxdart.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'models/auth_info.dart';
 
@@ -21,6 +21,7 @@ class AuthController extends Disposable {
   final NearBlockChainService _nearBlockChainService;
   final FlutterSecureStorage _secureStorage;
   final NearSocialApi _nearSocialApi;
+  final UserDataRepository _userDataRepository;
 
   late final CryptoStorageService _cryptoStorageService;
 
@@ -28,8 +29,11 @@ class AuthController extends Disposable {
       BehaviorSubject.seeded(const AuthInfo());
 
   AuthController(
-      this._nearBlockChainService, this._secureStorage, this._nearSocialApi)
-      : _cryptoStorageService =
+    this._nearBlockChainService,
+    this._secureStorage,
+    this._nearSocialApi,
+    this._userDataRepository,
+  ) : _cryptoStorageService =
             CryptoStorageService(secureStorage: _secureStorage);
 
   Stream<AuthInfo> get stream => _streamController.stream.distinct();
@@ -71,44 +75,27 @@ class AuthController extends Disposable {
         ...await _getAdditionalAccessKeys()
       };
 
-      String signedMessagedForVerification =
+      // Подписываем сообщение для верификации (используется локально)
+      String signedMessageForVerification =
           await Modular.get<InternalCryptographyService>()
               .encryptionRunner
               .signMessageForVerification(secretKey);
 
-      await Supabase.instance.client.auth.signInAnonymously();
-      final uuid = Supabase.instance.client.auth.currentUser!.id;
-      final secureStorage = Modular.get<FlutterSecureStorage>();
-      var keyPair;
-      final keys = await secureStorage.read(key: "session_keys");
-      if (keys == null) {
-        keyPair = await Modular.get<InternalCryptographyService>()
-            .encryptionRunner
-            .generateKeyPair();
+      // Получаем или генерируем ключи шифрования
+      var keyPair = await _getOrGenerateEncryptionKeys();
 
-        await secureStorage.write(
-            key: "session_keys", value: jsonEncode(keyPair.toJson()));
-      } else {
-        keyPair = KeyPair.fromJson(
-            jsonDecode(await Modular.get<FlutterSecureStorage>().read(
-                  key: "session_keys",
-                ) ??
-                '{}'));
-      }
-
-      final res = await verifyTransaction(
-        signature: signedMessagedForVerification,
-        encryptionPublicKey: keyPair.publicKey,
-        publicKeyStr: base58PubKey,
-        uuid: uuid,
+      // Верификация и создание сессии через репозиторий
+      final verificationResult = await _userDataRepository.verifyAndCreateSession(
         accountId: accountId,
+        signature: signedMessageForVerification,
+        publicKeyStr: base58PubKey,
+        encryptionPublicKey: keyPair.publicKey,
+        encryptionPrivateKey: keyPair.privateKey,
       );
 
-      if (!res) {
-        await Supabase.instance.client.auth.signOut();
-
+      if (!verificationResult.success) {
         await logout();
-        throw Exception("Server authenticated error");
+        throw Exception(verificationResult.errorMessage ?? "Verification failed");
       }
 
       if (kIsWeb) {
@@ -118,6 +105,7 @@ class AuthController extends Disposable {
           print("onGrantedCallback");
         }).request();
       }
+
       _streamController.add(state.copyWith(
         accountId: accountId,
         publicKey: publicKey,
@@ -128,6 +116,26 @@ class AuthController extends Disposable {
       ));
     } catch (err) {
       rethrow;
+    }
+  }
+
+  /// Получает или генерирует ключи шифрования для E2E
+  Future<KeyPair> _getOrGenerateEncryptionKeys() async {
+    final keys = await _secureStorage.read(key: "session_keys");
+
+    if (keys == null) {
+      final keyPair = await Modular.get<InternalCryptographyService>()
+          .encryptionRunner
+          .generateKeyPair();
+
+      await _secureStorage.write(
+        key: "session_keys",
+        value: jsonEncode(keyPair.toJson()),
+      );
+
+      return keyPair;
+    } else {
+      return KeyPair.fromJson(jsonDecode(keys));
     }
   }
 
@@ -150,106 +158,11 @@ class AuthController extends Disposable {
     }
   }
 
-  Future<bool> verifyTransaction({
-    required String signature,
-    required String publicKeyStr,
-    required String encryptionPublicKey,
-    required String uuid,
-    required String accountId,
-  }) async {
-    try {
-      final response = await Supabase.instance.client.functions.invoke(
-        'verifyAccount',
-        headers: {
-          "Accept": "application/json",
-          "Access-Control-Allow-Origin": "*",
-        },
-        body: <String, dynamic>{
-          'signature': signature,
-          'publicKeyStr': publicKeyStr,
-          'encryptionPublicKey': encryptionPublicKey,
-          'uuid': uuid,
-          'accountId': accountId,
-        },
-      );
-      return response.data['success'] == true;
-    } catch (e) {
-      print('Unexpected error: $e');
-      return false;
-    }
-  }
-
-  // Future<UserCredential?> authenticateUser(
-  //     String accountId, String secretKey) async {
-  //   final FirebaseAuth auth = FirebaseAuth.instance;
-  //   final userCredential = await auth.signInAnonymously();
-
-  //   print("secretKey  :::  " + secretKey);
-  //   final privateKey = await _nearBlockChainService
-  //       .getPrivateKeyFromSecretKeyFromNearApiJSFormat(
-  //     secretKey.split(":").last,
-  //   );
-  //   final publicKey = await _nearBlockChainService
-  //       .getPublicKeyFromSecretKeyFromNearApiJSFormat(
-  //     secretKey.split(":").last,
-  //   );
-
-  //   String base58EncodedPublicKey = (await _nearBlockChainService.jsVMService
-  //       .callJS("window.fromSecretToNearAPIJSPublicKey('$secretKey')"));
-
-  // String signedMessagedForVerification = (await _nearBlockChainService
-  //         .jsVMService
-  //         .callJS("window.signMessageForVerification('$secretKey')"))
-  //     .toString();
-
-  // print("signedMessagedForVerification  " + signedMessagedForVerification);
-
-  //   verifyTransaction(
-  //     signature: signedMessagedForVerification,
-  //     publicKeyStr: base58EncodedPublicKey,
-  //     uuid: FirebaseAuth.instance.currentUser!.uid,
-  //     accountId: accountId,
-  //   ).then((resVerefication) async {
-  //     final DocumentSnapshot res = await FirebaseFirestore.instance
-  //         .collection('users')
-  //         .doc(accountId)
-  //         .get();
-
-  //     if (res.exists) {
-  //       print('User data: ${res.data()}');
-  //     } else {
-  //       print('No user found with ID: $accountId');
-  //     }
-
-  //     if (resVerefication && !res.exists) {
-  //       final accountInfo = await NearSocialApi(
-  //               _nearBlockChainService: NearBlockChainService.defaultInstance())
-  //           .getGeneralAccountInfo(accountId: accountId);
-  //       print("accountInfo  " + accountInfo.toString());
-
-  //       FirebaseChatCore.instance.createUserInFirestore(
-  //         types.User(
-  //           firstName: accountInfo.name,
-  //           id: accountInfo.accountId,
-  //           imageUrl: accountInfo.profileImageLink,
-  //           lastName: "No data exist",
-  //           role: types.Role.user,
-  //         ),
-  //       );
-  //       print("resVerefication  " + resVerefication.toString());
-  //     }
-  //   });
-
-  //   try {
-  //     return userCredential;
-  //   } catch (e) {
-  //     print('Authentication error: $e');
-  //     return null;
-  //   }
-  // }
-
   Future<void> logout() async {
     try {
+      // Завершаем сессию через репозиторий
+      await _userDataRepository.endSession();
+
       await _secureStorage.delete(key: StorageKeys.authInfo);
       await _secureStorage.delete(key: StorageKeys.additionalCryptographicKeys);
       _streamController.add(const AuthInfo());

@@ -7,21 +7,15 @@ import 'package:flutter/services.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:near_social_mobile/assets/localizations/localizations_strings.dart';
-import 'package:near_social_mobile/config/constants.dart';
 import 'package:near_social_mobile/config/theme.dart';
 import 'package:near_social_mobile/exceptions/exceptions.dart';
 import 'package:near_social_mobile/modules/app_module.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'config/setup.dart';
 
 void main() async {
-  await Supabase.initialize(
-    url: SystemsManagmentConstans.mainSystemLink,
-    anonKey: SystemsManagmentConstans.mainSystemAnonKey,
-  );
-
   WidgetsFlutterBinding.ensureInitialized();
+
   final app = EasyLocalization(
     supportedLocales: const [
       Locale('en'),

@@ -324,7 +324,7 @@ dio_smart_retry: ^6.0.0       # Retry логика
 
 | Файл | Действие | Сложность |
 |------|----------|-----------|
-| `pubspec.yaml` | Удалить зависимости Supabase, Firebase, notifications, websocket | Низкая |
+| `pubspec.yaml`  | Удалить зависимости Supabase, Firebase, notifications, websocket | Низкая |
 | `lib/main.dart` | Удалить инициализацию Supabase | Низкая |
 | `lib/config/constants.dart` | Удалить `SystemsManagmentConstans` | Низкая |
 | `lib/modules/vms/core/auth_controller.dart` | Переписать авторизацию без Supabase | Высокая |

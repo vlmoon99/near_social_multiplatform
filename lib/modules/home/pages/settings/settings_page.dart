@@ -14,7 +14,6 @@ import 'package:near_social_mobile/routes/routes.dart';
 import 'package:near_social_mobile/services/cryptography/encryption/encryption_runner_interface.dart';
 import 'package:near_social_mobile/shared_widgets/home_menu_card.dart';
 import 'package:qr_flutter/qr_flutter.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
@@ -28,8 +27,7 @@ class SettingsPage extends StatelessWidget {
       (value) async {
         if (value != null && value) {
           final authController = Modular.get<AuthController>();
-          authController.logout();
-          await Supabase.instance.client.auth.signOut();
+          await authController.logout();
           Modular.get<NotificationsController>().clear();
           Modular.get<FilterController>().clear();
           Modular.get<PostsController>().clear();
