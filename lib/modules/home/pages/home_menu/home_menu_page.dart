@@ -1,119 +1,52 @@
-import 'package:animated_text_kit/animated_text_kit.dart';
+import 'dart:ui';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_modular/flutter_modular.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:flutterchain/flutterchain_lib/models/chains/near/near_account_info_request.dart';
 import 'package:flutterchain/flutterchain_lib/services/chains/near_blockchain_service.dart';
 import 'package:near_social_mobile/config/constants.dart';
-import 'package:near_social_mobile/config/theme.dart';
 import 'package:near_social_mobile/modules/home/apis/models/user_storage_info.dart';
 import 'package:near_social_mobile/modules/home/apis/near_social.dart';
-import 'package:near_social_mobile/modules/home/pages/home_menu/widgets/home_menu_list_tile.dart';
+import 'package:near_social_mobile/modules/home/pages/settings/settings_page.dart';
+import 'package:near_social_mobile/modules/home/vms/notifications/notifications_controller.dart';
+import 'package:near_social_mobile/modules/home/vms/posts/posts_controller.dart';
 import 'package:near_social_mobile/modules/home/vms/users/models/user_list_state.dart';
 import 'package:near_social_mobile/modules/home/vms/users/user_list_controller.dart';
 import 'package:near_social_mobile/modules/vms/core/auth_controller.dart';
+import 'package:near_social_mobile/modules/vms/core/filter_controller.dart';
 import 'package:near_social_mobile/routes/routes.dart';
-import 'package:near_social_mobile/shared_widgets/custom_button.dart';
 import 'package:near_social_mobile/shared_widgets/near_network_image.dart';
 import 'package:near_social_mobile/shared_widgets/spinner_loading_indicator.dart';
-import 'package:near_social_mobile/shared_widgets/storage_controll_dialogs.dart';
 
-class HomeMenuPage extends StatelessWidget {
-  const HomeMenuPage({super.key});
+class HomeMenuPage extends StatefulWidget {
+  const HomeMenuPage({super.key, this.onScroll});
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: ListView(
-        children: [
-          ProfileBanner(),
-          SizedBox(height: 10.h),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20).r,
-            child: Column(
-              children: [
-                HomeMenuListTile(
-                  tile: SvgPicture.asset(
-                    "assets/media/icons/nft-token.svg",
-                    color: IconTheme.of(context).color,
-                    height: IconTheme.of(context).size,
-                  ),
-                  title: "Mintbase Manager",
-                  onTap: () {
-                    HapticFeedback.lightImpact();
-                    Modular.to.pushNamed(
-                      ".${Routes.home.mintManager}/",
-                    );
-                  },
-                ),
-                // Chat functionality temporarily disabled for decentralization
-                // HomeMenuListTile(
-                //   tile: const Icon(Icons.message),
-                //   title: "Chats",
-                //   onTap: () {
-                //     HapticFeedback.lightImpact();
-                //     Modular.to.pushNamed(
-                //       ".${Routes.home.chatsPage}",
-                //     );
-                //   },
-                // ),
-                HomeMenuListTile(
-                  tile: const Icon(Icons.feed),
-                  title: "Smart Posts",
-                  onTap: () {
-                    HapticFeedback.lightImpact();
-                    Modular.to.pushNamed(".${Routes.home.smartFeedPage}");
-                  },
-                ),
-                HomeMenuListTile(
-                  tile: const Icon(Icons.settings),
-                  title: "Settings",
-                  onTap: () {
-                    HapticFeedback.lightImpact();
-                    Modular.to.pushNamed(
-                      ".${Routes.home.settingsPage}",
-                    );
-                  },
-                ),
-                HomeMenuListTile(
-                  tile: const Icon(Icons.design_services),
-                  title: "Modern Design Test",
-                  onTap: () {
-                    HapticFeedback.lightImpact();
-                    Modular.to.pushNamed(
-                      ".${Routes.home.modernDesignTestPage}",
-                    );
-                  },
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class ProfileBanner extends StatefulWidget {
-  const ProfileBanner({
-    super.key,
-  });
+  final VoidCallback? onScroll;
 
   @override
-  State<ProfileBanner> createState() => _ProfileBannerState();
+  State<HomeMenuPage> createState() => _HomeMenuPageState();
 }
 
-class _ProfileBannerState extends State<ProfileBanner> {
+class _HomeMenuPageState extends State<HomeMenuPage> {
+  final ScrollController _scrollController = ScrollController();
   final AuthController authController = Modular.get<AuthController>();
   final UserListController userListController =
       Modular.get<UserListController>();
-  late FullUserInfo user;
+  FullUserInfo? user;
   String? balance;
   UserStorageInfo? storageInfo;
   bool loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(() {
+      widget.onScroll?.call();
+    });
+  }
 
   @override
   void didChangeDependencies() async {
@@ -121,226 +54,397 @@ class _ProfileBannerState extends State<ProfileBanner> {
     if (loading) {
       await userListController.loadAndAddGeneralAccountInfoIfNotExists(
           accountId: authController.state.accountId);
-      setState(() {
-        user = userListController.state
-            .getUserByAccountId(accountId: authController.state.accountId);
-        loading = false;
-      });
+      if (mounted) {
+        setState(() {
+          user = userListController.state
+              .getUserByAccountId(accountId: authController.state.accountId);
+          loading = false;
+        });
+      }
       if (balance == null) {
         Modular.get<NearBlockChainService>()
             .getWalletBalance(NearAccountInfoRequest(
                 accountId: authController.state.accountId))
-            .then(
-          (value) {
-            setState(() {
-              balance = value;
-            });
-          },
-        );
+            .then((value) {
+          if (mounted) setState(() => balance = value);
+        });
       }
       if (storageInfo == null) {
         Modular.get<NearSocialApi>()
             .getUserStorageInfo(authController.state.accountId)
-            .then(
-          (value) {
-            setState(() {
-              storageInfo = value;
-            });
-          },
-        );
+            .then((value) {
+          if (mounted) setState(() => storageInfo = value);
+        });
       }
     }
   }
 
   @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _onLogoutTap() async {
+    HapticFeedback.lightImpact();
+    showDialog(
+      context: context,
+      builder: (context) => CustomAlertDialog(),
+    ).then((value) async {
+      if (value != null && value) {
+        final authController = Modular.get<AuthController>();
+        await authController.logout();
+        Modular.get<NotificationsController>().clear();
+        Modular.get<FilterController>().clear();
+        Modular.get<PostsController>().clear();
+        Modular.to.navigate("/");
+      }
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return loading
-        ? SizedBox(
-            height: .3.sh,
-            child: const Center(
-              child: SpinnerLoadingIndicator(),
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    if (loading) {
+      return const Center(child: SpinnerLoadingIndicator());
+    }
+
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 500),
+        child: CustomScrollView(
+          controller: _scrollController,
+          physics: const BouncingScrollPhysics(),
+          slivers: [
+            const SliverToBoxAdapter(child: SizedBox(height: 140)),
+
+            // Profile header card
+            SliverToBoxAdapter(
+              child: _buildProfileHeader(isDark),
             ),
-          )
-        : Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SizedBox(
-                height: .25.sh,
-                width: double.infinity,
-                child: Stack(
-                  alignment: Alignment.topCenter,
-                  children: [
-                    SizedBox(
-                      height: .20.sh,
-                      width: double.infinity,
+
+            // Stats row
+            SliverToBoxAdapter(
+              child: _buildStatsRow(isDark),
+            ),
+
+            // Menu items
+            SliverPadding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              sliver: SliverList(
+                delegate: SliverChildListDelegate([
+                  _buildMenuTile(
+                    icon: SvgPicture.asset(
+                      "assets/media/icons/nft-token.svg",
+                      height: 20,
+                      color: isDark ? Colors.white70 : Colors.black87,
+                    ),
+                    title: "Mintbase Manager",
+                    isDark: isDark,
+                    onTap: () {
+                      HapticFeedback.lightImpact();
+                      Modular.to.pushNamed(".${Routes.home.mintManager}/");
+                    },
+                  ),
+                  _buildMenuTile(
+                    icon: Icon(CupertinoIcons.doc_text_fill,
+                        size: 20,
+                        color: isDark ? Colors.white70 : Colors.black87),
+                    title: "Smart Posts",
+                    isDark: isDark,
+                    onTap: () {
+                      HapticFeedback.lightImpact();
+                      Modular.to.pushNamed(".${Routes.home.smartFeedPage}");
+                    },
+                  ),
+                  _buildMenuTile(
+                    icon: Icon(CupertinoIcons.settings_solid,
+                        size: 20,
+                        color: isDark ? Colors.white70 : Colors.black87),
+                    title: "Settings",
+                    isDark: isDark,
+                    onTap: () {
+                      HapticFeedback.lightImpact();
+                      Modular.to.pushNamed(".${Routes.home.settingsPage}");
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  // Logout button
+                  _buildLogoutTile(isDark),
+                ]),
+              ),
+            ),
+
+            const SliverToBoxAdapter(child: SizedBox(height: 140)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildProfileHeader(bool isDark) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(32),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.06)
+                  : Colors.white.withValues(alpha: 0.75),
+              borderRadius: BorderRadius.circular(32),
+              border: Border.all(
+                  color: isDark
+                      ? Colors.white10
+                      : Colors.white.withValues(alpha: 0.5)),
+            ),
+            child: Column(
+              children: [
+                // Avatar
+                GestureDetector(
+                  onTap: () {
+                    HapticFeedback.lightImpact();
+                    Modular.to.pushNamed(
+                      ".${Routes.home.userPage}?accountId=${authController.state.accountId}",
+                    );
+                  },
+                  child: Container(
+                    width: 76,
+                    height: 76,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: isDark ? Colors.white24 : Colors.black12,
+                        width: 2,
+                      ),
+                    ),
+                    child: ClipOval(
                       child: NearNetworkImage(
-                        imageUrl: user.generalAccountInfo.backgroundImageLink,
-                        errorPlaceholder:
-                            Container(color: AppColors.lightSurface),
-                      ),
-                    ),
-                    Positioned(
-                      bottom: 0,
-                      left: 20.h,
-                      width: .18.sh,
-                      height: .18.sh,
-                      child: Container(
-                        padding: REdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.white,
-                          border: Border.all(color: Colors.black, width: 1),
-                        ),
-                        child: Container(
-                          decoration: const BoxDecoration(
-                            shape: BoxShape.circle,
-                          ),
-                          clipBehavior: Clip.antiAlias,
-                          child: NearNetworkImage(
-                            imageUrl: user.generalAccountInfo.profileImageLink,
-                            errorPlaceholder: Image.asset(
-                              NearAssets.standartAvatar,
-                              fit: BoxFit.cover,
-                            ),
-                          ),
+                        imageUrl:
+                            user?.generalAccountInfo.profileImageLink ?? '',
+                        errorPlaceholder: Image.asset(
+                          NearAssets.standartAvatar,
+                          fit: BoxFit.cover,
                         ),
                       ),
                     ),
-                  ],
+                  ),
                 ),
-              ),
-              SizedBox(height: 5.h),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20).r,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      user.generalAccountInfo.name != ""
-                          ? user.generalAccountInfo.name
-                          : "No Name",
-                      style: const TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    Row(
-                      children: [
-                        const Icon(
-                          CupertinoIcons.person_fill,
-                          size: 14,
-                        ),
-                        SizedBox(width: 5.h),
-                        Expanded(
-                          child: MediaQuery.sizeOf(context).width < 600
-                              ? GestureDetector(
-                                  onTap: () {
-                                    HapticFeedback.lightImpact();
-                                    Clipboard.setData(
-                                      ClipboardData(
-                                        text: user.generalAccountInfo.accountId,
-                                      ),
-                                    );
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text(
-                                            "AccountId ${user.generalAccountInfo.accountId} copied to clipboard"),
-                                      ),
-                                    );
-                                  },
-                                  child: Text(
-                                    "@${user.generalAccountInfo.accountId}",
-                                    style: TextStyle(
-                                      color: Colors.grey.shade600,
-                                      fontWeight: FontWeight.w400,
-                                    ),
-                                  ),
-                                )
-                              : SelectableText(
-                                  "@${user.generalAccountInfo.accountId}",
-                                  style: TextStyle(
-                                    color: Colors.grey.shade600,
-                                    fontWeight: FontWeight.w400,
-                                  ),
-                                ),
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: 5.h),
-                    Row(
-                      children: [
-                        const Text(
-                          "Balance: ",
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        SizedBox(width: 5.h),
-                        if (balance == null)
-                          AnimatedTextKit(
-                            animatedTexts: [
-                              FadeAnimatedText('Loading...'),
-                            ],
-                            isRepeatingAnimation: true,
-                            repeatForever: true,
-                          )
-                        else
-                          Expanded(
-                            child: Text(
-                              "$balance NEAR",
-                            ),
-                          ),
-                      ],
-                    ),
-                    SizedBox(height: 5.h),
-                    Row(
-                      children: [
-                        const Text(
-                          "Storage space: ",
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        SizedBox(width: 5.h),
-                        if (storageInfo == null) ...[
-                          AnimatedTextKit(
-                            animatedTexts: [
-                              FadeAnimatedText('Loading...'),
-                            ],
-                            isRepeatingAnimation: true,
-                            repeatForever: true,
-                          )
-                        ] else ...[
-                          Text(
-                            "${((storageInfo?.availableBytes ?? 0) / 1000).toStringAsFixed(2)} kb",
-                          ),
-                          // SizedBox(width: 10.w),
-                          Spacer(),
-                          SizedBox(
-                            height: 30.h,
-                            child: CustomButton(
-                              onPressed: () {
-                                HapticFeedback.lightImpact();
-                                showDialog(
-                                  context: context,
-                                  builder: (context) {
-                                    return WithdrawStorageDialog();
-                                  },
-                                );
-                              },
-                              child: Text("Withdraw"),
-                            ),
-                          ),
-                        ]
-                      ],
-                    ),
-                  ],
+                const SizedBox(height: 12),
+                Text(
+                  user?.generalAccountInfo.name != ""
+                      ? (user?.generalAccountInfo.name ?? "No Name")
+                      : "No Name",
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: -0.5,
+                    color: isDark ? Colors.white : Colors.black,
+                  ),
                 ),
+                const SizedBox(height: 4),
+                GestureDetector(
+                  onTap: () {
+                    HapticFeedback.lightImpact();
+                    Clipboard.setData(ClipboardData(
+                        text: authController.state.accountId));
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                            "AccountId ${authController.state.accountId} copied to clipboard"),
+                      ),
+                    );
+                  },
+                  child: Text(
+                    "@${authController.state.accountId}",
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: isDark ? Colors.white54 : Colors.black54,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                CupertinoButton(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 32, vertical: 10),
+                  color:
+                      isDark ? CupertinoColors.white : CupertinoColors.black,
+                  borderRadius: BorderRadius.circular(20),
+                  onPressed: () {
+                    HapticFeedback.lightImpact();
+                    Modular.to.pushNamed(
+                      ".${Routes.home.userPage}?accountId=${authController.state.accountId}",
+                    );
+                  },
+                  child: Text('View Profile',
+                      style: TextStyle(
+                          color: isDark ? Colors.black : Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600)),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatsRow(bool isDark) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      child: Row(
+        children: [
+          _statBox(
+            balance ?? "...",
+            "NEAR",
+            isDark,
+          ),
+          const SizedBox(width: 8),
+          _statBox(
+            storageInfo != null
+                ? "${((storageInfo?.availableBytes ?? 0) / 1000).toStringAsFixed(1)}kb"
+                : "...",
+            "Storage",
+            isDark,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _statBox(String val, String lab, bool isDark) {
+    return Expanded(
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            decoration: BoxDecoration(
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.04)
+                  : Colors.white.withValues(alpha: 0.5),
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                  color: isDark
+                      ? Colors.white12
+                      : Colors.white.withValues(alpha: 0.6)),
+            ),
+            child: Column(
+              children: [
+                Text(val,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: isDark ? Colors.white : Colors.black,
+                    ),
+                    overflow: TextOverflow.ellipsis),
+                Text(lab,
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: isDark ? Colors.white54 : Colors.black54,
+                    )),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMenuTile({
+    required Widget icon,
+    required String title,
+    required bool isDark,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.only(top: 12),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(24),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+            child: Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.06)
+                    : Colors.white.withValues(alpha: 0.65),
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(
+                    color: isDark
+                        ? Colors.white10
+                        : Colors.white.withValues(alpha: 0.4)),
               ),
-            ],
-          );
+              child: Row(
+                children: [
+                  icon,
+                  const SizedBox(width: 16),
+                  Text(title,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 15,
+                        color: isDark ? Colors.white : Colors.black,
+                      )),
+                  const Spacer(),
+                  Icon(CupertinoIcons.chevron_right,
+                      size: 14,
+                      color: isDark ? Colors.white38 : Colors.black38),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLogoutTile(bool isDark) {
+    return GestureDetector(
+      onTap: _onLogoutTap,
+      child: Container(
+        margin: const EdgeInsets.only(top: 4),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(24),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+            child: Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: isDark
+                    ? Colors.red.withValues(alpha: 0.15)
+                    : Colors.red.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(
+                    color: isDark
+                        ? Colors.red.withValues(alpha: 0.3)
+                        : Colors.red.withValues(alpha: 0.2)),
+              ),
+              child: Row(
+                children: [
+                  Icon(CupertinoIcons.square_arrow_left,
+                      size: 20, color: Colors.redAccent),
+                  const SizedBox(width: 16),
+                  Text("Logout",
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 15,
+                        color: Colors.redAccent,
+                      )),
+                  const Spacer(),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }

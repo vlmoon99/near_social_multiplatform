@@ -3,7 +3,6 @@ import 'package:flutter_modular/flutter_modular.dart';
 import 'package:near_social_mobile/modules/core_module.dart';
 // Chat functionality temporarily disabled for decentralization
 // import 'package:near_social_mobile/modules/home/pages/chat/user_chats_page.dart';
-import 'package:near_social_mobile/modules/home/pages/home_menu/home_menu_page.dart';
 import 'package:near_social_mobile/modules/home/pages/home_menu/subpages/mint_manager/mintbase_module.dart';
 import 'package:near_social_mobile/modules/home/pages/home_menu/subpages/mint_manager/vm/mintbase_controller.dart';
 import 'package:near_social_mobile/modules/home/pages/settings/sub_pages/blocked_users/blocked_users_page.dart';
@@ -11,11 +10,7 @@ import 'package:near_social_mobile/modules/home/pages/settings/sub_pages/hided_p
 import 'package:near_social_mobile/modules/home/pages/home_page.dart';
 import 'package:near_social_mobile/modules/home/pages/home_menu/subpages/key_manager/key_manager_page.dart';
 import 'package:near_social_mobile/modules/home/pages/near_widgets/widget_app_page.dart';
-import 'package:near_social_mobile/modules/home/pages/near_widgets/widget_list_page.dart';
-import 'package:near_social_mobile/modules/home/pages/notifications/notifications_page.dart';
-import 'package:near_social_mobile/modules/home/pages/people/people_list_page.dart';
 import 'package:near_social_mobile/modules/home/pages/people/user_page.dart';
-import 'package:near_social_mobile/modules/home/pages/posts_page/posts_feed_page.dart';
 import 'package:near_social_mobile/modules/home/pages/settings/settings_page.dart';
 import 'package:near_social_mobile/modules/home/pages/settings/sub_pages/system_managment/system_managment_page.dart';
 import 'package:near_social_mobile/modules/home/pages/smart_feed_page.dart';
@@ -62,28 +57,6 @@ class HomeModule extends Module {
       Routes.home.startPage,
       child: (context) => const HomePage(),
       transition: TransitionType.fadeIn,
-      children: [
-        ChildRoute(
-          Routes.home.postsFeed,
-          child: (context) => const PostsFeedPage(),
-        ),
-        ChildRoute(
-          Routes.home.widgetsListPage,
-          child: (context) => const NearWidgetListPage(),
-        ),
-        ChildRoute(
-          Routes.home.peopleListPage,
-          child: (context) => const PeopleListPage(),
-        ),
-        ChildRoute(
-          Routes.home.notificationsPage,
-          child: (context) => const NotificationsPage(),
-        ),
-        ChildRoute(
-          Routes.home.homeMenu,
-          child: (context) => const HomeMenuPage(),
-        )
-      ],
     );
     r.child(
       Routes.home.postPage,

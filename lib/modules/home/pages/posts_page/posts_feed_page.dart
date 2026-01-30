@@ -1,13 +1,9 @@
 import 'dart:async';
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
-import 'package:flutter_svg/flutter_svg.dart';
-import 'package:near_social_mobile/config/theme.dart';
-import 'package:near_social_mobile/modules/home/pages/posts_page/widgets/create_post_dialog_body.dart';
 import 'package:near_social_mobile/modules/home/pages/posts_page/widgets/post_card.dart';
 import 'package:near_social_mobile/modules/home/vms/posts/posts_controller.dart';
 import 'package:near_social_mobile/modules/vms/core/filter_controller.dart';
@@ -16,7 +12,9 @@ import 'package:near_social_mobile/shared_widgets/spinner_loading_indicator.dart
 import 'package:rxdart/rxdart.dart';
 
 class PostsFeedPage extends StatefulWidget {
-  const PostsFeedPage({super.key});
+  const PostsFeedPage({super.key, this.onScroll});
+
+  final VoidCallback? onScroll;
 
   @override
   State<PostsFeedPage> createState() => _PostsFeedPageState();
@@ -27,6 +25,7 @@ class _PostsFeedPageState extends State<PostsFeedPage> {
   final _postsLoaderDebouncer = StreamController();
 
   void _onScroll() async {
+    widget.onScroll?.call();
     final postsController = Modular.get<PostsController>();
     if (_isBottom &&
         postsController.state.status != PostLoadingStatus.loadingMorePosts) {
@@ -86,135 +85,94 @@ class _PostsFeedPageState extends State<PostsFeedPage> {
   Widget build(BuildContext context) {
     final PostsController postsController = Modular.get<PostsController>();
     final FilterController filterController = Modular.get<FilterController>();
-    return Scaffold(
-      body: StreamBuilder<dynamic>(
-        stream: Rx.merge([
-          postsController.stream.distinct(
-            (previous, next) =>
-                previous.posts.length == next.posts.length ||
-                previous.status == next.status,
-          ),
-          filterController.stream
-        ]),
-        builder: (context, _) {
-          final postsState = postsController.state;
-          final filterUtil = FiltersUtil(filters: filterController.state);
-          final posts = postsState.posts
-              .where((post) => !filterUtil.postIsHided(
-                  post.authorInfo.accountId, post.blockHeight))
-              .toList();
 
-          if (postsState.status == PostLoadingStatus.loaded ||
-              postsState.status == PostLoadingStatus.loadingMorePosts) {
-            //loading more posts if zero posts
-            if (posts.isEmpty &&
-                postsState.status == PostLoadingStatus.loaded) {
-              postsController.loadMorePosts(
-                  postsViewMode: PostsViewMode.main,
-                  filters: filterController.state);
-            }
+    return StreamBuilder<dynamic>(
+      stream: Rx.merge([
+        postsController.stream.distinct(
+          (previous, next) =>
+              previous.posts.length == next.posts.length ||
+              previous.status == next.status,
+        ),
+        filterController.stream
+      ]),
+      builder: (context, _) {
+        final postsState = postsController.state;
+        final filterUtil = FiltersUtil(filters: filterController.state);
+        final posts = postsState.posts
+            .where((post) => !filterUtil.postIsHided(
+                post.authorInfo.accountId, post.blockHeight))
+            .toList();
 
-            return RefreshIndicator.adaptive(
-              onRefresh: () async {
-                return postsController.loadPosts(
-                  postsViewMode: PostsViewMode.main,
-                  filters: filterController.state,
-                );
-              },
-              child: Builder(
-                builder: (context) {
-                  if (MediaQuery.sizeOf(context).width > 600) {
-                    return MasonryGridView.count(
-                      controller: _scrollController,
-                      crossAxisCount: 3, // Number of columns
-                      mainAxisSpacing: 10,
-                      crossAxisSpacing: 10,
-                      padding: const EdgeInsets.symmetric(horizontal: 15).r,
-                      itemBuilder: (context, index) {
-                        //checking if posts enought ot scroll. if not -> load more posts
-                        if (index == 0) {
-                          WidgetsBinding.instance
-                              .addPostFrameCallback((timeStamp) {
-                            if (_scrollController.position.maxScrollExtent ==
-                                    0 &&
-                                postsState.status == PostLoadingStatus.loaded) {
-                              postsController.loadMorePosts(
-                                  postsViewMode: PostsViewMode.main,
-                                  filters: filterController.state);
-                            }
-                          });
-                        }
-                        return PostCard(
-                          post: posts[index],
-                          postsViewMode: PostsViewMode.main,
-                        );
-                      },
-                      itemCount: posts.length,
-                    );
-                  } else {
-                    return ListView.builder(
-                      controller: _scrollController,
-                      padding: const EdgeInsets.symmetric(horizontal: 15).r,
-                      itemBuilder: (context, index) {
-                        //checking if posts enought ot scroll. if not -> load more posts
-                        if (index == 0) {
-                          WidgetsBinding.instance
-                              .addPostFrameCallback((timeStamp) {
-                            if (_scrollController.position.maxScrollExtent ==
-                                    0 &&
-                                postsState.status == PostLoadingStatus.loaded) {
-                              postsController.loadMorePosts(
-                                  postsViewMode: PostsViewMode.main,
-                                  filters: filterController.state);
-                            }
-                          });
-                        }
-
-                        final post = posts[index];
-                        return Column(
-                          children: [
-                            PostCard(
-                              post: post,
-                              postsViewMode: PostsViewMode.main,
-                            ),
-                            if (postsController.state.status ==
-                                    PostLoadingStatus.loadingMorePosts &&
-                                index == postsState.posts.length - 1) ...[
-                              const Center(child: SpinnerLoadingIndicator()),
-                            ]
-                          ],
-                        );
-                      },
-                      itemCount: posts.length,
-                    );
-                  }
-                },
-              ),
-            );
+        if (postsState.status == PostLoadingStatus.loaded ||
+            postsState.status == PostLoadingStatus.loadingMorePosts) {
+          if (posts.isEmpty &&
+              postsState.status == PostLoadingStatus.loaded) {
+            postsController.loadMorePosts(
+                postsViewMode: PostsViewMode.main,
+                filters: filterController.state);
           }
-          return const Center(
-            child: SpinnerLoadingIndicator(),
-          );
-        },
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () async {
-          HapticFeedback.lightImpact();
-          showDialog(
-            context: context,
-            builder: (context) {
-              return const Dialog.fullscreen(
-                child: CreatePostDialog(),
+
+          return RefreshIndicator.adaptive(
+            onRefresh: () async {
+              return postsController.loadPosts(
+                postsViewMode: PostsViewMode.main,
+                filters: filterController.state,
               );
             },
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 500),
+                child: ListView.builder(
+                  controller: _scrollController,
+                  physics: const BouncingScrollPhysics(),
+                  padding: EdgeInsets.zero,
+                  itemBuilder: (context, index) {
+                    if (index == 0) {
+                      WidgetsBinding.instance
+                          .addPostFrameCallback((timeStamp) {
+                        if (_scrollController.hasClients &&
+                            _scrollController.position.maxScrollExtent == 0 &&
+                            postsState.status == PostLoadingStatus.loaded) {
+                          postsController.loadMorePosts(
+                              postsViewMode: PostsViewMode.main,
+                              filters: filterController.state);
+                        }
+                      });
+                      return const SizedBox(height: 140);
+                    }
+
+                    if (index == posts.length + 1) {
+                      return const SizedBox(height: 140);
+                    }
+
+                    final post = posts[index - 1];
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Column(
+                        children: [
+                          PostCard(
+                            post: post,
+                            postsViewMode: PostsViewMode.main,
+                          ),
+                          if (postsController.state.status ==
+                                  PostLoadingStatus.loadingMorePosts &&
+                              index == posts.length) ...[
+                            const Center(child: SpinnerLoadingIndicator()),
+                          ]
+                        ],
+                      ),
+                    );
+                  },
+                  itemCount: posts.length + 2, // +2 for top and bottom spacing
+                ),
+              ),
+            ),
           );
-        },
-        child: SvgPicture.asset(
-          "assets/media/icons/feather-icon.svg",
-          height: 24,
-          color: NEARColors.white,
-        ),
-      ),
+        }
+        return const Center(
+          child: SpinnerLoadingIndicator(),
+        );
+      },
     );
   }
 }

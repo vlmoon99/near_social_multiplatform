@@ -10,7 +10,9 @@ import 'package:near_social_mobile/shared_widgets/spinner_loading_indicator.dart
 import 'package:rxdart/rxdart.dart';
 
 class NotificationsPage extends StatefulWidget {
-  const NotificationsPage({super.key});
+  const NotificationsPage({super.key, this.onScroll});
+
+  final VoidCallback? onScroll;
 
   @override
   State<NotificationsPage> createState() => _NotificationsPageState();
@@ -20,6 +22,14 @@ class _NotificationsPageState extends State<NotificationsPage> {
   bool allNotificationsLoaded = false;
   bool moreNotificationsLoading = false;
   final _scrollController = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(() {
+      widget.onScroll?.call();
+    });
+  }
 
   Future<void> loadMoreNotifications() async {
     final NotificationsController notificationsController =
@@ -70,11 +80,18 @@ class _NotificationsPageState extends State<NotificationsPage> {
   }
 
   @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final AuthController authController = Modular.get<AuthController>();
     final NotificationsController notificationsController =
         Modular.get<NotificationsController>();
     final FilterController filterController = Modular.get<FilterController>();
+
     return StreamBuilder(
       stream:
           Rx.merge([notificationsController.stream, filterController.stream]),
@@ -111,66 +128,93 @@ class _NotificationsPageState extends State<NotificationsPage> {
                 },
               );
 
-              return const Center(
-                child: Text(
-                  "No notifications",
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 18,
-                  ),
+              return Center(
+                child: ListView(
+                  controller: _scrollController,
+                  physics: const BouncingScrollPhysics(),
+                  children: const [
+                    SizedBox(height: 300),
+                    Center(
+                      child: Text(
+                        "No notifications",
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               );
             }
 
-            return ListView.builder(
-              controller: _scrollController,
-              padding: REdgeInsets.symmetric(horizontal: 15).r,
-              itemBuilder: (context, index) {
-                if (index == 0) {
-                  WidgetsBinding.instance.addPostFrameCallback(
-                    (_) {
-                      if (_scrollController.position.maxScrollExtent == 0 &&
-                          notificationsController.state.status ==
-                              NotificationsLoadingState.loaded &&
-                          !moreNotificationsLoading &&
-                          !allNotificationsLoaded) {
-                        loadMoreNotifications();
-                      }
-                    },
-                  );
-                }
+            return Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 550),
+                child: ListView.builder(
+                  controller: _scrollController,
+                  physics: const BouncingScrollPhysics(),
+                  padding: EdgeInsets.zero,
+                  itemBuilder: (context, index) {
+                    if (index == 0) {
+                      WidgetsBinding.instance.addPostFrameCallback(
+                        (_) {
+                          if (_scrollController.hasClients &&
+                              _scrollController.position.maxScrollExtent == 0 &&
+                              notificationsController.state.status ==
+                                  NotificationsLoadingState.loaded &&
+                              !moreNotificationsLoading &&
+                              !allNotificationsLoaded) {
+                            loadMoreNotifications();
+                          }
+                        },
+                      );
+                      return const SizedBox(height: 140);
+                    }
 
-                if (index == notifications.length) {
-                  return RPadding(
-                    padding: const EdgeInsets.symmetric(vertical: 15),
-                    child: moreNotificationsLoading
-                        ? const Center(child: SpinnerLoadingIndicator())
-                        : (notifications.length < 20 && allNotificationsLoaded)
-                            ? const SizedBox.shrink()
-                            : CustomButton(
-                                onPressed: allNotificationsLoaded
-                                    ? null
-                                    : () async {
-                                        loadMoreNotifications();
-                                      },
-                                child: Text(
-                                  allNotificationsLoaded
-                                      ? "No more notifications"
-                                      : "Load more notifications",
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                  );
-                }
-                final notification = notifications[index];
-                return Padding(
-                  padding: EdgeInsets.only(top: index == 0 ? 5 : 0).r,
-                  child: NotificationTile(notification: notification),
-                );
-              },
-              itemCount: notifications.length + 1,
+                    if (index == notifications.length + 1) {
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 140),
+                        child: RPadding(
+                          padding: const EdgeInsets.symmetric(
+                              vertical: 15, horizontal: 16),
+                          child: moreNotificationsLoading
+                              ? const Center(child: SpinnerLoadingIndicator())
+                              : (notifications.length < 20 &&
+                                      allNotificationsLoaded)
+                                  ? const SizedBox.shrink()
+                                  : CustomButton(
+                                      onPressed: allNotificationsLoaded
+                                          ? null
+                                          : () async {
+                                              loadMoreNotifications();
+                                            },
+                                      child: Text(
+                                        allNotificationsLoaded
+                                            ? "No more notifications"
+                                            : "Load more notifications",
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                        ),
+                      );
+                    }
+
+                    final notification = notifications[index - 1];
+                    return Padding(
+                      padding: EdgeInsets.only(
+                        left: 16,
+                        right: 16,
+                        top: index == 1 ? 5 : 0,
+                      ),
+                      child: NotificationTile(notification: notification),
+                    );
+                  },
+                  itemCount: notifications.length + 2,
+                ),
+              ),
             );
           }),
         );
