@@ -19,6 +19,7 @@ import 'package:near_social_mobile/modules/home/pages/posts_page/posts_feed_page
 import 'package:near_social_mobile/modules/home/pages/settings/settings_page.dart';
 import 'package:near_social_mobile/modules/home/pages/settings/sub_pages/system_managment/system_managment_page.dart';
 import 'package:near_social_mobile/modules/home/pages/smart_feed_page.dart';
+import 'package:near_social_mobile/modules/home/pages/modern_design_test/modern_design_test_page.dart';
 // Chat controllers temporarily disabled for decentralization
 // import 'package:near_social_mobile/modules/home/vms/chats/chat_page_controller.dart';
 // import 'package:near_social_mobile/modules/home/vms/chats/user_chats_page_controller.dart';
@@ -131,5 +132,7 @@ class HomeModule extends Module {
         child: (context) => const SmartFeedPage());
     r.child(Routes.home.systemsManagmentPage,
         child: (context) => const SystemsManagmentPage());
+    r.child(Routes.home.modernDesignTestPage,
+        child: (context) => const ModernDesignTestPage());
   }
 }

@@ -78,6 +78,16 @@ class HomeMenuPage extends StatelessWidget {
                     );
                   },
                 ),
+                HomeMenuListTile(
+                  tile: const Icon(Icons.design_services),
+                  title: "Modern Design Test",
+                  onTap: () {
+                    HapticFeedback.lightImpact();
+                    Modular.to.pushNamed(
+                      ".${Routes.home.modernDesignTestPage}",
+                    );
+                  },
+                ),
               ],
             ),
           ),
