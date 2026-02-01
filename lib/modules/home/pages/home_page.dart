@@ -22,7 +22,7 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   int _currentIndex = 0;
-  bool _showBars = true;
+  final ValueNotifier<bool> _showBars = ValueNotifier(true);
   bool _showNotifications = false;
   Timer? _hideTimer;
 
@@ -48,13 +48,13 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   }
 
   void onChildScroll() {
-    if (_showBars) {
-      setState(() => _showBars = false);
+    if (_showBars.value) {
+      _showBars.value = false;
     }
     // Reset timer on every scroll event — bars reappear after scrolling stops
     _hideTimer?.cancel();
     _hideTimer = Timer(const Duration(seconds: 1), () {
-      if (mounted) setState(() => _showBars = true);
+      if (mounted) _showBars.value = true;
     });
   }
 
@@ -62,6 +62,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   void dispose() {
     _bgController.dispose();
     _hideTimer?.cancel();
+    _showBars.dispose();
     super.dispose();
   }
 
@@ -115,9 +116,13 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
           if (_showNotifications) NotificationsPage(onScroll: onChildScroll),
 
           // Top bar
-          buildAnimatedPanel(
-            top: true,
-            showBars: _showBars,
+          ValueListenableBuilder<bool>(
+            valueListenable: _showBars,
+            builder: (context, showBars, child) => buildAnimatedPanel(
+              top: true,
+              showBars: showBars,
+              child: child!,
+            ),
             child: buildGlassBar(
               360,
               Row(
@@ -160,9 +165,13 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
           ),
 
           // Bottom bar
-          buildAnimatedPanel(
-            top: false,
-            showBars: _showBars,
+          ValueListenableBuilder<bool>(
+            valueListenable: _showBars,
+            builder: (context, showBars, child) => buildAnimatedPanel(
+              top: false,
+              showBars: showBars,
+              child: child!,
+            ),
             child: buildGlassBar(
               360,
               Row(
