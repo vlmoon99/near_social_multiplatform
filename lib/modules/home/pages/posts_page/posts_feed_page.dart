@@ -1,4 +1,4 @@
-import 'dart:async';
+import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
@@ -23,37 +23,7 @@ class _PostsFeedPageState extends State<PostsFeedPage>
   @override
   bool get wantKeepAlive => true;
 
-  final _scrollController = ScrollController();
-  final _postsLoaderDebouncer = StreamController();
-
-  void _checkPagination() {
-    final postsController = Modular.get<PostsController>();
-    if (_isBottom &&
-        postsController.state.status != PostLoadingStatus.loadingMorePosts) {
-      postsController.loadMorePosts(postsViewMode: PostsViewMode.main);
-    }
-  }
-
-  bool get _isBottom {
-    if (!_scrollController.hasClients) return false;
-    final maxScroll = _scrollController.position.maxScrollExtent;
-    final currentScroll = _scrollController.offset;
-    return currentScroll >= (maxScroll * 0.6);
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    _scrollController.addListener(() {
-      // Notify parent immediately for bar hiding
-      widget.onScroll?.call();
-      // Debounce pagination check
-      _postsLoaderDebouncer.add(null);
-    });
-    _postsLoaderDebouncer.stream
-        .debounceTime(const Duration(milliseconds: 300))
-        .listen((_) => _checkPagination());
-  }
+  final _pageController = PageController();
 
   @override
   void didChangeDependencies() {
@@ -78,8 +48,7 @@ class _PostsFeedPageState extends State<PostsFeedPage>
 
   @override
   void dispose() {
-    _scrollController.dispose();
-    _postsLoaderDebouncer.close();
+    _pageController.dispose();
     super.dispose();
   }
 
@@ -115,61 +84,63 @@ class _PostsFeedPageState extends State<PostsFeedPage>
                 filters: filterController.state);
           }
 
-          return RefreshIndicator.adaptive(
-            onRefresh: () async {
-              return postsController.loadPosts(
-                postsViewMode: PostsViewMode.main,
-                filters: filterController.state,
-              );
-            },
-            child: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 500),
-                child: ListView.builder(
-                  controller: _scrollController,
-                  physics: const BouncingScrollPhysics(),
-                  padding: EdgeInsets.zero,
+          return LayoutBuilder(
+            builder: (context, constraints) {
+              return ScrollConfiguration(
+                behavior: const ScrollBehavior().copyWith(
+                  scrollbars: false,
+                  dragDevices: {
+                    PointerDeviceKind.touch,
+                    PointerDeviceKind.mouse,
+                    PointerDeviceKind.stylus,
+                    PointerDeviceKind.trackpad,
+                  },
+                ),
+                child: PageView.builder(
+                  controller: _pageController,
+                  scrollDirection: Axis.vertical,
+                  onPageChanged: (index) {
+                    widget.onScroll?.call();
+                    // Load more posts when reaching 2/3 of the list
+                    if (index >= (posts.length * 2 / 3).round() &&
+                        postsController.state.status !=
+                            PostLoadingStatus.loadingMorePosts) {
+                      postsController.loadMorePosts(
+                        postsViewMode: PostsViewMode.main,
+                        filters: filterController.state,
+                      );
+                    }
+                  },
+                  itemCount: posts.length + 1, // +1 for loading indicator at end
                   itemBuilder: (context, index) {
-                    if (index == 0) {
-                      WidgetsBinding.instance
-                          .addPostFrameCallback((timeStamp) {
-                        if (_scrollController.hasClients &&
-                            _scrollController.position.maxScrollExtent == 0 &&
-                            postsState.status == PostLoadingStatus.loaded) {
-                          postsController.loadMorePosts(
-                              postsViewMode: PostsViewMode.main,
-                              filters: filterController.state);
-                        }
-                      });
-                      return const SizedBox(height: 140);
+                    if (index == posts.length) {
+                      // Loading indicator / end of list
+                      if (postsState.status ==
+                          PostLoadingStatus.loadingMorePosts) {
+                        return const Center(child: SpinnerLoadingIndicator());
+                      }
+                      return const SizedBox.shrink();
                     }
 
-                    if (index == posts.length + 1) {
-                      return const SizedBox(height: 140);
-                    }
-
-                    final post = posts[index - 1];
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Column(
-                        children: [
-                          PostCard(
+                    final post = posts[index];
+                    return Center(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 500),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 20, vertical: 10),
+                          child: PostCard(
                             post: post,
                             postsViewMode: PostsViewMode.main,
+                            maxContentHeight: constraints.maxHeight * 0.55,
                           ),
-                          if (postsController.state.status ==
-                                  PostLoadingStatus.loadingMorePosts &&
-                              index == posts.length) ...[
-                            const Center(child: SpinnerLoadingIndicator()),
-                          ]
-                        ],
+                        ),
                       ),
                     );
                   },
-                  itemCount: posts.length + 2, // +2 for top and bottom spacing
                 ),
-              ),
-            ),
+              );
+            },
           );
         }
         return const Center(
