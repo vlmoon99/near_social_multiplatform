@@ -23,42 +23,47 @@ Widget buildLivingBackground({
   List<Color>? lightColors,
   Color? particleColor,
 }) {
-  return AnimatedBuilder(
-    animation: controller,
-    builder: (context, child) {
-      for (var p in particles) {
-        p.update(screenSize);
-      }
-      return Stack(
-        children: [
-          Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: gradientBegin,
-                end: gradientEnd,
-                colors: isDark
-                    ? (darkColors ??
-                        [const Color(0xFF000000), const Color(0xFF0A0A1F)])
-                    : (lightColors ??
-                        [const Color(0xFFE5E5EA), const Color(0xFFD1D1D6)]),
-              ),
-            ),
-          ),
-          ...particles.map((p) => Positioned(
-                left: p.position.dx,
-                top: p.position.dy,
-                child: Opacity(
-                  opacity: (math.sin(p.opacityPhase) * 0.04 + 0.05)
-                      .clamp(0.01, 0.1),
-                  child: Icon(p.icon,
-                      size: p.size,
-                      color: particleColor ??
-                          (isDark ? Colors.white : Colors.black45)),
-                ),
-              )),
-        ],
-      );
-    },
+  // Pre-build the static gradient as child (won't rebuild)
+  final gradientWidget = Container(
+    decoration: BoxDecoration(
+      gradient: LinearGradient(
+        begin: gradientBegin,
+        end: gradientEnd,
+        colors: isDark
+            ? (darkColors ??
+                [const Color(0xFF000000), const Color(0xFF0A0A1F)])
+            : (lightColors ??
+                [const Color(0xFFE5E5EA), const Color(0xFFD1D1D6)]),
+      ),
+    ),
+  );
+
+  final pColor = particleColor ?? (isDark ? Colors.white : Colors.black45);
+
+  return RepaintBoundary(
+    child: AnimatedBuilder(
+      animation: controller,
+      builder: (context, child) {
+        for (var p in particles) {
+          p.update(screenSize);
+        }
+        return Stack(
+          children: [
+            child!,
+            ...particles.map((p) => Positioned(
+                  left: p.position.dx,
+                  top: p.position.dy,
+                  child: Opacity(
+                    opacity:
+                        (math.sin(p.opacityPhase) * 0.04 + 0.05).clamp(0.01, 0.1),
+                    child: Icon(p.icon, size: p.size, color: pColor),
+                  ),
+                )),
+          ],
+        );
+      },
+      child: gradientWidget,
+    ),
   );
 }
 
@@ -70,7 +75,7 @@ Widget buildAnimatedPanel({
 }) {
   return AnimatedPositioned(
     duration: const Duration(milliseconds: 800),
-    curve: Curves.easeInOutCubic,
+    curve: Curves.easeOut,
     top: top ? (showBars ? 50 : -120) : null,
     bottom: top ? null : (showBars ? 40 : -120),
     left: 0,
@@ -105,12 +110,12 @@ Widget buildGlassBar(double width, Widget child, bool isDark) {
               end: Alignment.bottomRight,
               colors: isDark
                   ? [
-                      Colors.white.withValues(alpha: 0.14),
-                      Colors.white.withValues(alpha: 0.06)
+                      Colors.white.withValues(alpha: 0.10),
+                      Colors.white.withValues(alpha: 0.04)
                     ]
                   : [
-                      Colors.white.withValues(alpha: 0.95),
-                      Colors.white.withValues(alpha: 0.85)
+                      Colors.white.withValues(alpha: 0.75),
+                      Colors.white.withValues(alpha: 0.60)
                     ],
             ),
             borderRadius: BorderRadius.circular(40),
@@ -137,8 +142,7 @@ Widget buildCircleIcon(IconData icon, bool isDark, {double size = 32}) {
       color: isDark ? Colors.white : Colors.black,
       shape: BoxShape.circle,
       boxShadow: [
-        BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1), blurRadius: 8)
+        BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 8)
       ],
     ),
     child: Icon(icon,
@@ -227,8 +231,7 @@ class GlassSearchBar extends StatelessWidget {
                       : Colors.black.withValues(alpha: 0.1)),
               boxShadow: [
                 BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.05),
-                    blurRadius: 15)
+                    color: Colors.black.withValues(alpha: 0.05), blurRadius: 15)
               ],
             ),
             child: CupertinoTextField(
@@ -253,7 +256,8 @@ class GlassSearchBar extends StatelessWidget {
 }
 
 /// Mixin providing common living background + auto-hide bar boilerplate
-mixin LivingPageMixin<T extends StatefulWidget> on State<T>, TickerProviderStateMixin<T> {
+mixin LivingPageMixin<T extends StatefulWidget>
+    on State<T>, TickerProviderStateMixin<T> {
   late final ScrollController livingScrollController = ScrollController();
   late final AnimationController bgController =
       AnimationController(vsync: this, duration: const Duration(seconds: 1))

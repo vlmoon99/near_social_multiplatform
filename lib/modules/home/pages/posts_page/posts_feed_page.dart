@@ -1,9 +1,7 @@
 import 'dart:async';
 
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:near_social_mobile/modules/home/pages/posts_page/widgets/post_card.dart';
 import 'package:near_social_mobile/modules/home/vms/posts/posts_controller.dart';
 import 'package:near_social_mobile/modules/vms/core/filter_controller.dart';
@@ -20,12 +18,15 @@ class PostsFeedPage extends StatefulWidget {
   State<PostsFeedPage> createState() => _PostsFeedPageState();
 }
 
-class _PostsFeedPageState extends State<PostsFeedPage> {
+class _PostsFeedPageState extends State<PostsFeedPage>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
   final _scrollController = ScrollController();
   final _postsLoaderDebouncer = StreamController();
 
-  void _onScroll() async {
-    widget.onScroll?.call();
+  void _checkPagination() {
     final postsController = Modular.get<PostsController>();
     if (_isBottom &&
         postsController.state.status != PostLoadingStatus.loadingMorePosts) {
@@ -37,18 +38,21 @@ class _PostsFeedPageState extends State<PostsFeedPage> {
     if (!_scrollController.hasClients) return false;
     final maxScroll = _scrollController.position.maxScrollExtent;
     final currentScroll = _scrollController.offset;
-    return currentScroll >= (maxScroll * 0.8);
+    return currentScroll >= (maxScroll * 0.6);
   }
 
   @override
   void initState() {
     super.initState();
     _scrollController.addListener(() {
+      // Notify parent immediately for bar hiding
+      widget.onScroll?.call();
+      // Debounce pagination check
       _postsLoaderDebouncer.add(null);
     });
     _postsLoaderDebouncer.stream
         .debounceTime(const Duration(milliseconds: 300))
-        .listen((_) => _onScroll());
+        .listen((_) => _checkPagination());
   }
 
   @override
@@ -74,15 +78,14 @@ class _PostsFeedPageState extends State<PostsFeedPage> {
 
   @override
   void dispose() {
-    _scrollController
-      ..removeListener(_onScroll)
-      ..dispose();
+    _scrollController.dispose();
     _postsLoaderDebouncer.close();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     final PostsController postsController = Modular.get<PostsController>();
     final FilterController filterController = Modular.get<FilterController>();
 

@@ -16,7 +16,11 @@ class PeopleListPage extends StatefulWidget {
   State<PeopleListPage> createState() => _PeopleListPageState();
 }
 
-class _PeopleListPageState extends State<PeopleListPage> {
+class _PeopleListPageState extends State<PeopleListPage>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
   final ScrollController _scrollController = ScrollController();
   final TextEditingController searchController = TextEditingController();
 
@@ -52,6 +56,7 @@ class _PeopleListPageState extends State<PeopleListPage> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final UserListController userListController =
         Modular.get<UserListController>();

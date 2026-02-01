@@ -30,7 +30,11 @@ class HomeMenuPage extends StatefulWidget {
   State<HomeMenuPage> createState() => _HomeMenuPageState();
 }
 
-class _HomeMenuPageState extends State<HomeMenuPage> {
+class _HomeMenuPageState extends State<HomeMenuPage>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
   final ScrollController _scrollController = ScrollController();
   final AuthController authController = Modular.get<AuthController>();
   final UserListController userListController =
@@ -49,11 +53,19 @@ class _HomeMenuPageState extends State<HomeMenuPage> {
   }
 
   @override
-  void didChangeDependencies() async {
+  void didChangeDependencies() {
     super.didChangeDependencies();
     if (loading) {
-      await userListController.loadAndAddGeneralAccountInfoIfNotExists(
-          accountId: authController.state.accountId);
+      _loadProfileData();
+    }
+  }
+
+  void _loadProfileData() {
+    // Load user info asynchronously — don't block the UI
+    userListController
+        .loadAndAddGeneralAccountInfoIfNotExists(
+            accountId: authController.state.accountId)
+        .then((_) {
       if (mounted) {
         setState(() {
           user = userListController.state
@@ -61,22 +73,21 @@ class _HomeMenuPageState extends State<HomeMenuPage> {
           loading = false;
         });
       }
-      if (balance == null) {
-        Modular.get<NearBlockChainService>()
-            .getWalletBalance(NearAccountInfoRequest(
-                accountId: authController.state.accountId))
-            .then((value) {
-          if (mounted) setState(() => balance = value);
-        });
-      }
-      if (storageInfo == null) {
-        Modular.get<NearSocialApi>()
-            .getUserStorageInfo(authController.state.accountId)
-            .then((value) {
-          if (mounted) setState(() => storageInfo = value);
-        });
-      }
-    }
+    });
+
+    // Fire balance and storage requests in parallel
+    Modular.get<NearBlockChainService>()
+        .getWalletBalance(NearAccountInfoRequest(
+            accountId: authController.state.accountId))
+        .then((value) {
+      if (mounted) setState(() => balance = value);
+    });
+
+    Modular.get<NearSocialApi>()
+        .getUserStorageInfo(authController.state.accountId)
+        .then((value) {
+      if (mounted) setState(() => storageInfo = value);
+    });
   }
 
   @override
@@ -104,6 +115,7 @@ class _HomeMenuPageState extends State<HomeMenuPage> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     if (loading) {

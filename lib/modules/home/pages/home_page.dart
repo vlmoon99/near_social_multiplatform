@@ -48,9 +48,12 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   }
 
   void onChildScroll() {
-    if (_showBars) setState(() => _showBars = false);
+    if (_showBars) {
+      setState(() => _showBars = false);
+    }
+    // Reset timer on every scroll event — bars reappear after scrolling stops
     _hideTimer?.cancel();
-    _hideTimer = Timer(const Duration(seconds: 3), () {
+    _hideTimer = Timer(const Duration(seconds: 1), () {
       if (mounted) setState(() => _showBars = true);
     });
   }
@@ -80,12 +83,14 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     if (_particles.isEmpty || _lastSize != screenSize) {
-      _particles = List.generate(25, (i) => BackgroundParticle(screenSize));
+      _particles = List.generate(15, (i) => BackgroundParticle(screenSize));
       _lastSize = screenSize;
     }
 
     return Scaffold(
-      body: Stack(
+      body: ScrollConfiguration(
+        behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
+        child: Stack(
         children: [
           // Living background
           buildLivingBackground(
@@ -178,6 +183,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
             ),
           ),
         ],
+      ),
       ),
     );
   }

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:developer';
 
 import 'package:equatable/equatable.dart';
@@ -30,6 +31,63 @@ class PostsController {
   final FutureQueue _futureQueue = FutureQueue(
     timeout: const Duration(milliseconds: 1000),
   );
+
+  // Profile cache to avoid duplicate fetches for same author
+  final Map<String, GeneralAccountInfo> _profileCache = {};
+
+  // Concurrency limiter for async post loading
+  int _activeLoads = 0;
+  static const int _maxConcurrentLoads = 5;
+  final List<Future<void> Function()> _loadQueue = [];
+
+  // Throttled state emission to reduce stream churn
+  Timer? _batchUpdateTimer;
+
+  void _flushState() {
+    _batchUpdateTimer?.cancel();
+    _batchUpdateTimer = null;
+  }
+
+  void _emitStateThrottled() {
+    _batchUpdateTimer ??= Timer(const Duration(milliseconds: 80), () {
+      // Re-emit current state to notify listeners of accumulated changes
+      _streamController.add(state);
+      _batchUpdateTimer = null;
+    });
+  }
+
+  Future<GeneralAccountInfo> _getCachedProfile(String accountId) async {
+    if (_profileCache.containsKey(accountId)) {
+      return _profileCache[accountId]!;
+    }
+    final info =
+        await _nearSocialApi.getGeneralAccountInfo(accountId: accountId);
+    _profileCache[accountId] = info;
+    return info;
+  }
+
+  void _enqueueLoad(Future<void> Function() task) {
+    if (_activeLoads < _maxConcurrentLoads) {
+      _activeLoads++;
+      task().whenComplete(() {
+        _activeLoads--;
+        _processLoadQueue();
+      });
+    } else {
+      _loadQueue.add(task);
+    }
+  }
+
+  void _processLoadQueue() {
+    while (_activeLoads < _maxConcurrentLoads && _loadQueue.isNotEmpty) {
+      final task = _loadQueue.removeAt(0);
+      _activeLoads++;
+      task().whenComplete(() {
+        _activeLoads--;
+        _processLoadQueue();
+      });
+    }
+  }
 
   Future<void> loadPosts(
       {String? postsOfAccountId,
@@ -108,14 +166,18 @@ class PostsController {
         if (!post.fullyLoaded &&
             !filtersUtil.postIsHided(
                 post.authorInfo.accountId, post.blockHeight)) {
-          _loadPostsDataAsync(i, postsViewMode, postsOfAccountId);
+          final index = i;
+          _enqueueLoad(
+              () => _loadPostsDataAsync(index, postsViewMode, postsOfAccountId));
         }
       }
     } else {
       for (var i = 0; i < summaryPosts.length; i++) {
         final post = summaryPosts[i];
         if (!post.fullyLoaded) {
-          _loadPostsDataAsync(i, postsViewMode, postsOfAccountId);
+          final index = i;
+          _enqueueLoad(
+              () => _loadPostsDataAsync(index, postsViewMode, postsOfAccountId));
         }
       }
     }
@@ -132,20 +194,24 @@ class PostsController {
       return;
     }
 
-    final postBody = await _nearSocialApi.getPostContent(
-      accountId: accountInfo.accountId,
-      blockHeight: blockHeight,
-    );
+    final results = await Future.wait([
+      _nearSocialApi.getPostContent(
+        accountId: accountInfo.accountId,
+        blockHeight: blockHeight,
+      ),
+      _nearSocialApi.getDateOfBlockHeight(
+        blockHeight: blockHeight,
+      ),
+      _nearSocialApi.getLikesOfPost(
+          accountId: accountInfo.accountId, blockHeight: blockHeight),
+      _nearSocialApi.getRepostsOfPost(
+          accountId: accountInfo.accountId, blockHeight: blockHeight),
+    ]);
 
-    final data = await _nearSocialApi.getDateOfBlockHeight(
-      blockHeight: blockHeight,
-    );
-
-    final likeList = await _nearSocialApi.getLikesOfPost(
-        accountId: accountInfo.accountId, blockHeight: blockHeight);
-
-    final repostList = await _nearSocialApi.getRepostsOfPost(
-        accountId: accountInfo.accountId, blockHeight: blockHeight);
+    final postBody = results[0] as PostBody;
+    final data = results[1] as DateTime;
+    final likeList = results[2] as List<Like>;
+    final repostList = results[3] as List<Reposter>;
 
     _streamController.add(
       state.copyWith(
@@ -219,7 +285,7 @@ class PostsController {
             ? null
             : chosenPosts.elementAt(lastBlockHeightIndexOfReposts).blockHeight,
         targetAccounts: postsOfAccountId == null ? null : [postsOfAccountId],
-        limit: 15,
+        limit: 20,
       );
 
       if (lastBlockHeightIndexOfPosts != -1) {
@@ -464,19 +530,24 @@ class PostsController {
         }
     }
 
-    final CommentBody commentBody = await _nearSocialApi.getCommentContent(
-      accountId: comment.authorInfo.accountId,
-      blockHeight: comment.blockHeight,
-    );
+    // Parallelize comment data loading
+    final results = await Future.wait([
+      _nearSocialApi.getCommentContent(
+        accountId: comment.authorInfo.accountId,
+        blockHeight: comment.blockHeight,
+      ),
+      _nearSocialApi.getDateOfBlockHeight(
+        blockHeight: comment.blockHeight,
+      ),
+      _nearSocialApi.getLikesOfComment(
+        accountId: comment.authorInfo.accountId,
+        blockHeight: comment.blockHeight,
+      ),
+    ]);
 
-    final DateTime date = await _nearSocialApi.getDateOfBlockHeight(
-      blockHeight: comment.blockHeight,
-    );
-
-    final List<Like> likes = await _nearSocialApi.getLikesOfComment(
-      accountId: comment.authorInfo.accountId,
-      blockHeight: comment.blockHeight,
-    );
+    final CommentBody commentBody = results[0] as CommentBody;
+    final DateTime date = results[1] as DateTime;
+    final List<Like> likes = results[2] as List<Like>;
 
     late final List<Comment> commentsOfPost;
     switch (postsViewMode) {
@@ -576,28 +647,34 @@ class PostsController {
         }
     }
 
-    ReposterInfo? actualReposterInfo;
-    late final DateTime actualDateOfPost;
-    if (post.reposterInfo != null) {
-      actualReposterInfo = post.reposterInfo!.copyWith(
-        accountInfo: await _nearSocialApi.getGeneralAccountInfo(
-            accountId: post.reposterInfo!.accountInfo.accountId),
-      );
-      actualDateOfPost = await _nearSocialApi.getDateOfBlockHeight(
-        blockHeight: post.reposterInfo!.blockHeight,
-      );
-    } else {
-      actualDateOfPost = await _nearSocialApi.getDateOfBlockHeight(
-          blockHeight: post.blockHeight);
-    }
-
+    // Check if this post's data already exists from a previous load
     final loadedPosts = getPostsDueToPostsViewMode(
       postsViewMode,
       postsOfAccountId,
     ).where((element) => element.fullyLoaded == true).toList();
-    if (loadedPosts.any((element) =>
+    final alreadyLoaded = loadedPosts.any((element) =>
         element.blockHeight == post.blockHeight &&
-        element.authorInfo.accountId == post.authorInfo.accountId)) {
+        element.authorInfo.accountId == post.authorInfo.accountId);
+
+    final hasReposter = post.reposterInfo != null;
+    final dateBlockHeight =
+        hasReposter ? post.reposterInfo!.blockHeight : post.blockHeight;
+
+    if (alreadyLoaded) {
+      // Only need date + reposter info, skip content/likes/reposts
+      final futures = <Future>[
+        _nearSocialApi.getDateOfBlockHeight(blockHeight: dateBlockHeight),
+        if (hasReposter)
+          _getCachedProfile(post.reposterInfo!.accountInfo.accountId),
+      ];
+      final results = await Future.wait(futures);
+      final actualDateOfPost = results[0] as DateTime;
+      ReposterInfo? actualReposterInfo;
+      if (hasReposter) {
+        actualReposterInfo = post.reposterInfo!.copyWith(
+          accountInfo: results[1] as GeneralAccountInfo,
+        );
+      }
       final postToCopyInfo = loadedPosts.firstWhere((element) =>
           element.blockHeight == post.blockHeight &&
           element.authorInfo.accountId == post.authorInfo.accountId);
@@ -613,23 +690,39 @@ class PostsController {
         reposterInfo: actualReposterInfo,
         postBody: postToCopyInfo.postBody,
         fullyLoaded: true,
+        throttle: true,
       );
       return;
     }
 
-    final actualPostBody = await _nearSocialApi.getPostContent(
-      accountId: post.authorInfo.accountId,
-      blockHeight: post.blockHeight,
-    );
+    // Parallelize ALL API calls in a single round trip
+    final futures = <Future>[
+      _nearSocialApi.getPostContent(
+        accountId: post.authorInfo.accountId,
+        blockHeight: post.blockHeight,
+      ),
+      _getCachedProfile(post.authorInfo.accountId),
+      _nearSocialApi.getLikesOfPost(
+          accountId: post.authorInfo.accountId, blockHeight: post.blockHeight),
+      _nearSocialApi.getRepostsOfPost(
+          accountId: post.authorInfo.accountId, blockHeight: post.blockHeight),
+      _nearSocialApi.getDateOfBlockHeight(blockHeight: dateBlockHeight),
+      if (hasReposter)
+        _getCachedProfile(post.reposterInfo!.accountInfo.accountId),
+    ];
+    final results = await Future.wait(futures);
 
-    final actualAuthorInfo = await _nearSocialApi.getGeneralAccountInfo(
-        accountId: post.authorInfo.accountId);
-
-    final actualLikeList = await _nearSocialApi.getLikesOfPost(
-        accountId: post.authorInfo.accountId, blockHeight: post.blockHeight);
-
-    final actualRepostsOfPostList = await _nearSocialApi.getRepostsOfPost(
-        accountId: post.authorInfo.accountId, blockHeight: post.blockHeight);
+    final actualPostBody = results[0] as PostBody;
+    final actualAuthorInfo = results[1] as GeneralAccountInfo;
+    final actualLikeList = results[2] as List<Like>;
+    final actualRepostsOfPostList = results[3] as List<Reposter>;
+    final actualDateOfPost = results[4] as DateTime;
+    ReposterInfo? actualReposterInfo;
+    if (hasReposter) {
+      actualReposterInfo = post.reposterInfo!.copyWith(
+        accountInfo: results[5] as GeneralAccountInfo,
+      );
+    }
 
     _updateDataDueToPostsViewMode(
       post: post,
@@ -642,6 +735,7 @@ class PostsController {
       reposterInfo: actualReposterInfo,
       postBody: actualPostBody,
       fullyLoaded: true,
+      throttle: true,
     );
   }
 
@@ -870,15 +964,28 @@ class PostsController {
     ReposterInfo? reposterInfo,
     DateTime? date,
     bool? fullyLoaded,
+    bool throttle = false,
   }) {
     final indexOfPost = _getIndexOfPost(post, postsViewMode, postsOfAccountId);
     if (indexOfPost == -1) {
       return;
     }
+
+    void emitState(Posts newState) {
+      if (throttle) {
+        // Update internal state without immediately notifying listeners
+        _streamController.add(newState);
+        // But schedule a throttled notification
+        _emitStateThrottled();
+        return;
+      }
+      _streamController.add(newState);
+    }
+
     switch (postsViewMode) {
       case PostsViewMode.main:
         {
-          _streamController.add(
+          emitState(
             state.copyWith(
               posts: List<Post>.of(state.posts)
                 ..[indexOfPost] = state.posts[indexOfPost].copyWith(
@@ -928,7 +1035,7 @@ class PostsController {
                   state.postsOfAccounts[postsOfAccountId]![indexOfPost]
                       .fullyLoaded,
             );
-          _streamController.add(
+          emitState(
             state.copyWith(
               postsOfAccounts: Map<String, List<Post>>.of(state.postsOfAccounts)
                 ..[postsOfAccountId!] = newListOfPostsForUser,
@@ -938,7 +1045,7 @@ class PostsController {
         }
       case PostsViewMode.temporary:
         {
-          _streamController.add(
+          emitState(
             state.copyWith(
               temporaryPosts: List.of(state.temporaryPosts)
                 ..[indexOfPost] = state.temporaryPosts[indexOfPost].copyWith(
@@ -1000,6 +1107,10 @@ class PostsController {
   }
 
   Future<void> clear() async {
+    _flushState();
+    _profileCache.clear();
+    _loadQueue.clear();
+    _activeLoads = 0;
     _streamController.add(const Posts());
   }
 }

@@ -16,7 +16,11 @@ class NearWidgetListPage extends StatefulWidget {
   State<NearWidgetListPage> createState() => _NearWidgetListPageState();
 }
 
-class _NearWidgetListPageState extends State<NearWidgetListPage> {
+class _NearWidgetListPageState extends State<NearWidgetListPage>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
   final ScrollController _scrollController = ScrollController();
   final TextEditingController searchController = TextEditingController();
 
@@ -52,6 +56,7 @@ class _NearWidgetListPageState extends State<NearWidgetListPage> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final nearWidgetsController = Modular.get<NearWidgetsController>();
 

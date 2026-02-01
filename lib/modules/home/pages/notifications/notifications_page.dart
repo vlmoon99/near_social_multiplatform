@@ -18,7 +18,11 @@ class NotificationsPage extends StatefulWidget {
   State<NotificationsPage> createState() => _NotificationsPageState();
 }
 
-class _NotificationsPageState extends State<NotificationsPage> {
+class _NotificationsPageState extends State<NotificationsPage>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
   bool allNotificationsLoaded = false;
   bool moreNotificationsLoading = false;
   final _scrollController = ScrollController();
@@ -87,6 +91,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     final AuthController authController = Modular.get<AuthController>();
     final NotificationsController notificationsController =
         Modular.get<NotificationsController>();

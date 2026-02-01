@@ -38,7 +38,8 @@ class PostCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final AuthController authController = Modular.get<AuthController>();
     final PostsController postsController = Modular.get<PostsController>();
-    return GestureDetector(
+    return RepaintBoundary(
+      child: GestureDetector(
       onTap: () {
         HapticFeedback.lightImpact();
         Modular.to.pushNamed(
@@ -338,6 +339,7 @@ class PostCard extends StatelessWidget {
               ),
             );
           }),
+    ),
     );
   }
 }

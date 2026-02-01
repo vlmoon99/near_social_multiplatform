@@ -34,14 +34,21 @@ class NearSocialApi {
   final Dio _dio = Dio();
   final NearBlockChainService nearBlockChainService;
 
+  // Cache for block height → DateTime to avoid repeated network calls
+  final Map<int, DateTime> _dateCache = {};
+
   NearSocialApi({required this.nearBlockChainService}) {
+    _dio.options.connectTimeout = const Duration(seconds: 10);
+    _dio.options.receiveTimeout = const Duration(seconds: 10);
     _dio.interceptors.addAll([
       RetryInterceptor(
         dio: _dio,
         logPrint: log,
-        retries: 5,
+        retries: 3,
         retryDelays: [
-          ...List.generate(5, (index) => const Duration(seconds: 1))
+          const Duration(milliseconds: 500),
+          const Duration(seconds: 1),
+          const Duration(seconds: 2),
         ],
       ),
       RetryOnConnectionChangeInterceptor(
@@ -366,6 +373,9 @@ class NearSocialApi {
   }
 
   Future<DateTime> getDateOfBlockHeight({required int blockHeight}) async {
+    if (_dateCache.containsKey(blockHeight)) {
+      return _dateCache[blockHeight]!;
+    }
     try {
       final response = await _dio.request(
         '${NearUrls.nearSocialApi}/time?blockHeight=$blockHeight',
@@ -376,6 +386,7 @@ class NearSocialApi {
       final epochTime = response.data as int;
 
       DateTime dateTime = DateTime.fromMillisecondsSinceEpoch(epochTime);
+      _dateCache[blockHeight] = dateTime;
 
       return dateTime;
     } catch (err) {
