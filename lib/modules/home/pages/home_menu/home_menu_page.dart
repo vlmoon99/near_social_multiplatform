@@ -4,13 +4,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_modular/flutter_modular.dart';
-import 'package:flutter_svg/svg.dart';
-import 'package:flutterchain/flutterchain_lib/models/chains/near/near_account_info_request.dart';
-import 'package:flutterchain/flutterchain_lib/services/chains/near_blockchain_service.dart';
 import 'package:near_social_mobile/config/constants.dart';
-import 'package:near_social_mobile/modules/home/apis/models/user_storage_info.dart';
-import 'package:near_social_mobile/modules/home/apis/near_social.dart';
-import 'package:near_social_mobile/modules/home/pages/settings/settings_page.dart';
 import 'package:near_social_mobile/modules/home/vms/notifications/notifications_controller.dart';
 import 'package:near_social_mobile/modules/home/vms/posts/posts_controller.dart';
 import 'package:near_social_mobile/modules/home/vms/users/models/user_list_state.dart';
@@ -40,8 +34,6 @@ class _HomeMenuPageState extends State<HomeMenuPage>
   final UserListController userListController =
       Modular.get<UserListController>();
   FullUserInfo? user;
-  String? balance;
-  UserStorageInfo? storageInfo;
   bool loading = true;
 
   @override
@@ -75,18 +67,16 @@ class _HomeMenuPageState extends State<HomeMenuPage>
       }
     });
 
-    // Fire balance and storage requests in parallel
-    Modular.get<NearBlockChainService>()
-        .getWalletBalance(NearAccountInfoRequest(
-            accountId: authController.state.accountId))
-        .then((value) {
-      if (mounted) setState(() => balance = value);
-    });
-
-    Modular.get<NearSocialApi>()
-        .getUserStorageInfo(authController.state.accountId)
-        .then((value) {
-      if (mounted) setState(() => storageInfo = value);
+    // Load followers/following metadata
+    userListController
+        .loadAdditionalMetadata(accountId: authController.state.accountId)
+        .then((_) {
+      if (mounted) {
+        setState(() {
+          user = userListController.state
+              .getUserByAccountId(accountId: authController.state.accountId);
+        });
+      }
     });
   }
 
@@ -98,9 +88,11 @@ class _HomeMenuPageState extends State<HomeMenuPage>
 
   Future<void> _onLogoutTap() async {
     HapticFeedback.lightImpact();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     showDialog(
       context: context,
-      builder: (context) => CustomAlertDialog(),
+      barrierColor: Colors.black54,
+      builder: (context) => _buildLogoutDialog(isDark),
     ).then((value) async {
       if (value != null && value) {
         final authController = Modular.get<AuthController>();
@@ -111,6 +103,126 @@ class _HomeMenuPageState extends State<HomeMenuPage>
         Modular.to.navigate("/");
       }
     });
+  }
+
+  Widget _buildLogoutDialog(bool isDark) {
+    return Center(
+      child: Container(
+        margin: const EdgeInsets.all(40),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(28),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
+            child: Container(
+              padding: const EdgeInsets.all(28),
+              decoration: BoxDecoration(
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.08)
+                    : Colors.white.withValues(alpha: 0.80),
+                borderRadius: BorderRadius.circular(28),
+                border: Border.all(
+                  color: isDark ? Colors.white24 : Colors.black12,
+                ),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 56,
+                    height: 56,
+                    decoration: BoxDecoration(
+                      color: Colors.red.withValues(alpha: isDark ? 0.2 : 0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(CupertinoIcons.square_arrow_left,
+                        color: Colors.red.shade300, size: 26),
+                  ),
+                  const SizedBox(height: 20),
+                  Text(
+                    'Logout?',
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -0.5,
+                      color: isDark ? Colors.white : Colors.black,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Are you sure you want to sign out?',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 15,
+                      color: isDark ? Colors.white60 : Colors.black54,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () {
+                            HapticFeedback.lightImpact();
+                            Modular.to.pop(false);
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            decoration: BoxDecoration(
+                              color: isDark
+                                  ? Colors.white.withValues(alpha: 0.1)
+                                  : Colors.black.withValues(alpha: 0.06),
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: Center(
+                              child: Text(
+                                'Cancel',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 16,
+                                  color: isDark ? Colors.white : Colors.black,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () {
+                            HapticFeedback.lightImpact();
+                            Modular.to.pop(true);
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            decoration: BoxDecoration(
+                              color: Colors.red.withValues(alpha: isDark ? 0.3 : 0.15),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                  color: Colors.red.withValues(alpha: 0.3)),
+                            ),
+                            child: Center(
+                              child: Text(
+                                'Logout',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 16,
+                                  color: Colors.red.shade300,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   @override
@@ -129,7 +241,7 @@ class _HomeMenuPageState extends State<HomeMenuPage>
           controller: _scrollController,
           physics: const BouncingScrollPhysics(),
           slivers: [
-            const SliverToBoxAdapter(child: SizedBox(height: 140)),
+            const SliverToBoxAdapter(child: SizedBox(height: 90)),
 
             // Profile header card
             SliverToBoxAdapter(
@@ -146,30 +258,6 @@ class _HomeMenuPageState extends State<HomeMenuPage>
               padding: const EdgeInsets.symmetric(horizontal: 16),
               sliver: SliverList(
                 delegate: SliverChildListDelegate([
-                  _buildMenuTile(
-                    icon: SvgPicture.asset(
-                      "assets/media/icons/nft-token.svg",
-                      height: 20,
-                      color: isDark ? Colors.white70 : Colors.black87,
-                    ),
-                    title: "Mintbase Manager",
-                    isDark: isDark,
-                    onTap: () {
-                      HapticFeedback.lightImpact();
-                      Modular.to.pushNamed(".${Routes.home.mintManager}/");
-                    },
-                  ),
-                  _buildMenuTile(
-                    icon: Icon(CupertinoIcons.doc_text_fill,
-                        size: 20,
-                        color: isDark ? Colors.white70 : Colors.black87),
-                    title: "Smart Posts",
-                    isDark: isDark,
-                    onTap: () {
-                      HapticFeedback.lightImpact();
-                      Modular.to.pushNamed(".${Routes.home.smartFeedPage}");
-                    },
-                  ),
                   _buildMenuTile(
                     icon: Icon(CupertinoIcons.settings_solid,
                         size: 20,
@@ -188,7 +276,7 @@ class _HomeMenuPageState extends State<HomeMenuPage>
               ),
             ),
 
-            const SliverToBoxAdapter(child: SizedBox(height: 140)),
+            const SliverToBoxAdapter(child: SizedBox(height: 90)),
           ],
         ),
       ),
@@ -312,16 +400,18 @@ class _HomeMenuPageState extends State<HomeMenuPage>
       child: Row(
         children: [
           _statBox(
-            balance ?? "...",
-            "NEAR",
+            user?.followers != null
+                ? user!.followers!.length.toString()
+                : "...",
+            "Followers",
             isDark,
           ),
           const SizedBox(width: 8),
           _statBox(
-            storageInfo != null
-                ? "${((storageInfo?.availableBytes ?? 0) / 1000).toStringAsFixed(1)}kb"
+            user?.followings != null
+                ? user!.followings!.length.toString()
                 : "...",
-            "Storage",
+            "Following",
             isDark,
           ),
         ],

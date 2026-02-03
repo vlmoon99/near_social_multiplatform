@@ -26,8 +26,7 @@ class AccessKeyInfoCard extends StatelessWidget {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16.0).r,
       ),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(16.0).r,
+      child: GestureDetector(
         onTap: () {
           showDialog(
             context: context,

@@ -30,8 +30,7 @@ class _NearWidgetTileState extends State<NearWidgetTile> {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16.0).r,
       ),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(16.0).r,
+      child: GestureDetector(
         onTap: () {
           HapticFeedback.lightImpact();
           setState(() {

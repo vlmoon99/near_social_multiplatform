@@ -31,8 +31,8 @@ class _MoreActionsForPostButtonState extends State<MoreActionsForPostButton> {
   @override
   Widget build(BuildContext context) {
     final AuthController authController = Modular.get<AuthController>();
-    return IconButton(
-      onPressed: () {
+    return GestureDetector(
+      onTap: () {
         showModalBottomSheet(
           context: Modular.routerDelegate.navigatorKey.currentContext!,
           shape: RoundedRectangleBorder(
@@ -224,10 +224,9 @@ class _MoreActionsForPostButtonState extends State<MoreActionsForPostButton> {
           },
         );
       },
-      icon: const Icon(Icons.more_horiz),
-      style: const ButtonStyle(
-        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-        foregroundColor: WidgetStatePropertyAll(NEARColors.grey),
+      child: const Padding(
+        padding: EdgeInsets.all(8),
+        child: Icon(Icons.more_horiz, color: NEARColors.grey),
       ),
     );
   }

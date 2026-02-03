@@ -1,20 +1,22 @@
+import 'dart:ui';
+
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:near_social_mobile/config/constants.dart';
-import 'package:near_social_mobile/config/theme.dart';
 import 'package:near_social_mobile/modules/home/pages/posts_page/widgets/comment_card.dart';
 import 'package:near_social_mobile/modules/home/pages/posts_page/widgets/create_comment_dialog_body.dart';
 import 'package:near_social_mobile/modules/home/pages/posts_page/widgets/more_actions_for_post_button.dart';
 import 'package:near_social_mobile/modules/home/pages/posts_page/widgets/raw_text_to_content_formatter.dart';
+import 'package:near_social_mobile/modules/home/pages/shared_design/glassmorphism_components.dart';
 import 'package:near_social_mobile/modules/home/vms/posts/posts_controller.dart';
 import 'package:near_social_mobile/modules/home/vms/users/user_list_controller.dart';
 import 'package:near_social_mobile/modules/vms/core/auth_controller.dart';
 import 'package:near_social_mobile/modules/vms/core/filter_controller.dart';
 import 'package:near_social_mobile/routes/routes.dart';
 import 'package:near_social_mobile/services/pausable_timer.dart';
-import 'package:near_social_mobile/shared_widgets/custom_button.dart';
 import 'package:near_social_mobile/shared_widgets/image_full_screen_page.dart';
 import 'package:near_social_mobile/shared_widgets/scale_animated_iconbutton.dart';
 import 'package:near_social_mobile/shared_widgets/spinner_loading_indicator.dart';
@@ -42,8 +44,13 @@ class PostPage extends StatefulWidget {
   State<PostPage> createState() => _PostPageState();
 }
 
-class _PostPageState extends State<PostPage> {
+class _PostPageState extends State<PostPage> with TickerProviderStateMixin {
   late final PausableTimer updateCommentsTimer;
+  late final AnimationController _bgController =
+      AnimationController(vsync: this, duration: const Duration(seconds: 1))
+        ..repeat();
+  List<BackgroundParticle> _particles = [];
+  Size _lastSize = Size.zero;
 
   @override
   void initState() {
@@ -100,310 +107,563 @@ class _PostPageState extends State<PostPage> {
   @override
   void dispose() {
     updateCommentsTimer.cancel();
+    _bgController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final screenSize = MediaQuery.of(context).size;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final AuthController authController = Modular.get<AuthController>();
     final PostsController postsController = Modular.get<PostsController>();
     final FilterController filterController = Modular.get<FilterController>();
+
+    if (_particles.isEmpty || _lastSize != screenSize) {
+      _particles = List.generate(10, (i) => BackgroundParticle(screenSize));
+      _lastSize = screenSize;
+    }
+
     return Scaffold(
-      body: SafeArea(
-        child: StreamBuilder(
-            stream: Rx.merge([postsController.stream, filterController.stream]),
-            builder: (context, snapshot) {
-              final posts = postsController.getPostsDueToPostsViewMode(
-                  widget.postsViewMode, widget.postsOfAccountId);
-              final post = posts.firstWhere((element) =>
-                  element.blockHeight == widget.blockHeight &&
-                  element.authorInfo.accountId == widget.accountId);
-              return ListView(
-                padding: REdgeInsets.all(15),
-                physics: const RangeMaintainingScrollPhysics(),
-                children: [
-                  InkWell(
-                    borderRadius: BorderRadius.circular(10).r,
-                    onTap: widget.allowToNavigateToPostAuthorPage
-                        ? () async {
-                            HapticFeedback.lightImpact();
-                            await Modular.get<UserListController>()
-                                .addGeneralAccountInfoIfNotExists(
-                              generalAccountInfo: post.authorInfo,
-                            );
-                            Modular.to.pushNamed(
-                              ".${Routes.home.userPage}?accountId=${post.authorInfo.accountId}",
-                            );
-                          }
-                        : null,
-                    child: SizedBox(
-                      height: 37.h,
+      body: Stack(
+        children: [
+          buildLivingBackground(
+            controller: _bgController,
+            particles: _particles,
+            screenSize: screenSize,
+            isDark: isDark,
+          ),
+          SafeArea(
+            child: StreamBuilder(
+              stream:
+                  Rx.merge([postsController.stream, filterController.stream]),
+              builder: (context, snapshot) {
+                final posts = postsController.getPostsDueToPostsViewMode(
+                    widget.postsViewMode, widget.postsOfAccountId);
+                final post = posts.firstWhere((element) =>
+                    element.blockHeight == widget.blockHeight &&
+                    element.authorInfo.accountId == widget.accountId);
+                return Column(
+                  children: [
+                    // Header
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 12, 20, 4),
                       child: Row(
                         children: [
-                          Container(
-                            width: 35.h,
-                            height: 35.h,
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(10).r,
-                            ),
-                            clipBehavior: Clip.antiAlias,
-                            child: NearNetworkImage(
-                              imageUrl: post.authorInfo.profileImageLink,
-                              errorPlaceholder: Image.asset(
-                                NearAssets.standartAvatar,
-                                fit: BoxFit.cover,
+                          GestureDetector(
+                            onTap: () {
+                              HapticFeedback.lightImpact();
+                              Navigator.pop(context);
+                            },
+                            child: Container(
+                              width: 40,
+                              height: 40,
+                              decoration: BoxDecoration(
+                                color: isDark
+                                    ? Colors.white.withValues(alpha: 0.1)
+                                    : Colors.black.withValues(alpha: 0.06),
+                                shape: BoxShape.circle,
                               ),
-                              placeholder: Image.asset(
-                                NearAssets.standartAvatar,
-                                fit: BoxFit.cover,
+                              child: Icon(
+                                CupertinoIcons.back,
+                                size: 20,
+                                color: isDark ? Colors.white : Colors.black,
                               ),
                             ),
                           ),
-                          SizedBox(width: 10.h),
-                          Expanded(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                if (post.authorInfo.name != "")
-                                  Text(
-                                    post.authorInfo.name,
-                                    overflow: TextOverflow.ellipsis,
-                                    maxLines: 2,
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                Text(
-                                  "@${post.authorInfo.accountId}",
-                                  overflow: TextOverflow.ellipsis,
-                                  maxLines: 1,
-                                  style: post.authorInfo.name != ""
-                                      ? const TextStyle(
-                                          color: NEARColors.grey,
-                                          fontSize: 13,
-                                        )
-                                      : const TextStyle(
-                                          fontWeight: FontWeight.bold),
-                                ),
-                              ],
+                          const SizedBox(width: 16),
+                          Text(
+                            'Post',
+                            style: TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: -0.5,
+                              color: isDark ? Colors.white : Colors.black,
                             ),
+                          ),
+                          const Spacer(),
+                          MoreActionsForPostButton(
+                            post: post,
+                            postsViewMode: widget.postsViewMode,
                           ),
                         ],
                       ),
                     ),
-                  ),
-                  SizedBox(height: 5.h),
-                  RawTextToContentFormatter(
-                    rawText: post.postBody.text.trim(),
-                    imageHeight: .5.sh,
-                  ),
-                  SizedBox(height: 10.h),
-                  if (post.postBody.mediaLink != null) ...[
-                    GestureDetector(
-                      onTap: () {
-                        HapticFeedback.lightImpact();
-                        Navigator.push(
-                          Modular.routerDelegate.navigatorKey.currentContext!,
-                          MaterialPageRoute(
-                            builder: (context) => ImageFullScreen(
-                              imageUrl: post.postBody.mediaLink!,
+
+                    // Content
+                    Expanded(
+                      child: ListView(
+                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 40),
+                        physics: const BouncingScrollPhysics(),
+                        children: [
+                          // Post card
+                          GlassContainer(
+                            isDark: isDark,
+                            margin: EdgeInsets.zero,
+                            padding: const EdgeInsets.all(16),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // Author info
+                                GestureDetector(
+                                  onTap: widget.allowToNavigateToPostAuthorPage
+                                      ? () async {
+                                          HapticFeedback.lightImpact();
+                                          await Modular.get<
+                                                  UserListController>()
+                                              .addGeneralAccountInfoIfNotExists(
+                                            generalAccountInfo:
+                                                post.authorInfo,
+                                          );
+                                          Modular.to.pushNamed(
+                                            ".${Routes.home.userPage}?accountId=${post.authorInfo.accountId}",
+                                          );
+                                        }
+                                      : null,
+                                  child: Row(
+                                    children: [
+                                      Container(
+                                        width: 42,
+                                        height: 42,
+                                        decoration: BoxDecoration(
+                                          borderRadius:
+                                              BorderRadius.circular(14),
+                                        ),
+                                        clipBehavior: Clip.antiAlias,
+                                        child: NearNetworkImage(
+                                          imageUrl:
+                                              post.authorInfo.profileImageLink,
+                                          errorPlaceholder: Image.asset(
+                                            NearAssets.standartAvatar,
+                                            fit: BoxFit.cover,
+                                          ),
+                                          placeholder: Image.asset(
+                                            NearAssets.standartAvatar,
+                                            fit: BoxFit.cover,
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            if (post.authorInfo.name != "")
+                                              Text(
+                                                post.authorInfo.name,
+                                                overflow:
+                                                    TextOverflow.ellipsis,
+                                                maxLines: 1,
+                                                style: TextStyle(
+                                                  fontWeight: FontWeight.w700,
+                                                  fontSize: 16,
+                                                  color: isDark
+                                                      ? Colors.white
+                                                      : Colors.black,
+                                                ),
+                                              ),
+                                            Text(
+                                              "@${post.authorInfo.accountId}",
+                                              overflow:
+                                                  TextOverflow.ellipsis,
+                                              maxLines: 1,
+                                              style: TextStyle(
+                                                fontSize: 13,
+                                                color: isDark
+                                                    ? Colors.white54
+                                                    : Colors.black45,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(height: 14),
+
+                                // Post body
+                                RawTextToContentFormatter(
+                                  rawText: post.postBody.text.trim(),
+                                  imageHeight: .5.sh,
+                                ),
+
+                                // Media
+                                if (post.postBody.mediaLink != null) ...[
+                                  const SizedBox(height: 12),
+                                  GestureDetector(
+                                    onTap: () {
+                                      HapticFeedback.lightImpact();
+                                      Navigator.push(
+                                        Modular.routerDelegate.navigatorKey
+                                            .currentContext!,
+                                        MaterialPageRoute(
+                                          builder: (context) =>
+                                              ImageFullScreen(
+                                            imageUrl:
+                                                post.postBody.mediaLink!,
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                    child: Hero(
+                                      tag: post.postBody.mediaLink!,
+                                      child: ClipRRect(
+                                        borderRadius:
+                                            BorderRadius.circular(16),
+                                        child: ConstrainedBox(
+                                          constraints: BoxConstraints(
+                                              maxHeight: .5.sh),
+                                          child: NearNetworkImage(
+                                            imageUrl:
+                                                post.postBody.mediaLink!,
+                                            boxFit: BoxFit.contain,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+
+                                const SizedBox(height: 14),
+
+                                // Action buttons
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceAround,
+                                  children: [
+                                    TwoStatesIconButton(
+                                      iconPath: NearAssets.commentIcon,
+                                      onPressed: () async {
+                                        HapticFeedback.lightImpact();
+                                        showDialog(
+                                          context: context,
+                                          builder: (context) {
+                                            return Dialog.fullscreen(
+                                              child: CreateCommentDialog(
+                                                postsViewMode:
+                                                    widget.postsViewMode,
+                                                postsOfAccountId:
+                                                    widget.postsOfAccountId,
+                                                descriptionTitle: Text.rich(
+                                                  style: const TextStyle(
+                                                      fontSize: 14),
+                                                  TextSpan(
+                                                    children: [
+                                                      const TextSpan(
+                                                          text:
+                                                              "Answer to "),
+                                                      TextSpan(
+                                                        text:
+                                                            "@${post.authorInfo.accountId}",
+                                                        style: const TextStyle(
+                                                            fontWeight:
+                                                                FontWeight
+                                                                    .bold),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                                post: post,
+                                              ),
+                                            );
+                                          },
+                                        );
+                                      },
+                                    ),
+                                    ScaleAnimatedIconButtonWithCounter(
+                                      iconPath: NearAssets.likeIcon,
+                                      iconActivatedPath:
+                                          NearAssets.activatedLikeIcon,
+                                      count: post.likeList.length,
+                                      activated: post.likeList.any(
+                                        (element) =>
+                                            element.accountId ==
+                                            authController.state.accountId,
+                                      ),
+                                      onPressed: () async {
+                                        HapticFeedback.lightImpact();
+                                        try {
+                                          await postsController.likePost(
+                                            post: post,
+                                            postsViewMode:
+                                                widget.postsViewMode,
+                                            postsOfAccountId:
+                                                widget.postsOfAccountId,
+                                          );
+                                        } catch (err) {
+                                          if (err is Exception) {
+                                            throw Exception(
+                                                "Failed to like post");
+                                          } else {
+                                            rethrow;
+                                          }
+                                        }
+                                      },
+                                    ),
+                                    ScaleAnimatedIconButtonWithCounter(
+                                      iconPath: NearAssets.repostIcon,
+                                      count: post.repostList.length,
+                                      activated: post.repostList.any(
+                                        (element) =>
+                                            element.accountId ==
+                                            authController.state.accountId,
+                                      ),
+                                      activatedColor: Colors.green,
+                                      onPressed: () async {
+                                        HapticFeedback.lightImpact();
+                                        final String accountId =
+                                            authController.state.accountId;
+                                        if (post.repostList.any((element) =>
+                                            element.accountId ==
+                                            accountId)) {
+                                          return;
+                                        }
+                                        await _showRepostDialog(
+                                            context,
+                                            isDark,
+                                            postsController,
+                                            post);
+                                      },
+                                    ),
+                                  ],
+                                ),
+                              ],
                             ),
                           ),
-                        );
-                      },
-                      child: Hero(
-                        tag: post.postBody.mediaLink!,
-                        child: ConstrainedBox(
-                          constraints: BoxConstraints(maxHeight: .5.sh),
-                          child: NearNetworkImage(
-                            imageUrl: post.postBody.mediaLink!,
-                            boxFit: BoxFit.contain,
+
+                          // Comments section
+                          const SizedBox(height: 16),
+                          Padding(
+                            padding: const EdgeInsets.only(left: 4),
+                            child: Text(
+                              'Comments',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w700,
+                                color: isDark ? Colors.white : Colors.black,
+                              ),
+                            ),
                           ),
-                        ),
+                          const SizedBox(height: 10),
+
+                          if (post.commentList != null)
+                            Builder(
+                              builder: (context) {
+                                final FiltersUtil filterUtil = FiltersUtil(
+                                  filters: filterController.state,
+                                );
+                                final comments = post.commentList!
+                                    .where((comment) =>
+                                        !filterUtil.commentIsHided(
+                                            comment.authorInfo.accountId,
+                                            comment.blockHeight))
+                                    .toList();
+                                if (comments.isEmpty) {
+                                  return Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                        vertical: 32),
+                                    child: Center(
+                                      child: Text(
+                                        'No comments yet',
+                                        style: TextStyle(
+                                          fontSize: 15,
+                                          color: isDark
+                                              ? Colors.white38
+                                              : Colors.black26,
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                }
+                                return Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: comments
+                                      .map(
+                                        (comment) => CommentCard(
+                                          comment: comment,
+                                          post: post,
+                                          postsViewMode:
+                                              widget.postsViewMode,
+                                          postsOfAccountId:
+                                              widget.postsOfAccountId,
+                                        ),
+                                      )
+                                      .toList(),
+                                );
+                              },
+                            )
+                          else ...[
+                            const Padding(
+                              padding: EdgeInsets.symmetric(vertical: 32),
+                              child: Center(
+                                child: SpinnerLoadingIndicator(),
+                              ),
+                            )
+                          ],
+                        ],
                       ),
                     ),
                   ],
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _showRepostDialog(BuildContext context, bool isDark,
+      PostsController postsController, dynamic post) async {
+    await showDialog(
+      context: context,
+      barrierColor: Colors.black54,
+      builder: (context) {
+        return Center(
+          child: Container(
+            margin: const EdgeInsets.all(40),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(28),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
+                child: Container(
+                  padding: const EdgeInsets.all(28),
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? Colors.white.withValues(alpha: 0.08)
+                        : Colors.white.withValues(alpha: 0.80),
+                    borderRadius: BorderRadius.circular(28),
+                    border: Border.all(
+                      color: isDark ? Colors.white24 : Colors.black12,
+                    ),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      TwoStatesIconButton(
-                        iconPath: NearAssets.commentIcon,
-                        onPressed: () async {
-                          HapticFeedback.lightImpact();
-                          showDialog(
-                            context: context,
-                            builder: (context) {
-                              return Dialog.fullscreen(
-                                child: CreateCommentDialog(
-                                  postsViewMode: widget.postsViewMode,
-                                  postsOfAccountId: widget.postsOfAccountId,
-                                  descriptionTitle: Text.rich(
-                                    style: const TextStyle(fontSize: 14),
-                                    TextSpan(
-                                      children: [
-                                        const TextSpan(text: "Answer to "),
-                                        TextSpan(
-                                          text: "@${post.authorInfo.accountId}",
-                                          style: const TextStyle(
-                                              fontWeight: FontWeight.bold),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  post: post,
-                                ),
-                              );
-                            },
-                          );
-                        },
-                      ),
-                      ScaleAnimatedIconButtonWithCounter(
-                        iconPath: NearAssets.likeIcon,
-                        iconActivatedPath: NearAssets.activatedLikeIcon,
-                        count: post.likeList.length,
-                        activated: post.likeList.any(
-                          (element) =>
-                              element.accountId ==
-                              authController.state.accountId,
+                      Container(
+                        width: 56,
+                        height: 56,
+                        decoration: BoxDecoration(
+                          color: Colors.green
+                              .withValues(alpha: isDark ? 0.2 : 0.1),
+                          shape: BoxShape.circle,
                         ),
-                        onPressed: () async {
-                          HapticFeedback.lightImpact();
-                          try {
-                            await postsController.likePost(
-                              post: post,
-                              postsViewMode: widget.postsViewMode,
-                              postsOfAccountId: widget.postsOfAccountId,
-                            );
-                          } catch (err) {
-                            if (err is Exception) {
-                              throw Exception("Failed to like post");
-                            } else {
-                              rethrow;
-                            }
-                          }
-                        },
+                        child: const Icon(CupertinoIcons.arrow_2_squarepath,
+                            color: Colors.green, size: 26),
                       ),
-                      ScaleAnimatedIconButtonWithCounter(
-                        iconPath: NearAssets.repostIcon,
-                        count: post.repostList.length,
-                        activated: post.repostList.any(
-                          (element) =>
-                              element.accountId ==
-                              authController.state.accountId,
+                      const SizedBox(height: 20),
+                      Text(
+                        'Repost?',
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -0.5,
+                          color: isDark ? Colors.white : Colors.black,
                         ),
-                        activatedColor: Colors.green,
-                        onPressed: () async {
-                          HapticFeedback.lightImpact();
-                          final String accountId =
-                              authController.state.accountId;
-                          if (post.repostList.any(
-                              (element) => element.accountId == accountId)) {
-                            return;
-                          }
-                          await showDialog(
-                            context: context,
-                            builder: (context) {
-                              return AlertDialog(
-                                title: const Text("Repost"),
-                                content: const Text(
-                                  "Are you sure you want to repost this post?",
-                                ),
-                                actionsAlignment: MainAxisAlignment.spaceEvenly,
-                                actions: [
-                                  CustomButton(
-                                    primary: true,
-                                    child: const Text(
-                                      "Yes",
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    onPressed: () {
-                                      HapticFeedback.lightImpact();
-                                      Modular.to.pop(true);
-                                    },
-                                  ),
-                                  CustomButton(
-                                    child: const Text(
-                                      "No",
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    onPressed: () {
-                                      HapticFeedback.lightImpact();
-                                      Modular.to.pop(false);
-                                    },
-                                  ),
-                                ],
-                              );
-                            },
-                          ).then(
-                            (answer) async {
-                              if (answer == null || !answer) {
-                                return;
-                              }
-                              try {
-                                await postsController.repostPost(
-                                  post: post,
-                                  postsViewMode: widget.postsViewMode,
-                                  postsOfAccountId: widget.postsOfAccountId,
-                                );
-                              } catch (err) {
-                                if (err is Exception) {
-                                  throw Exception("Failed to repost post");
-                                } else {
-                                  rethrow;
-                                }
-                              }
-                            },
-                          );
-                        },
                       ),
-                      MoreActionsForPostButton(
-                        post: post,
-                        postsViewMode: widget.postsViewMode,
+                      const SizedBox(height: 8),
+                      Text(
+                        'Share this post with your followers?',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 15,
+                          color: isDark ? Colors.white60 : Colors.black54,
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: GestureDetector(
+                              onTap: () {
+                                HapticFeedback.lightImpact();
+                                Modular.to.pop(false);
+                              },
+                              child: Container(
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 14),
+                                decoration: BoxDecoration(
+                                  color: isDark
+                                      ? Colors.white.withValues(alpha: 0.1)
+                                      : Colors.black.withValues(alpha: 0.06),
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    'Cancel',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 16,
+                                      color:
+                                          isDark ? Colors.white : Colors.black,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: GestureDetector(
+                              onTap: () {
+                                HapticFeedback.lightImpact();
+                                Modular.to.pop(true);
+                              },
+                              child: Container(
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 14),
+                                decoration: BoxDecoration(
+                                  color: Colors.green
+                                      .withValues(alpha: isDark ? 0.3 : 0.15),
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(
+                                      color: Colors.green
+                                          .withValues(alpha: 0.3)),
+                                ),
+                                child: const Center(
+                                  child: Text(
+                                    'Repost',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 16,
+                                      color: Colors.green,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
-                  SizedBox(height: 10.h),
-                  if (post.commentList != null)
-                    Builder(
-                      builder: (context) {
-                        final FiltersUtil filterUtil = FiltersUtil(
-                          filters: filterController.state,
-                        );
-                        final comments = post.commentList!
-                            .where((comment) => !filterUtil.commentIsHided(
-                                comment.authorInfo.accountId,
-                                comment.blockHeight))
-                            .toList();
-                        return Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: comments
-                              .map(
-                                (comment) => CommentCard(
-                                  comment: comment,
-                                  post: post,
-                                  postsViewMode: widget.postsViewMode,
-                                  postsOfAccountId: widget.postsOfAccountId,
-                                ),
-                              )
-                              .toList(),
-                        );
-                      },
-                    )
-                  else ...[
-                    const Center(
-                      child: SpinnerLoadingIndicator(),
-                    )
-                  ],
-                ],
-              );
-            }),
-      ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    ).then(
+      (answer) async {
+        if (answer == null || !answer) {
+          return;
+        }
+        try {
+          await postsController.repostPost(
+            post: post,
+            postsViewMode: widget.postsViewMode,
+            postsOfAccountId: widget.postsOfAccountId,
+          );
+        } catch (err) {
+          if (err is Exception) {
+            throw Exception("Failed to repost post");
+          } else {
+            rethrow;
+          }
+        }
+      },
     );
   }
 }

@@ -88,7 +88,7 @@ class _NearWidgetListPageState extends State<NearWidgetListPage>
               controller: _scrollController,
               physics: const BouncingScrollPhysics(),
               slivers: [
-                const SliverToBoxAdapter(child: SizedBox(height: 140)),
+                const SliverToBoxAdapter(child: SizedBox(height: 90)),
                 SliverToBoxAdapter(
                   child: GlassSearchBar(
                     controller: searchController,
@@ -112,7 +112,7 @@ class _NearWidgetListPageState extends State<NearWidgetListPage>
                     ),
                   ),
                 ),
-                const SliverToBoxAdapter(child: SizedBox(height: 140)),
+                const SliverToBoxAdapter(child: SizedBox(height: 90)),
               ],
             ),
           ),

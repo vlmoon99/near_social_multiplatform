@@ -20,8 +20,7 @@ class UserTile extends StatelessWidget {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16.0).r,
       ),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(16.0).r,
+      child: GestureDetector(
         onTap: () {
           HapticFeedback.lightImpact();
           Modular.to.pushNamed(

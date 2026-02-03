@@ -194,24 +194,21 @@ class _CreateCommentDialogState extends State<CreateCommentDialog> {
                               child: SizedBox(
                                 width: 30.h,
                                 height: 30.h,
-                                child: FittedBox(
-                                  child: IconButton(
-                                    onPressed: () {
-                                      HapticFeedback.lightImpact();
-                                      setState(() {
-                                        imageData = null;
-                                      });
-                                    },
-                                    icon: const Icon(Icons.close),
-                                    color: Colors.red,
-                                    style: const ButtonStyle(
-                                      backgroundColor: WidgetStatePropertyAll(
-                                        Colors.white,
-                                      ),
-                                      shadowColor:
-                                          WidgetStatePropertyAll(Colors.black),
-                                      elevation: WidgetStatePropertyAll(2),
+                                child: GestureDetector(
+                                  onTap: () {
+                                    HapticFeedback.lightImpact();
+                                    setState(() {
+                                      imageData = null;
+                                    });
+                                  },
+                                  child: Container(
+                                    decoration: const BoxDecoration(
+                                      color: Colors.white,
+                                      shape: BoxShape.circle,
+                                      boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 2)],
                                     ),
+                                    padding: const EdgeInsets.all(4),
+                                    child: const Icon(Icons.close, color: Colors.red, size: 16),
                                   ),
                                 ),
                               ),

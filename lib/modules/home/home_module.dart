@@ -3,8 +3,7 @@ import 'package:flutter_modular/flutter_modular.dart';
 import 'package:near_social_mobile/modules/core_module.dart';
 // Chat functionality temporarily disabled for decentralization
 // import 'package:near_social_mobile/modules/home/pages/chat/user_chats_page.dart';
-import 'package:near_social_mobile/modules/home/pages/home_menu/subpages/mint_manager/mintbase_module.dart';
-import 'package:near_social_mobile/modules/home/pages/home_menu/subpages/mint_manager/vm/mintbase_controller.dart';
+// Mintbase removed
 import 'package:near_social_mobile/modules/home/pages/settings/sub_pages/blocked_users/blocked_users_page.dart';
 import 'package:near_social_mobile/modules/home/pages/settings/sub_pages/hided_posts_users/hidden_posts_users_page.dart';
 import 'package:near_social_mobile/modules/home/pages/home_page.dart';
@@ -13,7 +12,7 @@ import 'package:near_social_mobile/modules/home/pages/near_widgets/widget_app_pa
 import 'package:near_social_mobile/modules/home/pages/people/user_page.dart';
 import 'package:near_social_mobile/modules/home/pages/settings/settings_page.dart';
 import 'package:near_social_mobile/modules/home/pages/settings/sub_pages/system_managment/system_managment_page.dart';
-import 'package:near_social_mobile/modules/home/pages/smart_feed_page.dart';
+// SmartFeed removed
 import 'package:near_social_mobile/modules/home/pages/modern_design_test/modern_design_test_page.dart';
 // Chat controllers temporarily disabled for decentralization
 // import 'package:near_social_mobile/modules/home/vms/chats/chat_page_controller.dart';
@@ -40,7 +39,7 @@ class HomeModule extends Module {
     i.addSingleton(UserListController.new);
     i.addSingleton(NotificationsController.new);
     i.addSingleton(FilterController.new);
-    i.addSingleton(MintbaseController.new);
+    // Mintbase controller removed
     // Chat controllers temporarily disabled for decentralization
     // i.addSingleton(UserChatsPageController.new);
     // i.addSingleton(ChatPageController.new);
@@ -100,9 +99,7 @@ class HomeModule extends Module {
         child: (context) => const BlockedUsersPage());
     r.child(Routes.home.hiddenPostsPage,
         child: (context) => const HiddenPostsUsersPage());
-    r.module(Routes.home.mintManager, module: MintbaseModule());
-    r.child(Routes.home.smartFeedPage,
-        child: (context) => const SmartFeedPage());
+    // Mintbase and SmartFeed routes removed
     r.child(Routes.home.systemsManagmentPage,
         child: (context) => const SystemsManagmentPage());
     r.child(Routes.home.modernDesignTestPage,

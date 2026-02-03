@@ -9,6 +9,22 @@ import 'package:near_social_mobile/modules/vms/core/models/filters.dart';
 import 'package:near_social_mobile/shared_widgets/spinner_loading_indicator.dart';
 import 'package:rxdart/rxdart.dart';
 
+/// Standard page snap but with lower velocity threshold so less swipe force is needed.
+class _EasySwipePhysics extends PageScrollPhysics {
+  const _EasySwipePhysics({super.parent});
+
+  @override
+  _EasySwipePhysics applyTo(ScrollPhysics? ancestor) {
+    return _EasySwipePhysics(parent: buildParent(ancestor));
+  }
+
+  @override
+  double get minFlingVelocity => 100;
+
+  @override
+  double get minPageTurnDistance => 0.15;
+}
+
 class PostsFeedPage extends StatefulWidget {
   const PostsFeedPage({super.key, this.onScroll});
 
@@ -99,6 +115,7 @@ class _PostsFeedPageState extends State<PostsFeedPage>
                 child: PageView.builder(
                   controller: _pageController,
                   scrollDirection: Axis.vertical,
+                  physics: const _EasySwipePhysics(),
                   onPageChanged: (index) {
                     widget.onScroll?.call();
                     // Load more posts when reaching 2/3 of the list

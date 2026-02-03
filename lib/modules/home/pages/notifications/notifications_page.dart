@@ -174,7 +174,7 @@ class _NotificationsPageState extends State<NotificationsPage>
                           }
                         },
                       );
-                      return const SizedBox(height: 140);
+                      return const SizedBox(height: 90);
                     }
 
                     if (index == notifications.length + 1) {

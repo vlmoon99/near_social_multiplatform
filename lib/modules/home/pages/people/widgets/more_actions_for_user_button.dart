@@ -26,8 +26,8 @@ class _MoreActionsForUserButtonState extends State<MoreActionsForUserButton> {
   Widget build(BuildContext context) {
     final AuthController authController = Modular.get<AuthController>();
     final FilterController filterController = Modular.get<FilterController>();
-    return IconButton(
-      onPressed: () {
+    return GestureDetector(
+      onTap: () {
         showModalBottomSheet(
           context: Modular.routerDelegate.navigatorKey.currentContext!,
           shape: RoundedRectangleBorder(
@@ -196,12 +196,9 @@ class _MoreActionsForUserButtonState extends State<MoreActionsForUserButton> {
           },
         );
       },
-      icon: const Icon(
-        Icons.more_vert,
-      ),
-      style: const ButtonStyle(
-        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-        foregroundColor: WidgetStatePropertyAll(NEARColors.slate),
+      child: const Padding(
+        padding: EdgeInsets.all(8),
+        child: Icon(Icons.more_vert, color: NEARColors.slate),
       ),
     );
   }

@@ -104,7 +104,7 @@ class PostsController {
 
       final List<Post> posts = await _nearSocialApi.getPosts(
         targetAccounts: postsOfAccountId == null ? null : [postsOfAccountId],
-        limit: 10,
+        limit: postsViewMode == PostsViewMode.account ? 20 : 10,
       );
       switch (postsViewMode) {
         case PostsViewMode.main:

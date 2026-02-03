@@ -29,6 +29,7 @@ class _Home extends RouteClass {
   String chatsPage = '/chats';
   String blockedUsersPage = '/blocked_users';
   String hiddenPostsPage = '/hided_posts';
+  // Mintbase routes (module disabled but files kept)
   String mintManager = '/mint_manager';
   String allMintbaseNftsPage = '/all_mintbase_nfts';
   String nftDetailsAndActionsPage = '/nft_details_and_actions';

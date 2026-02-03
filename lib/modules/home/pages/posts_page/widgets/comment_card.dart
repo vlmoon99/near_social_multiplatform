@@ -57,8 +57,7 @@ class CommentCard extends StatelessWidget {
                 ),
               ),
             ),
-            InkWell(
-              borderRadius: BorderRadius.circular(10).r,
+            GestureDetector(
               onTap: () async {
                 HapticFeedback.lightImpact();
                 await Modular.get<UserListController>()

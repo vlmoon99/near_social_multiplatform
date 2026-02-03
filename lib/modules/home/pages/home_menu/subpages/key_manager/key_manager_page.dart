@@ -25,11 +25,14 @@ class KeyManagerPage extends StatelessWidget {
         centerTitle: true,
         leadingWidth: kIsWeb ? 50.h : 0,
         leading: kIsWeb
-            ? IconButton(
-                onPressed: () {
+            ? GestureDetector(
+                onTap: () {
                   Modular.to.pop();
                 },
-                icon: const Icon(Icons.arrow_back),
+                child: const Padding(
+                  padding: EdgeInsets.all(8),
+                  child: Icon(Icons.arrow_back),
+                ),
               )
             : const SizedBox.shrink(),
       ),

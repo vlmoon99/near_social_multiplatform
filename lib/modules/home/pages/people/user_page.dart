@@ -15,7 +15,6 @@ import 'package:near_social_mobile/modules/home/apis/near_social.dart';
 import 'package:near_social_mobile/modules/home/pages/modern_design_test/modern_design_test_page.dart';
 import 'package:near_social_mobile/modules/home/pages/people/widgets/donation_dialog.dart';
 import 'package:near_social_mobile/modules/home/pages/people/widgets/more_actions_for_user_button.dart';
-import 'package:near_social_mobile/modules/home/pages/people/widgets/user_page_tabs/user_nfts.dart';
 import 'package:near_social_mobile/modules/home/pages/people/widgets/user_page_tabs/user_posts.dart';
 import 'package:near_social_mobile/modules/home/pages/people/widgets/user_page_tabs/user_widgets.dart';
 import 'package:near_social_mobile/modules/home/pages/posts_page/widgets/raw_text_to_content_formatter.dart';
@@ -171,9 +170,9 @@ class _UserPageState extends State<UserPage> with TickerProviderStateMixin {
 
   Widget _buildTopBar(bool isDark) {
     return AnimatedPositioned(
-      duration: const Duration(milliseconds: 800),
+      duration: const Duration(milliseconds: 400),
       curve: Curves.easeInOutCubic,
-      top: _showTopBar ? 50 : -120,
+      top: _showTopBar ? 20 : -100,
       left: 0,
       right: 0,
       child: Center(
@@ -201,7 +200,25 @@ class _UserPageState extends State<UserPage> with TickerProviderStateMixin {
                       fontSize: 17,
                       letterSpacing: -0.5)),
               const Spacer(),
-              const SizedBox(width: 32),
+              GestureDetector(
+                onTap: () {
+                  _scrollController.animateTo(
+                    0,
+                    duration: const Duration(milliseconds: 500),
+                    curve: Curves.easeOut,
+                  );
+                },
+                child: Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    color: isDark ? Colors.white : Colors.black,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(CupertinoIcons.arrow_up,
+                      color: isDark ? Colors.black : Colors.white, size: 18),
+                ),
+              ),
             ],
           ),
           isDark,
@@ -239,7 +256,7 @@ class _UserPageState extends State<UserPage> with TickerProviderStateMixin {
               physics: const BouncingScrollPhysics(),
               headerSliverBuilder: (context, innerBoxIsScrolled) {
                 return [
-                  SliverToBoxAdapter(child: SizedBox(height: 100 + MediaQuery.of(context).padding.top)),
+                  SliverToBoxAdapter(child: SizedBox(height: 80 + MediaQuery.of(context).padding.top)),
 
                   // Header card with background image, avatar, name, actions
                   SliverToBoxAdapter(
@@ -281,7 +298,6 @@ class _UserPageState extends State<UserPage> with TickerProviderStateMixin {
                 index: _selectedTab,
                 children: [
                   UserPostsView(accountIdOfUser: widget.accountId),
-                  NftsView(accountIdOfUser: widget.accountId),
                   WidgetsView(accountIdOfUser: widget.accountId),
                 ],
               ),
@@ -300,7 +316,7 @@ class _UserPageState extends State<UserPage> with TickerProviderStateMixin {
           controller: _scrollController,
           physics: const BouncingScrollPhysics(),
           slivers: [
-            SliverToBoxAdapter(child: SizedBox(height: 100 + MediaQuery.of(context).padding.top)),
+            SliverToBoxAdapter(child: SizedBox(height: 80 + MediaQuery.of(context).padding.top)),
             SliverToBoxAdapter(
               child: _buildHeaderCard(isDark, user, authController, false),
             ),
@@ -336,7 +352,7 @@ class _UserPageState extends State<UserPage> with TickerProviderStateMixin {
                 ),
               ),
             ),
-            const SliverToBoxAdapter(child: SizedBox(height: 140)),
+            const SliverToBoxAdapter(child: SizedBox(height: 90)),
           ],
         ),
       ),
@@ -918,7 +934,7 @@ class _UserPageState extends State<UserPage> with TickerProviderStateMixin {
   }
 
   Widget _buildTabSelector(bool isDark) {
-    final tabs = ['Posts', 'NFTs', 'Widgets'];
+    final tabs = ['Posts', 'Widgets'];
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: ClipRRect(
@@ -994,8 +1010,8 @@ class _UserPageState extends State<UserPage> with TickerProviderStateMixin {
           filter: ImageFilter.blur(sigmaX: 35, sigmaY: 35),
           child: Container(
             width: width,
-            height: 72,
-            padding: const EdgeInsets.symmetric(horizontal: 22),
+            height: 56,
+            padding: const EdgeInsets.symmetric(horizontal: 18),
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topLeft,

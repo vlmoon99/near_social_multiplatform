@@ -94,8 +94,7 @@ class PostCard extends StatelessWidget {
                       ),
                     ),
                     if (currentPost.reposterInfo != null) ...[
-                      InkWell(
-                        borderRadius: BorderRadius.circular(10).r,
+                      GestureDetector(
                         onTap: allowToNavigateToReposterAuthorPage
                             ? () async {
                                 HapticFeedback.lightImpact();
@@ -118,8 +117,7 @@ class PostCard extends StatelessWidget {
                         ),
                       ),
                     ],
-                    InkWell(
-                      borderRadius: BorderRadius.circular(10).r,
+                    GestureDetector(
                       onTap: allowToNavigateToPostAuthorPage
                           ? () async {
                               HapticFeedback.lightImpact();

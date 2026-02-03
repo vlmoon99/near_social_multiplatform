@@ -79,7 +79,7 @@ class SmartHomePage extends StatelessWidget {
                 'icon': Icons.rss_feed,
                 'callback': () {
                   HapticFeedback.lightImpact();
-                  Modular.to.pushNamed(".${Routes.home.smartFeedPage}");
+                  // SmartFeed route removed
                 }
               },
               {
@@ -141,11 +141,10 @@ class SmartHomePage extends StatelessWidget {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16.r),
       ),
-      child: InkWell(
+      child: GestureDetector(
         onTap: () {
           callback();
         },
-        borderRadius: BorderRadius.circular(16.r),
         child: Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(

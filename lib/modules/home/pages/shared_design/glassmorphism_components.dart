@@ -74,10 +74,10 @@ Widget buildAnimatedPanel({
   required Widget child,
 }) {
   return AnimatedPositioned(
-    duration: const Duration(milliseconds: 800),
+    duration: const Duration(milliseconds: 400),
     curve: Curves.easeOut,
-    top: top ? (showBars ? 50 : -120) : null,
-    bottom: top ? null : (showBars ? 40 : -120),
+    top: top ? (showBars ? 20 : -100) : null,
+    bottom: top ? null : (showBars ? 16 : -100),
     left: 0,
     right: 0,
     child: Center(child: child),
@@ -102,8 +102,8 @@ Widget buildGlassBar(double width, Widget child, bool isDark) {
         filter: ImageFilter.blur(sigmaX: 35, sigmaY: 35),
         child: Container(
           width: width,
-          height: 72,
-          padding: const EdgeInsets.symmetric(horizontal: 22),
+          height: 56,
+          padding: const EdgeInsets.symmetric(horizontal: 18),
           decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topLeft,

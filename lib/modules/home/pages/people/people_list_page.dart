@@ -88,7 +88,7 @@ class _PeopleListPageState extends State<PeopleListPage>
               controller: _scrollController,
               physics: const BouncingScrollPhysics(),
               slivers: [
-                const SliverToBoxAdapter(child: SizedBox(height: 140)),
+                const SliverToBoxAdapter(child: SizedBox(height: 90)),
                 SliverToBoxAdapter(
                   child: GlassSearchBar(
                     controller: searchController,
@@ -111,7 +111,7 @@ class _PeopleListPageState extends State<PeopleListPage>
                     ),
                   ),
                 ),
-                const SliverToBoxAdapter(child: SizedBox(height: 140)),
+                const SliverToBoxAdapter(child: SizedBox(height: 90)),
               ],
             ),
           ),

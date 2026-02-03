@@ -49,8 +49,7 @@ class _BlockedUserTileState extends State<BlockedUserTile> {
       child: StreamBuilder(
         stream: userListController.stream,
         builder: (context, snapshot) {
-          return InkWell(
-            borderRadius: BorderRadius.circular(16.0).r,
+          return GestureDetector(
             onTap: () {
               if (userListController.state.activeUsers
                   .containsKey(userListController.state)) {
