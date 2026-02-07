@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'dart:ui';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 class ModernDesignTestPage extends StatelessWidget {
   const ModernDesignTestPage({super.key});
@@ -62,9 +63,11 @@ class BackgroundParticle {
   late double rotation;
   late double rotationSpeed;
   late double opacityPhase;
-  late IconData icon;
+  late IconData? icon;
+  late String? svgPath;
 
-  BackgroundParticle(Size screenSize, {List<IconData>? icons}) {
+  /// [icons] может содержать IconData или String (путь к SVG-ассету).
+  BackgroundParticle(Size screenSize, {List<Object>? icons}) {
     final random = math.Random();
     position = Offset(random.nextDouble() * screenSize.width,
         random.nextDouble() * screenSize.height);
@@ -74,12 +77,19 @@ class BackgroundParticle {
     rotation = random.nextDouble() * math.pi * 2;
     rotationSpeed = (random.nextDouble() - 0.5) * 0.01;
     opacityPhase = random.nextDouble() * math.pi * 2;
-    final defaultIcons = [
-      CupertinoIcons.infinite,
-      CupertinoIcons.sparkles,
-      CupertinoIcons.hexagon_fill,
+    final List<Object> defaultIcons = [
+      'assets/media/icons/near_social_logo.svg',
+      CupertinoIcons.bell_fill,
+      'assets/media/icons/near_social_logo.svg',
     ];
-    icon = (icons ?? defaultIcons)[random.nextInt((icons ?? defaultIcons).length)];
+    final chosen = (icons ?? defaultIcons)[random.nextInt((icons ?? defaultIcons).length)];
+    if (chosen is String) {
+      svgPath = chosen;
+      icon = null;
+    } else {
+      icon = chosen as IconData;
+      svgPath = null;
+    }
   }
 
   void update(Size screenSize) {
@@ -255,9 +265,9 @@ class _LivingWidgetsScreenState extends State<LivingWidgetsScreen>
       _particles = List.generate(
         20,
         (i) => BackgroundParticle(screenSize, icons: [
-          CupertinoIcons.square_stack_3d_up_fill,
-          CupertinoIcons.app_badge,
-          CupertinoIcons.circle_grid_hex_fill,
+          'assets/media/icons/near_social_logo.svg',
+          CupertinoIcons.bell_fill,
+          'assets/media/icons/near_social_logo.svg',
         ]),
       );
       _lastSize = screenSize;
@@ -479,9 +489,9 @@ class _LivingUsersScreenState extends State<LivingUsersScreen>
       _particles = List.generate(
         22,
         (i) => BackgroundParticle(screenSize, icons: [
-          CupertinoIcons.person_2_fill,
-          CupertinoIcons.heart_fill,
-          CupertinoIcons.circle_fill,
+          'assets/media/icons/near_social_logo.svg',
+          CupertinoIcons.bell_fill,
+          'assets/media/icons/near_social_logo.svg',
         ]),
       );
       _lastSize = screenSize;
@@ -957,18 +967,25 @@ Widget _buildLivingBackground(
               ),
             ),
           ),
-          ...particles.map((p) => Positioned(
-                left: p.position.dx,
-                top: p.position.dy,
-                child: Opacity(
-                  opacity:
-                      (math.sin(p.opacityPhase) * 0.04 + 0.05).clamp(0.01, 0.1),
-                  child: Icon(p.icon,
-                      size: p.size,
-                      color: particleColor ??
-                          (isDark ? Colors.white : Colors.black45)),
-                ),
-              )),
+          ...particles.map((p) {
+                final pColor = particleColor ?? (isDark ? Colors.white : Colors.black45);
+                return Positioned(
+                  left: p.position.dx,
+                  top: p.position.dy,
+                  child: Opacity(
+                    opacity:
+                        (math.sin(p.opacityPhase) * 0.04 + 0.05).clamp(0.01, 0.1),
+                    child: p.svgPath != null
+                        ? SvgPicture.asset(
+                            p.svgPath!,
+                            width: p.size,
+                            height: p.size,
+                            colorFilter: ColorFilter.mode(pColor, BlendMode.srcIn),
+                          )
+                        : Icon(p.icon, size: p.size, color: pColor),
+                  ),
+                );
+              }),
         ],
       );
     },

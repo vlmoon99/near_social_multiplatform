@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:near_social_mobile/modules/core_module.dart';
 // Chat functionality temporarily disabled for decentralization
@@ -17,14 +18,32 @@ import 'package:near_social_mobile/modules/home/pages/modern_design_test/modern_
 // Chat controllers temporarily disabled for decentralization
 // import 'package:near_social_mobile/modules/home/vms/chats/chat_page_controller.dart';
 // import 'package:near_social_mobile/modules/home/vms/chats/user_chats_page_controller.dart';
+import 'package:near_social_mobile/modules/home/vms/blockchain/operation_queue_controller.dart';
 import 'package:near_social_mobile/modules/home/vms/near_widgets/near_widgets_controller.dart';
 import 'package:near_social_mobile/modules/home/vms/notifications/notifications_controller.dart';
+import 'package:near_social_mobile/modules/home/pages/p2p_call/p2p_call_page.dart';
+import 'package:near_social_mobile/modules/home/vms/p2p_call/p2p_call_controller.dart';
 import 'package:near_social_mobile/modules/home/vms/posts/posts_controller.dart';
 import 'package:near_social_mobile/modules/home/vms/users/user_list_controller.dart';
 import 'package:near_social_mobile/modules/vms/core/filter_controller.dart';
 import 'package:near_social_mobile/routes/routes.dart';
 
 import 'pages/posts_page/post_page.dart';
+
+/// Parses query parameters from web URL fragment for deep linking support.
+/// Falls back to provided queryParams if not on web or fragment is missing.
+Map<String, String> _parseWebQueryParams(Map<String, String> queryParams) {
+  if (!kIsWeb) return queryParams;
+
+  final fragment = Uri.base.fragment;
+  if (!fragment.contains('?')) return queryParams;
+
+  final rawQueryParams = fragment.split('?').last;
+  final webParams = Uri.splitQueryString(rawQueryParams);
+
+  // Merge web params with route params, preferring route params
+  return {...webParams, ...queryParams};
+}
 
 class HomeModule extends Module {
   @override
@@ -39,6 +58,8 @@ class HomeModule extends Module {
     i.addSingleton(UserListController.new);
     i.addSingleton(NotificationsController.new);
     i.addSingleton(FilterController.new);
+    i.addSingleton(P2PCallController.new);
+    i.addSingleton(OperationQueueController.new);
     // Mintbase controller removed
     // Chat controllers temporarily disabled for decentralization
     // i.addSingleton(UserChatsPageController.new);
@@ -59,33 +80,70 @@ class HomeModule extends Module {
     );
     r.child(
       Routes.home.postPage,
-      child: (context) => PostPage(
-        accountId: r.args.queryParams['accountId'] as String,
-        blockHeight: int.parse(r.args.queryParams['blockHeight'] as String),
-        postsViewMode: PostsViewMode
-            .values[int.parse(r.args.queryParams['postsViewMode'] as String)],
-        postsOfAccountId: r.args.queryParams['postsOfAccountId'] ?? "",
-        allowToNavigateToPostAuthorPage: bool.tryParse(
-                r.args.queryParams['allowToNavigateToPostAuthorPage'] ?? "") ??
-            true,
-      ),
+      child: (context) {
+        final params = _parseWebQueryParams(r.args.queryParams);
+        final accountId = params['accountId'];
+        final blockHeightStr = params['blockHeight'];
+        final postsViewModeStr = params['postsViewMode'];
+
+        // Validate required parameters
+        if (accountId == null ||
+            accountId.isEmpty ||
+            blockHeightStr == null ||
+            int.tryParse(blockHeightStr) == null) {
+          // Invalid deep link - redirect to home
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            Modular.to.navigate(Routes.home.startPage);
+          });
+          return const SizedBox.shrink();
+        }
+
+        final blockHeight = int.parse(blockHeightStr);
+        final postsViewModeIndex = int.tryParse(postsViewModeStr ?? '0') ?? 0;
+        final postsViewMode = postsViewModeIndex < PostsViewMode.values.length
+            ? PostsViewMode.values[postsViewModeIndex]
+            : PostsViewMode.temporary;
+
+        return PostPage(
+          accountId: accountId,
+          blockHeight: blockHeight,
+          postsViewMode: postsViewMode,
+          postsOfAccountId: params['postsOfAccountId'] ?? '',
+          allowToNavigateToPostAuthorPage:
+              bool.tryParse(params['allowToNavigateToPostAuthorPage'] ?? '') ??
+                  true,
+        );
+      },
     );
     r.child(
       Routes.home.widgetPage,
-      child: (context) => NearWidget(nearWidgetSetupCredentials: r.args.data),
+      child: (context) {
+        // Widget page requires credentials passed via navigation arguments
+        // Deep links without data redirect to home (widgets contain sensitive private keys)
+        final credentials = r.args.data;
+        if (credentials == null || credentials is! NearWidgetSetupCredentials) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            Modular.to.navigate(Routes.home.startPage);
+          });
+          return const SizedBox.shrink();
+        }
+        return NearWidget(nearWidgetSetupCredentials: credentials);
+      },
     );
     // Chat route temporarily disabled for decentralization
     // r.child(Routes.home.chatsPage, child: (context) => const UserChatsPage());
     r.child(
       Routes.home.userPage,
       child: (context) {
-        String accountId = '';
-        if (r.args.queryParams['accountId'] == null && kIsWeb) {
-          final rawQueryParams = Uri.base.fragment.split('?').last;
-          final queryParams = Uri.splitQueryString(rawQueryParams);
-          accountId = queryParams['accountId'].toString();
-        } else {
-          accountId = r.args.queryParams['accountId'].toString();
+        final params = _parseWebQueryParams(r.args.queryParams);
+        final accountId = params['accountId'];
+
+        if (accountId == null || accountId.isEmpty) {
+          // Invalid deep link - redirect to home
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            Modular.to.navigate(Routes.home.startPage);
+          });
+          return const SizedBox.shrink();
         }
         return UserPage(
           accountId: accountId,
@@ -104,5 +162,14 @@ class HomeModule extends Module {
         child: (context) => const SystemsManagmentPage());
     r.child(Routes.home.modernDesignTestPage,
         child: (context) => const ModernDesignTestPage());
+    r.child(
+      Routes.home.p2pCallPage,
+      child: (context) {
+        final params = _parseWebQueryParams(r.args.queryParams);
+        return P2PCallPage(
+          targetAccountId: params['targetAccountId'],
+        );
+      },
+    );
   }
 }

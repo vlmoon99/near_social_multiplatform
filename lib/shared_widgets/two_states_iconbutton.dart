@@ -8,7 +8,7 @@ class TwoStatesIconButton extends StatelessWidget {
     super.key,
     required this.iconPath,
     this.iconActivatedPath,
-    required this.onPressed,
+    this.onPressed,
     this.activated = false,
     this.size = 16,
     this.activatedColor = Colors.red,
@@ -16,7 +16,7 @@ class TwoStatesIconButton extends StatelessWidget {
 
   final String iconPath;
   final String? iconActivatedPath;
-  final Function() onPressed;
+  final Function()? onPressed;
   final bool activated;
   final Color activatedColor;
   final int size;

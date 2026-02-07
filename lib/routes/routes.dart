@@ -39,6 +39,7 @@ class _Home extends RouteClass {
   String smartFeedPage = '/smart_feed';
   String systemsManagmentPage = '/systems_managment';
   String modernDesignTestPage = '/modern_design_test';
+  String p2pCallPage = '/p2p_call';
 }
 
 abstract class RouteClass {

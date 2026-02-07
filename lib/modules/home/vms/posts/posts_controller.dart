@@ -10,27 +10,25 @@ import 'package:near_social_mobile/modules/home/apis/models/post.dart';
 import 'package:near_social_mobile/modules/home/apis/models/reposter.dart';
 import 'package:near_social_mobile/modules/home/apis/models/reposter_info.dart';
 import 'package:near_social_mobile/modules/home/apis/near_social.dart';
+import 'package:near_social_mobile/modules/home/vms/blockchain/models/pending_operation.dart';
+import 'package:near_social_mobile/modules/home/vms/blockchain/operation_queue_controller.dart';
 import 'package:near_social_mobile/modules/vms/core/auth_controller.dart';
 import 'package:near_social_mobile/modules/vms/core/filter_controller.dart';
 import 'package:near_social_mobile/modules/vms/core/models/auth_info.dart';
 import 'package:near_social_mobile/modules/vms/core/models/filters.dart';
-import 'package:near_social_mobile/utils/future_queue.dart';
 import 'package:rxdart/rxdart.dart';
 
 class PostsController {
   final NearSocialApi _nearSocialApi;
   final AuthController _authController;
-  PostsController(this._nearSocialApi, this._authController);
+  final OperationQueueController _operationQueue;
+  PostsController(this._nearSocialApi, this._authController, this._operationQueue);
 
   final BehaviorSubject<Posts> _streamController =
       BehaviorSubject.seeded(const Posts());
 
   Stream<Posts> get stream => _streamController.stream.distinct();
   Posts get state => _streamController.value;
-
-  final FutureQueue _futureQueue = FutureQueue(
-    timeout: const Duration(milliseconds: 1000),
-  );
 
   // Profile cache to avoid duplicate fetches for same author
   final Map<String, GeneralAccountInfo> _profileCache = {};
@@ -745,77 +743,48 @@ class PostsController {
     String? postsOfAccountId,
   }) async {
     final accountId = _authController.state.accountId;
-    final publicKey = _authController.state.publicKey;
-    final privateKey = _authController.state.privateKey;
     if ((await _authController.getActivationStatus()) !=
         AccountActivationStatus.activated) {
       throw AccountNotActivatedException();
     }
     final isLiked =
         post.likeList.any((element) => element.accountId == accountId);
-    try {
-      if (isLiked) {
-        await _futureQueue.addToQueue(
-          () => _nearSocialApi.unlikePost(
-            accountIdOfPost: post.authorInfo.accountId,
-            accountId: accountId,
-            blockHeight: post.blockHeight,
-            publicKey: publicKey,
-            privateKey: privateKey,
+
+    // Optimistic UI update immediately
+    if (isLiked) {
+      _updateDataDueToPostsViewMode(
+        postsViewMode: postsViewMode,
+        post: post,
+        likeList: List.of(post.likeList)
+          ..removeWhere((element) => element.accountId == accountId),
+        postsOfAccountId: postsOfAccountId,
+      );
+      // Enqueue blockchain operation - will be processed and persisted
+      await _operationQueue.enqueue(
+        type: OperationType.unlikePost,
+        payload: {
+          'accountIdOfPost': post.authorInfo.accountId,
+          'blockHeight': post.blockHeight,
+        },
+      );
+    } else {
+      _updateDataDueToPostsViewMode(
+        postsViewMode: postsViewMode,
+        post: post,
+        likeList: List.of(post.likeList)
+          ..add(
+            Like(accountId: accountId),
           ),
-        );
-        _updateDataDueToPostsViewMode(
-          postsViewMode: postsViewMode,
-          post: post,
-          likeList: List.of(post.likeList)
-            ..removeWhere((element) => element.accountId == accountId),
-          postsOfAccountId: postsOfAccountId,
-        );
-      } else {
-        await _futureQueue.addToQueue(
-          () => _nearSocialApi.likePost(
-            accountIdOfPost: post.authorInfo.accountId,
-            accountId: accountId,
-            blockHeight: post.blockHeight,
-            publicKey: publicKey,
-            privateKey: privateKey,
-          ),
-        );
-        _updateDataDueToPostsViewMode(
-          postsViewMode: postsViewMode,
-          post: post,
-          likeList: List.of(post.likeList)
-            ..add(
-              Like(accountId: accountId),
-            ),
-          postsOfAccountId: postsOfAccountId,
-        );
-      }
-    } catch (err) {
-      if (isLiked) {
-        _updateDataDueToPostsViewMode(
-          postsViewMode: postsViewMode,
-          post: post,
-          likeList: List.of(post.likeList)
-            ..add(
-              Like(accountId: accountId),
-            ),
-          postsOfAccountId: postsOfAccountId,
-        );
-      } else {
-        _updateDataDueToPostsViewMode(
-          postsViewMode: postsViewMode,
-          post: post,
-          likeList: List.of(post.likeList)
-            ..removeWhere((element) => element.accountId == accountId),
-          postsOfAccountId: postsOfAccountId,
-        );
-      }
-      if (err.toString().contains('Not enough storage balance')) {
-        throw NotEnoughStorageBalanceException();
-      } else {
-        rethrow;
-      }
+        postsOfAccountId: postsOfAccountId,
+      );
+      // Enqueue blockchain operation - will be processed and persisted
+      await _operationQueue.enqueue(
+        type: OperationType.likePost,
+        payload: {
+          'accountIdOfPost': post.authorInfo.accountId,
+          'blockHeight': post.blockHeight,
+        },
+      );
     }
   }
 
@@ -826,8 +795,6 @@ class PostsController {
     String? postsOfAccountId,
   }) async {
     final accountId = _authController.state.accountId;
-    final publicKey = _authController.state.publicKey;
-    final privateKey = _authController.state.privateKey;
     if ((await _authController.getActivationStatus()) !=
         AccountActivationStatus.activated) {
       throw AccountNotActivatedException();
@@ -859,55 +826,45 @@ class PostsController {
       }
     }
 
-    try {
-      if (isLiked) {
-        await _futureQueue.addToQueue(
-          () => _nearSocialApi.unlikeComment(
-            accountIdOfPost: comment.authorInfo.accountId,
-            accountId: accountId,
-            blockHeight: comment.blockHeight,
-            publicKey: publicKey,
-            privateKey: privateKey,
+    // Optimistic UI update immediately
+    if (isLiked) {
+      _updateDataDueToPostsViewMode(
+        postsViewMode: postsViewMode,
+        post: post,
+        commentList: commentsOfPost()
+          ..[indexOfComment] = commentsOfPost()[indexOfComment].copyWith(
+            likeList: List.of(comment.likeList)
+              ..removeWhere((element) => element.accountId == accountId),
           ),
-        );
-
-        _updateDataDueToPostsViewMode(
-          postsViewMode: postsViewMode,
-          post: post,
-          commentList: commentsOfPost()
-            ..[indexOfComment] = commentsOfPost()[indexOfComment].copyWith(
-              likeList: List.of(comment.likeList)
-                ..removeWhere((element) => element.accountId == accountId),
-            ),
-          postsOfAccountId: postsOfAccountId,
-        );
-      } else {
-        await _futureQueue.addToQueue(
-          () => _nearSocialApi.likeComment(
-            accountIdOfPost: comment.authorInfo.accountId,
-            accountId: accountId,
-            blockHeight: comment.blockHeight,
-            publicKey: publicKey,
-            privateKey: privateKey,
+        postsOfAccountId: postsOfAccountId,
+      );
+      // Enqueue blockchain operation
+      await _operationQueue.enqueue(
+        type: OperationType.unlikeComment,
+        payload: {
+          'accountIdOfPost': comment.authorInfo.accountId,
+          'blockHeight': comment.blockHeight,
+        },
+      );
+    } else {
+      _updateDataDueToPostsViewMode(
+        postsViewMode: postsViewMode,
+        post: post,
+        commentList: commentsOfPost()
+          ..[indexOfComment] = commentsOfPost()[indexOfComment].copyWith(
+            likeList: List.of(comment.likeList)
+              ..add(Like(accountId: accountId)),
           ),
-        );
-        _updateDataDueToPostsViewMode(
-          postsViewMode: postsViewMode,
-          post: post,
-          commentList: commentsOfPost()
-            ..[indexOfComment] = commentsOfPost()[indexOfComment].copyWith(
-              likeList: List.of(comment.likeList)
-                ..add(Like(accountId: accountId)),
-            ),
-          postsOfAccountId: postsOfAccountId,
-        );
-      }
-    } catch (err) {
-      if (err.toString().contains('Not enough storage balance')) {
-        throw NotEnoughStorageBalanceException();
-      } else {
-        rethrow;
-      }
+        postsOfAccountId: postsOfAccountId,
+      );
+      // Enqueue blockchain operation
+      await _operationQueue.enqueue(
+        type: OperationType.likeComment,
+        payload: {
+          'accountIdOfPost': comment.authorInfo.accountId,
+          'blockHeight': comment.blockHeight,
+        },
+      );
     }
   }
 
@@ -917,39 +874,30 @@ class PostsController {
     String? postsOfAccountId,
   }) async {
     final accountId = _authController.state.accountId;
-    final publicKey = _authController.state.publicKey;
-    final privateKey = _authController.state.privateKey;
     if ((await _authController.getActivationStatus()) !=
         AccountActivationStatus.activated) {
       throw AccountNotActivatedException();
     }
-    try {
-      await _futureQueue.addToQueue(
-        () => _nearSocialApi.repostPost(
-          accountIdOfPost: post.authorInfo.accountId,
-          accountId: accountId,
-          blockHeight: post.blockHeight,
-          publicKey: publicKey,
-          privateKey: privateKey,
-        ),
-      );
 
-      _updateDataDueToPostsViewMode(
-        postsViewMode: postsViewMode,
-        post: post,
-        repostList: List.of(post.repostList)
-          ..add(
-            Reposter(accountId: accountId),
-          ),
-        postsOfAccountId: postsOfAccountId,
-      );
-    } catch (err) {
-      if (err.toString().contains('Not enough storage balance')) {
-        throw NotEnoughStorageBalanceException();
-      } else {
-        rethrow;
-      }
-    }
+    // Optimistic UI update immediately
+    _updateDataDueToPostsViewMode(
+      postsViewMode: postsViewMode,
+      post: post,
+      repostList: List.of(post.repostList)
+        ..add(
+          Reposter(accountId: accountId),
+        ),
+      postsOfAccountId: postsOfAccountId,
+    );
+
+    // Enqueue blockchain operation
+    await _operationQueue.enqueue(
+      type: OperationType.repostPost,
+      payload: {
+        'accountIdOfPost': post.authorInfo.accountId,
+        'blockHeight': post.blockHeight,
+      },
+    );
   }
 
   void _updateDataDueToPostsViewMode({

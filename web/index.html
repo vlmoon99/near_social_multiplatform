@@ -40,12 +40,15 @@
     src="/assets/packages/flutterchain/assets/crypto-lib/dist/dop_bundle.js"></script>
   <link rel="modulepreload" crossorigin href="/assets/packages/flutterchain/assets/crypto-lib/dist/bundle2.js">
   <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
-  
+
   <script type="module" src="/assets/packages/near_wallet_selector/assets/wallet-selector/dist/bundle.js"
     defer></script>
 
-  <script type="module" type="application/javascript"
-    src="/assets/cryptogrpahy_gateway/dist/bundle.js"></script>
+  <script type="module">
+    import "/assets/assets/cryptogrpahy_gateway/dist/bundle.js";
+    window._cryptoGatewayReady = true;
+    console.log("Crypto gateway loaded");
+  </script>
 
 </head>
 
@@ -69,11 +72,16 @@
       document.body.append(scriptTag);
     }
 
+    function waitForCryptoAndLoad() {
+      if (window._cryptoGatewayReady) {
+        loadMainDartJs();
+      } else {
+        setTimeout(waitForCryptoAndLoad, 50);
+      }
+    }
+
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', function () {
-        // Wait for registration to finish before dropping the <script> tag.
-        // Otherwise, the browser will load the script multiple times,
-        // potentially different versions.
         var serviceWorkerUrl = 'flutter_service_worker.js?v=' + serviceWorkerVersion;
         navigator.serviceWorker.register(serviceWorkerUrl)
           .then((reg) => {
@@ -81,41 +89,33 @@
               serviceWorker.addEventListener('statechange', () => {
                 if (serviceWorker.state == 'activated') {
                   console.log('Installed new service worker.');
-                  loadMainDartJs();
+                  waitForCryptoAndLoad();
                 }
               });
             }
             if (!reg.active && (reg.installing || reg.waiting)) {
-              // No active web worker and we have installed or are installing
-              // one for the first time. Simply wait for it to activate.
               waitForActivation(reg.installing || reg.waiting);
             } else if (!reg.active.scriptURL.endsWith(serviceWorkerVersion)) {
-              // When the app updates the serviceWorkerVersion changes, so we
-              // need to ask the service worker to update.
               console.log('New service worker available.');
               reg.update();
               waitForActivation(reg.installing);
             } else {
-              // Existing service worker is still good.
               console.log('Loading app from service worker.');
-              loadMainDartJs();
+              waitForCryptoAndLoad();
             }
           });
 
-        // If service worker doesn't succeed in a reasonable amount of time,
-        // fallback to plaint <script> tag.
         setTimeout(() => {
           if (!scriptLoaded) {
             console.warn(
               'Failed to load app from service worker. Falling back to plain <script> tag.',
             );
-            loadMainDartJs();
+            waitForCryptoAndLoad();
           }
         }, 4000);
       });
     } else {
-      // Service workers not supported. Just drop the <script> tag.
-      loadMainDartJs();
+      waitForCryptoAndLoad();
     }
   </script>
 </body>

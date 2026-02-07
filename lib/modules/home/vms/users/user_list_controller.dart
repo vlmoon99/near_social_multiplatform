@@ -2,6 +2,8 @@ import 'package:near_social_mobile/exceptions/exceptions.dart';
 import 'package:near_social_mobile/modules/home/apis/models/follower.dart';
 import 'package:near_social_mobile/modules/home/apis/models/general_account_info.dart';
 import 'package:near_social_mobile/modules/home/apis/near_social.dart';
+import 'package:near_social_mobile/modules/home/vms/blockchain/models/pending_operation.dart';
+import 'package:near_social_mobile/modules/home/vms/blockchain/operation_queue_controller.dart';
 import 'package:near_social_mobile/modules/home/vms/users/models/user_list_state.dart';
 import 'package:near_social_mobile/modules/vms/core/auth_controller.dart';
 import 'package:near_social_mobile/modules/vms/core/models/auth_info.dart';
@@ -10,8 +12,9 @@ import 'package:rxdart/rxdart.dart';
 class UserListController {
   final NearSocialApi _nearSocialApi;
   final AuthController _authController;
+  final OperationQueueController _operationQueue;
 
-  UserListController(this._nearSocialApi, this._authController);
+  UserListController(this._nearSocialApi, this._authController, this._operationQueue);
 
   final BehaviorSubject<UsersList> _streamController =
       BehaviorSubject.seeded(UsersList());
@@ -118,96 +121,62 @@ class UserListController {
     required String accountIdToFollow,
   }) async {
     final accountId = _authController.state.accountId;
-    final publicKey = _authController.state.publicKey;
-    final privateKey = _authController.state.privateKey;
     if ((await _authController.getActivationStatus()) !=
         AccountActivationStatus.activated) {
       throw AccountNotActivatedException();
     }
-    try {
-      _streamController.add(
-        state.copyWith(
-          activeUsers: Map.of(state.activeUsers)
-            ..[accountIdToFollow] =
-                state.activeUsers[accountIdToFollow]!.copyWith(
-              followers:
-                  List.of(state.activeUsers[accountIdToFollow]?.followers ?? [])
-                    ..add(Follower(accountId: accountId)),
-            ),
-        ),
-      );
-      await _nearSocialApi.followAccount(
-        accountIdToFollow: accountIdToFollow,
-        accountId: accountId,
-        publicKey: publicKey,
-        privateKey: privateKey,
-      );
-    } catch (err) {
-      _streamController.add(
-        state.copyWith(
-          activeUsers: Map.of(state.activeUsers)
-            ..[accountIdToFollow] =
-                state.activeUsers[accountIdToFollow]!.copyWith(
-              followers: List.of(
-                  state.activeUsers[accountIdToFollow]?.followers ?? [])
-                ..removeWhere((follower) => follower.accountId == accountId),
-            ),
-        ),
-      );
-      if (err.toString().contains('Not enough storage balance')) {
-        throw NotEnoughStorageBalanceException();
-      } else {
-        rethrow;
-      }
-    }
+
+    // Optimistic UI update immediately
+    _streamController.add(
+      state.copyWith(
+        activeUsers: Map.of(state.activeUsers)
+          ..[accountIdToFollow] =
+              state.activeUsers[accountIdToFollow]!.copyWith(
+            followers:
+                List.of(state.activeUsers[accountIdToFollow]?.followers ?? [])
+                  ..add(Follower(accountId: accountId)),
+          ),
+      ),
+    );
+
+    // Enqueue blockchain operation
+    await _operationQueue.enqueue(
+      type: OperationType.followAccount,
+      payload: {
+        'accountIdToFollow': accountIdToFollow,
+      },
+    );
   }
 
   Future<void> unfollowAccount({
     required String accountIdToUnfollow,
   }) async {
     final accountId = _authController.state.accountId;
-    final publicKey = _authController.state.publicKey;
-    final privateKey = _authController.state.privateKey;
     if ((await _authController.getActivationStatus()) !=
         AccountActivationStatus.activated) {
       throw AccountNotActivatedException();
     }
-    try {
-      _streamController.add(
-        state.copyWith(
-          activeUsers: Map.of(state.activeUsers)
-            ..[accountIdToUnfollow] =
-                state.activeUsers[accountIdToUnfollow]!.copyWith(
-              followers: List.of(
-                  state.activeUsers[accountIdToUnfollow]?.followers ?? [])
-                ..removeWhere((follower) => follower.accountId == accountId),
-            ),
-        ),
-      );
-      await _nearSocialApi.unfollowAccount(
-        accountIdToUnfollow: accountIdToUnfollow,
-        accountId: accountId,
-        publicKey: publicKey,
-        privateKey: privateKey,
-      );
-    } catch (err) {
-      _streamController.add(
-        state.copyWith(
-          activeUsers: Map.of(state.activeUsers)
-            ..[accountIdToUnfollow] =
-                state.activeUsers[accountIdToUnfollow]!.copyWith(
-              followers: List.of(
-                  state.activeUsers[accountIdToUnfollow]?.followers ?? [])
-                ..add(Follower(accountId: accountId)),
-            ),
-        ),
-      );
-      if (err.toString().contains('Not enough storage balance')) {
-        throw NotEnoughStorageBalanceException();
-      } else {
-        rethrow;
-      }
-    }
+
+    // Optimistic UI update immediately
+    _streamController.add(
+      state.copyWith(
+        activeUsers: Map.of(state.activeUsers)
+          ..[accountIdToUnfollow] =
+              state.activeUsers[accountIdToUnfollow]!.copyWith(
+            followers: List.of(
+                state.activeUsers[accountIdToUnfollow]?.followers ?? [])
+              ..removeWhere((follower) => follower.accountId == accountId),
+          ),
+      ),
+    );
+
+    // Enqueue blockchain operation
+    await _operationQueue.enqueue(
+      type: OperationType.unfollowAccount,
+      payload: {
+        'accountIdToUnfollow': accountIdToUnfollow,
+      },
+    );
   }
 
   Future<void> reloadUserInfo({required String accountId}) async {

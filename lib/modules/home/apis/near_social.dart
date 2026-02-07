@@ -266,7 +266,7 @@ class NearSocialApi {
         mediaLink: postInfo["image"] != null
             ? postInfo["image"]["ipfs_cid"] != null
                 ? NearUrls.nearSocialIpfsMediaHosting +
-                    postInfo["image"]["ipfs_cid"]
+                    postInfo["image"]["ipfs_cid"].toString()
                 : postInfo["image"]["url"]
             : null,
       );
@@ -505,7 +505,7 @@ class NearSocialApi {
         mediaLink: commentInfo["image"] != null
             ? commentInfo["image"]["ipfs_cid"] != null
                 ? NearUrls.nearSocialIpfsMediaHosting +
-                    commentInfo["image"]["ipfs_cid"]
+                    commentInfo["image"]["ipfs_cid"].toString()
                 : commentInfo["image"]["url"]
             : null,
       );
@@ -588,7 +588,7 @@ class NearSocialApi {
         final image = requestBody[typeOfImage];
 
         if (image["ipfs_cid"] != null) {
-          imageLink = NearUrls.nearSocialIpfsMediaHosting + image["ipfs_cid"];
+          imageLink = NearUrls.nearSocialIpfsMediaHosting + image["ipfs_cid"].toString();
         } else if (image["url"] != null) {
           imageLink = image["url"];
         } else if (image["nft"] != null) {

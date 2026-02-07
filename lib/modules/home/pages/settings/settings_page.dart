@@ -39,9 +39,10 @@ class _SettingsPageState extends State<SettingsPage>
   Future<void> onLogoutTap(BuildContext context) async {
     HapticFeedback.lightImpact();
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    showDialog(
+    _showGlassDialog(
       context: context,
-      builder: (context) => _GlassAlertDialog(isDark: isDark),
+      isDark: isDark,
+      builder: (ctx) => _GlassAlertDialog(isDark: isDark),
     ).then(
       (value) async {
         if (value != null && value) {
@@ -52,6 +53,37 @@ class _SettingsPageState extends State<SettingsPage>
           Modular.get<PostsController>().clear();
           Modular.to.navigate("/");
         }
+      },
+    );
+  }
+
+  /// Общий метод для показа glass-диалогов с Material-обёрткой
+  Future<T?> _showGlassDialog<T>({
+    required BuildContext context,
+    required bool isDark,
+    required WidgetBuilder builder,
+  }) {
+    return showGeneralDialog<T>(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: 'Close',
+      barrierColor: Colors.black.withValues(alpha: 0.5),
+      transitionDuration: const Duration(milliseconds: 350),
+      transitionBuilder: (ctx, anim1, anim2, child) {
+        return FadeTransition(
+          opacity: anim1,
+          child: ScaleTransition(
+            scale: Tween<double>(begin: 0.9, end: 1.0)
+                .animate(CurvedAnimation(parent: anim1, curve: Curves.easeOutCubic)),
+            child: child,
+          ),
+        );
+      },
+      pageBuilder: (ctx, anim1, anim2) {
+        return Material(
+          type: MaterialType.transparency,
+          child: builder(ctx),
+        );
       },
     );
   }
@@ -67,89 +99,92 @@ class _SettingsPageState extends State<SettingsPage>
     final String chatKey = keys.toJson().toString();
 
     if (!context.mounted) return;
-    showDialog(
+    _showGlassDialog(
       context: context,
-      barrierColor: Colors.black54,
-      builder: (BuildContext context) {
+      isDark: isDark,
+      builder: (ctx) {
         return Center(
-          child: Container(
-            margin: const EdgeInsets.all(32),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(28),
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
-                child: Container(
-                  padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    color: isDark
-                        ? Colors.white.withValues(alpha: 0.08)
-                        : Colors.white.withValues(alpha: 0.75),
-                    borderRadius: BorderRadius.circular(28),
-                    border: Border.all(
-                      color: isDark ? Colors.white24 : Colors.black12,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 500),
+            child: Container(
+              margin: const EdgeInsets.all(32),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(28),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 40, sigmaY: 40),
+                  child: Container(
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      color: isDark
+                          ? Colors.black.withValues(alpha: 0.7)
+                          : Colors.white.withValues(alpha: 0.85),
+                      borderRadius: BorderRadius.circular(28),
+                      border: Border.all(
+                        color: isDark ? Colors.white24 : Colors.black12,
+                      ),
                     ),
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        'Chat Keys',
-                        style: TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: -0.5,
-                          color: isDark ? Colors.white : Colors.black,
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: isDark
-                              ? Colors.white.withValues(alpha: 0.05)
-                              : Colors.black.withValues(alpha: 0.04),
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: Text(
-                          "${chatKey.substring(0, chatKey.length > 200 ? 200 : chatKey.length)}...",
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'Chat Keys',
                           style: TextStyle(
-                            fontSize: 13,
-                            fontFamily: 'monospace',
-                            color: isDark ? Colors.white70 : Colors.black54,
+                            fontSize: 22,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -0.5,
+                            color: isDark ? Colors.white : Colors.black,
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 20),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          _glassButton(
-                            label: 'Copy',
-                            icon: CupertinoIcons.doc_on_doc,
-                            isDark: isDark,
-                            onTap: () {
-                              Clipboard.setData(ClipboardData(text: chatKey));
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  behavior: SnackBarBehavior.floating,
-                                  shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(14)),
-                                  content:
-                                      const Text('Key copied to clipboard'),
-                                ),
-                              );
-                              Navigator.pop(context);
-                            },
+                        const SizedBox(height: 20),
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: isDark
+                                ? Colors.white.withValues(alpha: 0.05)
+                                : Colors.black.withValues(alpha: 0.04),
+                            borderRadius: BorderRadius.circular(16),
                           ),
-                          _glassButton(
-                            label: 'Close',
-                            icon: CupertinoIcons.xmark,
-                            isDark: isDark,
-                            onTap: () => Navigator.pop(context),
+                          child: Text(
+                            "${chatKey.substring(0, chatKey.length > 200 ? 200 : chatKey.length)}...",
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontFamily: 'monospace',
+                              color: isDark ? Colors.white70 : Colors.black54,
+                            ),
                           ),
-                        ],
-                      ),
-                    ],
+                        ),
+                        const SizedBox(height: 20),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            _glassButton(
+                              label: 'Copy',
+                              icon: CupertinoIcons.doc_on_doc,
+                              isDark: isDark,
+                              onTap: () {
+                                Clipboard.setData(ClipboardData(text: chatKey));
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    behavior: SnackBarBehavior.floating,
+                                    shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(14)),
+                                    content:
+                                        const Text('Key copied to clipboard'),
+                                  ),
+                                );
+                                Navigator.pop(ctx);
+                              },
+                            ),
+                            _glassButton(
+                              label: 'Close',
+                              icon: CupertinoIcons.xmark,
+                              isDark: isDark,
+                              onTap: () => Navigator.pop(ctx),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -167,70 +202,73 @@ class _SettingsPageState extends State<SettingsPage>
     final link = "https://near.social/signin#?a=$accountId&k=$authSecretKey";
 
     if (!context.mounted) return;
-    showDialog(
+    _showGlassDialog(
       context: context,
-      barrierColor: Colors.black54,
-      builder: (BuildContext context) {
+      isDark: isDark,
+      builder: (ctx) {
         return Center(
-          child: Container(
-            margin: const EdgeInsets.all(32),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(28),
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
-                child: Container(
-                  padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    color: isDark
-                        ? Colors.white.withValues(alpha: 0.08)
-                        : Colors.white.withValues(alpha: 0.75),
-                    borderRadius: BorderRadius.circular(28),
-                    border: Border.all(
-                      color: isDark ? Colors.white24 : Colors.black12,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 500),
+            child: Container(
+              margin: const EdgeInsets.all(32),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(28),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 40, sigmaY: 40),
+                  child: Container(
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      color: isDark
+                          ? Colors.black.withValues(alpha: 0.7)
+                          : Colors.white.withValues(alpha: 0.85),
+                      borderRadius: BorderRadius.circular(28),
+                      border: Border.all(
+                        color: isDark ? Colors.white24 : Colors.black12,
+                      ),
                     ),
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        'Near Social Key',
-                        style: TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: -0.5,
-                          color: isDark ? Colors.white : Colors.black,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'Near Social Key',
+                          style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -0.5,
+                            color: isDark ? Colors.white : Colors.black,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 20),
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
+                        const SizedBox(height: 20),
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: QrImageView(
+                            data: link,
+                            version: QrVersions.auto,
+                            size: 200,
+                            backgroundColor: Colors.white,
+                          ),
                         ),
-                        child: QrImageView(
-                          data: link,
-                          version: QrVersions.auto,
-                          size: 200,
-                          backgroundColor: Colors.white,
+                        const SizedBox(height: 16),
+                        Text(
+                          'Scan to sign in on another device',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: isDark ? Colors.white60 : Colors.black45,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'Scan to sign in on another device',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: isDark ? Colors.white60 : Colors.black45,
+                        const SizedBox(height: 20),
+                        _glassButton(
+                          label: 'Close',
+                          icon: CupertinoIcons.xmark,
+                          isDark: isDark,
+                          onTap: () => Navigator.pop(ctx),
                         ),
-                      ),
-                      const SizedBox(height: 20),
-                      _glassButton(
-                        label: 'Close',
-                        icon: CupertinoIcons.xmark,
-                        isDark: isDark,
-                        onTap: () => Navigator.pop(context),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -290,7 +328,7 @@ class _SettingsPageState extends State<SettingsPage>
 
     if (_particles.isEmpty || _lastSize != screenSize) {
       _particles = List.generate(
-          10, (i) => BackgroundParticle(screenSize, icons: [CupertinoIcons.gear_alt_fill, CupertinoIcons.lock_fill, CupertinoIcons.shield_fill]));
+          10, (i) => BackgroundParticle(screenSize, icons: ['assets/media/icons/near_social_logo.svg', CupertinoIcons.bell_fill, 'assets/media/icons/near_social_logo.svg']));
       _lastSize = screenSize;
     }
 
@@ -334,124 +372,129 @@ class _SettingsPageState extends State<SettingsPage>
             isDark: isDark,
           ),
           SafeArea(
-            child: Column(
-              children: [
-                // Header
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
-                  child: Row(
-                    children: [
-                      GestureDetector(
-                        onTap: () {
-                          HapticFeedback.lightImpact();
-                          Navigator.pop(context);
-                        },
-                        child: Container(
-                          width: 40,
-                          height: 40,
-                          decoration: BoxDecoration(
-                            color: isDark
-                                ? Colors.white.withValues(alpha: 0.1)
-                                : Colors.black.withValues(alpha: 0.06),
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(
-                            CupertinoIcons.back,
-                            size: 20,
-                            color: isDark ? Colors.white : Colors.black,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Text(
-                        'Settings',
-                        style: TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: -1,
-                          color: isDark ? Colors.white : Colors.black,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                // Settings list
-                Expanded(
-                  child: ListView.builder(
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 120),
-                    physics: const BouncingScrollPhysics(),
-                    itemCount: settingsItems.length,
-                    itemBuilder: (context, index) {
-                      final item = settingsItems[index];
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
-                        child: GestureDetector(
-                          onTap: item.onTap,
-                          child: GlassContainer(
-                            isDark: isDark,
-                            margin: EdgeInsets.zero,
-                            padding: const EdgeInsets.all(20),
-                            child: Row(
-                              children: [
-                                Container(
-                                  width: 48,
-                                  height: 48,
-                                  decoration: BoxDecoration(
-                                    color: isDark
-                                        ? Colors.white.withValues(alpha: 0.1)
-                                        : Colors.black.withValues(alpha: 0.06),
-                                    borderRadius: BorderRadius.circular(14),
-                                  ),
-                                  child: Icon(
-                                    item.icon,
-                                    size: 24,
-                                    color: isDark ? Colors.white : Colors.black,
-                                  ),
-                                ),
-                                const SizedBox(width: 16),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        item.title,
-                                        style: TextStyle(
-                                          fontSize: 17,
-                                          fontWeight: FontWeight.w700,
-                                          color: isDark
-                                              ? Colors.white
-                                              : Colors.black,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 3),
-                                      Text(
-                                        item.subtitle,
-                                        style: TextStyle(
-                                          fontSize: 13,
-                                          color: isDark
-                                              ? Colors.white54
-                                              : Colors.black45,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                Icon(
-                                  CupertinoIcons.chevron_right,
-                                  size: 18,
-                                  color: isDark ? Colors.white38 : Colors.black26,
-                                ),
-                              ],
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 550),
+                child: Column(
+                  children: [
+                    // Header
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+                      child: Row(
+                        children: [
+                          GestureDetector(
+                            onTap: () {
+                              HapticFeedback.lightImpact();
+                              Navigator.pop(context);
+                            },
+                            child: Container(
+                              width: 40,
+                              height: 40,
+                              decoration: BoxDecoration(
+                                color: isDark
+                                    ? Colors.white.withValues(alpha: 0.1)
+                                    : Colors.black.withValues(alpha: 0.06),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                CupertinoIcons.back,
+                                size: 20,
+                                color: isDark ? Colors.white : Colors.black,
+                              ),
                             ),
                           ),
-                        ),
-                      );
-                    },
-                  ),
+                          const SizedBox(width: 16),
+                          Text(
+                            'Settings',
+                            style: TextStyle(
+                              fontSize: 28,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: -1,
+                              color: isDark ? Colors.white : Colors.black,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    // Settings list
+                    Expanded(
+                      child: ListView.builder(
+                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 120),
+                        physics: const BouncingScrollPhysics(),
+                        itemCount: settingsItems.length,
+                        itemBuilder: (context, index) {
+                          final item = settingsItems[index];
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: GestureDetector(
+                              onTap: item.onTap,
+                              child: GlassContainer(
+                                isDark: isDark,
+                                margin: EdgeInsets.zero,
+                                padding: const EdgeInsets.all(20),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      width: 48,
+                                      height: 48,
+                                      decoration: BoxDecoration(
+                                        color: isDark
+                                            ? Colors.white.withValues(alpha: 0.1)
+                                            : Colors.black.withValues(alpha: 0.06),
+                                        borderRadius: BorderRadius.circular(14),
+                                      ),
+                                      child: Icon(
+                                        item.icon,
+                                        size: 24,
+                                        color: isDark ? Colors.white : Colors.black,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 16),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            item.title,
+                                            style: TextStyle(
+                                              fontSize: 17,
+                                              fontWeight: FontWeight.w700,
+                                              color: isDark
+                                                  ? Colors.white
+                                                  : Colors.black,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 3),
+                                          Text(
+                                            item.subtitle,
+                                            style: TextStyle(
+                                              fontSize: 13,
+                                              color: isDark
+                                                  ? Colors.white54
+                                                  : Colors.black45,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    Icon(
+                                      CupertinoIcons.chevron_right,
+                                      size: 18,
+                                      color: isDark ? Colors.white38 : Colors.black26,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
 
@@ -519,116 +562,119 @@ class _GlassAlertDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: Container(
-        margin: const EdgeInsets.all(40),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(28),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
-            child: Container(
-              padding: const EdgeInsets.all(28),
-              decoration: BoxDecoration(
-                color: isDark
-                    ? Colors.white.withValues(alpha: 0.08)
-                    : Colors.white.withValues(alpha: 0.80),
-                borderRadius: BorderRadius.circular(28),
-                border: Border.all(
-                  color: isDark ? Colors.white24 : Colors.black12,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 500),
+        child: Container(
+          margin: const EdgeInsets.all(40),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(28),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 40, sigmaY: 40),
+              child: Container(
+                padding: const EdgeInsets.all(28),
+                decoration: BoxDecoration(
+                  color: isDark
+                      ? Colors.black.withValues(alpha: 0.7)
+                      : Colors.white.withValues(alpha: 0.85),
+                  borderRadius: BorderRadius.circular(28),
+                  border: Border.all(
+                    color: isDark ? Colors.white24 : Colors.black12,
+                  ),
                 ),
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 56,
-                    height: 56,
-                    decoration: BoxDecoration(
-                      color: Colors.red.withValues(alpha: isDark ? 0.2 : 0.1),
-                      shape: BoxShape.circle,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 56,
+                      height: 56,
+                      decoration: BoxDecoration(
+                        color: Colors.red.withValues(alpha: isDark ? 0.2 : 0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(CupertinoIcons.square_arrow_left,
+                          color: Colors.red.shade300, size: 26),
                     ),
-                    child: Icon(CupertinoIcons.square_arrow_left,
-                        color: Colors.red.shade300, size: 26),
-                  ),
-                  const SizedBox(height: 20),
-                  Text(
-                    'Logout?',
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: -0.5,
-                      color: isDark ? Colors.white : Colors.black,
+                    const SizedBox(height: 20),
+                    Text(
+                      'Logout?',
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.5,
+                        color: isDark ? Colors.white : Colors.black,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Are you sure you want to sign out?',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 15,
-                      color: isDark ? Colors.white60 : Colors.black54,
+                    const SizedBox(height: 8),
+                    Text(
+                      'Are you sure you want to sign out?',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 15,
+                        color: isDark ? Colors.white60 : Colors.black54,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 24),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: GestureDetector(
-                          onTap: () {
-                            HapticFeedback.lightImpact();
-                            Modular.to.pop(false);
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            decoration: BoxDecoration(
-                              color: isDark
-                                  ? Colors.white.withValues(alpha: 0.1)
-                                  : Colors.black.withValues(alpha: 0.06),
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            child: Center(
-                              child: Text(
-                                'Cancel',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 16,
-                                  color: isDark ? Colors.white : Colors.black,
+                    const SizedBox(height: 24),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () {
+                              HapticFeedback.lightImpact();
+                              Navigator.pop(context, false);
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              decoration: BoxDecoration(
+                                color: isDark
+                                    ? Colors.white.withValues(alpha: 0.1)
+                                    : Colors.black.withValues(alpha: 0.06),
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  'Cancel',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 16,
+                                    color: isDark ? Colors.white : Colors.black,
+                                  ),
                                 ),
                               ),
                             ),
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: GestureDetector(
-                          onTap: () {
-                            HapticFeedback.lightImpact();
-                            Modular.to.pop(true);
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            decoration: BoxDecoration(
-                              color: Colors.red.withValues(alpha: isDark ? 0.3 : 0.15),
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(
-                                  color: Colors.red.withValues(alpha: 0.3)),
-                            ),
-                            child: Center(
-                              child: Text(
-                                'Logout',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 16,
-                                  color: Colors.red.shade300,
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () {
+                              HapticFeedback.lightImpact();
+                              Navigator.pop(context, true);
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              decoration: BoxDecoration(
+                                color: Colors.red.withValues(alpha: isDark ? 0.3 : 0.15),
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(
+                                    color: Colors.red.withValues(alpha: 0.3)),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  'Logout',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 16,
+                                    color: Colors.red.shade300,
+                                  ),
                                 ),
                               ),
                             ),
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                ],
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
           ),

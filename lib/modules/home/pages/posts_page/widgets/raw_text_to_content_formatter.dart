@@ -17,12 +17,14 @@ class RawTextToContentFormatter extends StatelessWidget {
     this.heroAnimForImages = true,
     this.imageHeight,
     this.responsive = true,
+    this.textColor,
   });
 
   final String rawText;
   final bool responsive;
   final bool heroAnimForImages;
   final double? imageHeight;
+  final Color? textColor;
 
   bool _isNearWidget(String url) => url.contains("/widget/");
 
@@ -79,10 +81,46 @@ class RawTextToContentFormatter extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final text = rawText.replaceAll("\\n", "\n");
+    final defaultTextColor = textColor ?? Theme.of(context).textTheme.bodyMedium?.color ?? Colors.black;
+    final baseStyle = TextStyle(fontSize: 15, color: defaultTextColor, height: 1.4, decoration: TextDecoration.none);
+    final markdownStyleSheet = MarkdownStyleSheet.fromTheme(Theme.of(context)).copyWith(
+      p: baseStyle,
+      pPadding: EdgeInsets.zero,
+      h1: baseStyle.copyWith(fontSize: 22, fontWeight: FontWeight.bold),
+      h2: baseStyle.copyWith(fontSize: 20, fontWeight: FontWeight.bold),
+      h3: baseStyle.copyWith(fontSize: 18, fontWeight: FontWeight.bold),
+      h4: baseStyle.copyWith(fontSize: 16, fontWeight: FontWeight.bold),
+      h5: baseStyle.copyWith(fontSize: 15, fontWeight: FontWeight.bold),
+      h6: baseStyle.copyWith(fontSize: 14, fontWeight: FontWeight.bold),
+      a: baseStyle.copyWith(color: Colors.blue, decoration: TextDecoration.none),
+      em: baseStyle.copyWith(fontStyle: FontStyle.italic),
+      strong: baseStyle.copyWith(fontWeight: FontWeight.bold),
+      del: baseStyle.copyWith(decoration: TextDecoration.lineThrough),
+      blockquote: baseStyle.copyWith(color: defaultTextColor.withValues(alpha: 0.7)),
+      blockquoteDecoration: BoxDecoration(
+        border: Border(
+          left: BorderSide(color: defaultTextColor.withValues(alpha: 0.3), width: 3),
+        ),
+      ),
+      blockquotePadding: const EdgeInsets.only(left: 12, top: 4, bottom: 4),
+      code: TextStyle(
+        fontSize: 13,
+        color: defaultTextColor,
+        backgroundColor: defaultTextColor.withValues(alpha: 0.08),
+        decoration: TextDecoration.none,
+      ),
+      codeblockDecoration: BoxDecoration(
+        color: defaultTextColor.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      listBullet: baseStyle,
+      blockSpacing: 8,
+    );
     return Stack(
       children: [
         MarkdownBody(
           data: text,
+          styleSheet: markdownStyleSheet,
           imageBuilder: (uri, title, alt) {
             return GestureDetector(
               onTap: () {

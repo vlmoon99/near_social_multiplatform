@@ -2,18 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:near_social_mobile/config/animation_constants.dart';
 import 'package:near_social_mobile/config/constants.dart';
 import 'package:near_social_mobile/config/theme.dart';
 import 'package:near_social_mobile/modules/home/apis/models/post.dart';
 import 'package:near_social_mobile/modules/home/pages/posts_page/widgets/more_actions_for_post_button.dart';
+import 'package:near_social_mobile/modules/home/pages/posts_page/widgets/post_details_modal.dart';
 import 'package:near_social_mobile/modules/home/pages/posts_page/widgets/raw_text_to_content_formatter.dart';
 import 'package:near_social_mobile/modules/home/vms/posts/posts_controller.dart';
 import 'package:near_social_mobile/modules/home/vms/users/user_list_controller.dart';
 import 'package:near_social_mobile/modules/vms/core/auth_controller.dart';
 import 'package:near_social_mobile/routes/routes.dart';
-import 'package:near_social_mobile/shared_widgets/custom_button.dart';
+// import 'package:near_social_mobile/shared_widgets/custom_button.dart';
 import 'package:near_social_mobile/shared_widgets/scale_animated_iconbutton.dart';
 import 'package:near_social_mobile/shared_widgets/near_network_image.dart';
+import 'package:near_social_mobile/shared_widgets/tappable_scale_widget.dart';
 import 'package:near_social_mobile/utils/date_to_string.dart';
 import 'package:near_social_mobile/utils/no_scrollbar_behavior.dart';
 
@@ -42,8 +45,25 @@ class PostCard extends StatelessWidget {
       child: GestureDetector(
       onTap: () {
         HapticFeedback.lightImpact();
-        Modular.to.pushNamed(
-          ".${Routes.home.postPage}?accountId=${post.authorInfo.accountId}&blockHeight=${post.blockHeight}&postsViewMode=${postsViewMode.index}&postsOfAccountId=${postsOfAccountId ?? ""}&allowToNavigateToPostAuthorPage=$allowToNavigateToPostAuthorPage",
+        showGeneralDialog(
+          context: context,
+          barrierDismissible: true,
+          barrierLabel: "Close",
+          barrierColor: Colors.black.withValues(alpha: 0.4),
+          transitionDuration: const Duration(milliseconds: 400),
+          pageBuilder: (ctx, anim1, anim2) => PostDetailsModal(
+            accountId: post.authorInfo.accountId,
+            blockHeight: post.blockHeight,
+            postsViewMode: postsViewMode,
+            postsOfAccountId: postsOfAccountId,
+            allowToNavigateToPostAuthorPage: allowToNavigateToPostAuthorPage,
+          ),
+          transitionBuilder: (ctx, anim1, anim2, child) {
+            return Transform.scale(
+              scale: 0.9 + (0.1 * anim1.value),
+              child: Opacity(opacity: anim1.value, child: child),
+            );
+          },
         );
       },
       child: StreamBuilder(
@@ -94,7 +114,10 @@ class PostCard extends StatelessWidget {
                       ),
                     ),
                     if (currentPost.reposterInfo != null) ...[
-                      GestureDetector(
+                      TappableScaleWidget(
+                        scaleDown: allowToNavigateToReposterAuthorPage
+                            ? AppAnimations.profileTapScaleDown
+                            : 1.0,
                         onTap: allowToNavigateToReposterAuthorPage
                             ? () async {
                                 HapticFeedback.lightImpact();
@@ -117,7 +140,10 @@ class PostCard extends StatelessWidget {
                         ),
                       ),
                     ],
-                    GestureDetector(
+                    TappableScaleWidget(
+                      scaleDown: allowToNavigateToPostAuthorPage
+                          ? AppAnimations.profileTapScaleDown
+                          : 1.0,
                       onTap: allowToNavigateToPostAuthorPage
                           ? () async {
                               HapticFeedback.lightImpact();
@@ -222,6 +248,7 @@ class PostCard extends StatelessWidget {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: [
+                        // Like button (blockchain write disabled)
                         ScaleAnimatedIconButtonWithCounter(
                           iconPath: NearAssets.likeIcon,
                           iconActivatedPath: NearAssets.activatedLikeIcon,
@@ -230,24 +257,10 @@ class PostCard extends StatelessWidget {
                                 element.accountId ==
                                 authController.state.accountId,
                           ),
-                          onPressed: () async {
-                            HapticFeedback.lightImpact();
-                            try {
-                              await postsController.likePost(
-                                post: currentPost,
-                                postsViewMode: postsViewMode,
-                                postsOfAccountId: postsOfAccountId,
-                              );
-                            } catch (err) {
-                              if (err is Exception) {
-                                throw Exception("Failed to like post");
-                              } else {
-                                rethrow;
-                              }
-                            }
-                          },
+                          onPressed: null,
                           count: currentPost.likeList.length,
                         ),
+                        // Repost button (blockchain write disabled)
                         ScaleAnimatedIconButtonWithCounter(
                           iconPath: NearAssets.repostIcon,
                           count: currentPost.repostList.length,
@@ -257,74 +270,7 @@ class PostCard extends StatelessWidget {
                                 authController.state.accountId,
                           ),
                           activatedColor: Colors.green,
-                          onPressed: () async {
-                            HapticFeedback.lightImpact();
-                            final String accountId =
-                                authController.state.accountId;
-                            if (currentPost.repostList.any(
-                                (element) => element.accountId == accountId)) {
-                              return;
-                            }
-                            await showDialog(
-                              context: context,
-                              builder: (context) {
-                                return AlertDialog(
-                                  title: const Text(
-                                    "Repost",
-                                  ),
-                                  content: const Text(
-                                    "Are you sure you want to repost this post?",
-                                  ),
-                                  actionsAlignment:
-                                      MainAxisAlignment.spaceEvenly,
-                                  actions: [
-                                    CustomButton(
-                                      primary: true,
-                                      child: const Text(
-                                        "Yes",
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                      onPressed: () {
-                                        Modular.to.pop(true);
-                                      },
-                                    ),
-                                    CustomButton(
-                                      child: const Text(
-                                        "No",
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                      onPressed: () {
-                                        Modular.to.pop(false);
-                                      },
-                                    ),
-                                  ],
-                                );
-                              },
-                            ).then(
-                              (answer) async {
-                                if (answer == null || !answer) {
-                                  return;
-                                }
-                                try {
-                                  await postsController.repostPost(
-                                    post: currentPost,
-                                    postsViewMode: postsViewMode,
-                                    postsOfAccountId: postsOfAccountId,
-                                  );
-                                } catch (err) {
-                                  if (err is Exception) {
-                                    throw Exception("Failed to repost post");
-                                  } else {
-                                    rethrow;
-                                  }
-                                }
-                              },
-                            );
-                          },
+                          onPressed: null,
                         ),
                         MoreActionsForPostButton(
                           post: currentPost,

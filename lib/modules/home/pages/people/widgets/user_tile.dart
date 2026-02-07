@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:near_social_mobile/config/animation_constants.dart';
 import 'package:near_social_mobile/config/constants.dart';
 import 'package:near_social_mobile/config/theme.dart';
 import 'package:near_social_mobile/modules/home/vms/users/models/user_list_state.dart';
 import 'package:near_social_mobile/routes/routes.dart';
 import 'package:near_social_mobile/shared_widgets/near_network_image.dart';
+import 'package:near_social_mobile/shared_widgets/tappable_scale_widget.dart';
 
 class UserTile extends StatelessWidget {
   const UserTile({super.key, required this.user});
@@ -15,18 +17,19 @@ class UserTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 5,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16.0).r,
-      ),
-      child: GestureDetector(
-        onTap: () {
-          HapticFeedback.lightImpact();
-          Modular.to.pushNamed(
-            ".${Routes.home.userPage}?accountId=${user.generalAccountInfo.accountId}",
-          );
-        },
+    return TappableScaleWidget(
+      scaleDown: AppAnimations.profileTapScaleDown,
+      onTap: () {
+        HapticFeedback.lightImpact();
+        Modular.to.pushNamed(
+          ".${Routes.home.userPage}?accountId=${user.generalAccountInfo.accountId}",
+        );
+      },
+      child: Card(
+        elevation: 5,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16.0).r,
+        ),
         child: Padding(
           padding: const EdgeInsets.all(15).r,
           child: Column(

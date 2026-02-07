@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>P2P Ultimate Diagnostic Tool</title>
+    <style>
+        :root { --bg: #121212; --surface: #1e1e1e; --primary: #3b82f6; --danger: #ef4444; --success: #22c55e; --warn: #f59e0b; --text: #e5e7eb; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 10px; height: 100vh; display: flex; flex-direction: column; }
+        .container { max-width: 1200px; margin: 0 auto; width: 100%; display: flex; flex-direction: column; gap: 10px; flex: 1; }
+        
+        /* Layout Grid */
+        .grid-row { display: flex; gap: 10px; flex-wrap: wrap; }
+        .col-left { flex: 1; min-width: 300px; display: flex; flex-direction: column; gap: 10px; }
+        .col-right { flex: 2; min-width: 300px; display: flex; flex-direction: column; gap: 10px; }
+
+        .box { background: var(--surface); padding: 15px; border-radius: 8px; border: 1px solid #333; }
+        h3 { margin-top: 0; margin-bottom: 10px; font-size: 15px; color: #aaa; border-bottom: 1px solid #333; padding-bottom: 5px; text-transform: uppercase; letter-spacing: 1px; }
+        
+        .control-group { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; align-items: center; }
+        .label { min-width: 70px; font-size: 12px; color: #888; }
+        input { background: #2d2d2d; border: 1px solid #444; color: white; padding: 8px; border-radius: 4px; flex: 1; }
+        
+        button { padding: 8px 16px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; color: white; transition: 0.2s; font-size: 13px; }
+        button:disabled { background: #444 !important; cursor: not-allowed; opacity: 0.5; }
+        .btn-blue { background: var(--primary); } 
+        .btn-green { background: var(--success); } 
+        .btn-red { background: var(--danger); }
+        .btn-warn { background: var(--warn); color: #000; }
+        
+        /* Video Area */
+        .video-container { display: flex; gap: 10px; flex: 1; min-height: 300px; }
+        .vid-wrapper { flex: 1; background: black; border-radius: 8px; overflow: hidden; position: relative; border: 1px solid #333; }
+        video { width: 100%; height: 100%; object-fit: cover; }
+        .vid-label { position: absolute; bottom: 10px; left: 10px; background: rgba(0,0,0,0.7); padding: 4px 8px; font-size: 12px; border-radius: 4px; }
+
+        /* Chat & Logs */
+        #chatBox { height: 150px; overflow-y: scroll; background: #000; border: 1px solid #333; padding: 10px; font-size: 13px; margin-bottom: 5px; }
+        .chat-msg { margin-bottom: 4px; }
+        .chat-me { color: var(--primary); }
+        .chat-peer { color: var(--success); }
+
+        #statsBox { font-family: monospace; font-size: 11px; color: #0ff; white-space: pre-wrap; height: 100%; }
+
+        /* Modal */
+        #incomingModal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 100; align-items: center; justify-content: center; }
+        .modal-content { background: var(--surface); padding: 30px; border-radius: 10px; text-align: center; border: 1px solid #555; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    
+    <div class="grid-row" style="flex: 0 0 auto;">
+        <!-- LEFT COLUMN: Config & signaling -->
+        <div class="col-left">
+            <div class="box">
+                <h3>1. Signaling Setup</h3>
+                <div class="control-group">
+                    <span class="label">WS URL:</span>
+                    <input type="text" id="serverUrl" value="wss://p2ptest1.duckdns.org/ws">
+                </div>
+                <div class="control-group">
+                    <span class="label">My ID:</span>
+                    <input type="text" id="myId" placeholder="Alice">
+                    <button class="btn-blue" id="btnConn" onclick="connectServer()">Connect</button>
+                </div>
+                <div id="status">Status: 🔴 Offline</div>
+            </div>
+
+            <div class="box">
+                <h3>2. ICE / TURN Config</h3>
+                <div class="control-group">
+                    <span class="label">STUN:</span>
+                    <input type="text" id="stunUrl" value="stun:stun.l.google.com:19302">
+                </div>
+                <div class="control-group">
+                    <span class="label">TURN:</span>
+                    <input type="text" id="turnUrl" value="turn:p2ptest1.duckdns.org:3478">
+                </div>
+                <div class="control-group">
+                    <input type="text" id="turnUser" value="myuser" placeholder="User">
+                    <input type="text" id="turnPass" value="mypassword" placeholder="Pass">
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT COLUMN: Call Controls & Media -->
+        <div class="col-right">
+            <div class="box">
+                <h3>3. Call Controls</h3>
+                <div class="control-group">
+                    <input type="text" id="targetId" placeholder="Peer ID (e.g. Bob)">
+                    <button class="btn-green" id="btnVid" onclick="requestCall('video')" disabled>📹 Video Call</button>
+                    <button class="btn-red" id="btnHang" onclick="hangUp()" disabled>❌ Hang Up</button>
+                </div>
+                <div class="control-group">
+                    <button class="btn-blue" id="btnScreen" onclick="toggleScreenShare()" disabled>🖥️ Screen Share</button>
+                    <button class="btn-warn" id="btnMuteAudio" onclick="toggleMute('audio')" disabled>🎤 Mute Mic</button>
+                    <button class="btn-warn" id="btnMuteVideo" onclick="toggleMute('video')" disabled>📷 Stop Cam</button>
+                </div>
+            </div>
+
+            <div class="box" style="flex:1; display:flex; flex-direction:column;">
+                <h3>4. Data Channel (Chat)</h3>
+                <div id="chatBox"></div>
+                <div class="control-group">
+                    <input type="text" id="chatInput" placeholder="Type a message..." onkeypress="if(event.key==='Enter') sendChat()">
+                    <button class="btn-blue" id="btnSend" onclick="sendChat()" disabled>Send</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- VIDEO ROW -->
+    <div class="video-container">
+        <div class="vid-wrapper">
+            <video id="localVideo" autoplay muted playsinline></video>
+            <div class="vid-label">My Feed</div>
+        </div>
+        <div class="vid-wrapper">
+            <video id="remoteVideo" autoplay playsinline></video>
+            <div class="vid-label">Remote Feed</div>
+        </div>
+        <!-- STATS PANEL -->
+        <div class="vid-wrapper" style="flex: 0.5; background: #000; padding: 10px; overflow: hidden;">
+            <div id="statsBox">Waiting for connection...</div>
+        </div>
+    </div>
+
+</div>
+
+<!-- INCOMING CALL MODAL -->
+<div id="incomingModal">
+    <div class="modal-content">
+        <h3 id="callTitle">📞 Incoming Call...</h3>
+        <br>
+        <button class="btn-green" onclick="answerCall(true)">✅ Accept</button>
+        <button class="btn-red" onclick="answerCall(false)">❌ Reject</button>
+    </div>
+</div>
+
+<script>
+    let ws, pc, localStream, dataChannel, statsInterval;
+    let myId = "", targetId = "";
+    let incomingCallData = null;
+    let candidateQueue = [];
+
+    // Helper: Logger
+    function logChat(msg, type) {
+        const box = document.getElementById("chatBox");
+        const color = type === 'me' ? 'chat-me' : (type === 'peer' ? 'chat-peer' : 'gray');
+        box.innerHTML += `<div class="chat-msg ${color}"><b>${type === 'me' ? 'Me' : (type === 'peer' ? 'Peer' : 'Sys')}:</b> ${msg}</div>`;
+        box.scrollTop = box.scrollHeight;
+    }
+
+    // --- 1. CONFIGURATION ---
+    function getIceConfig() {
+        const stun = document.getElementById("stunUrl").value.trim();
+        const turn = document.getElementById("turnUrl").value.trim();
+        const user = document.getElementById("turnUser").value.trim();
+        const pass = document.getElementById("turnPass").value.trim();
+        
+        let servers = [];
+        if(stun) servers.push({ urls: stun });
+        if(turn) servers.push({ urls: turn, username: user, credential: pass });
+        
+        return { iceServers: servers };
+    }
+
+    // --- 2. SIGNALING ---
+    function connectServer() {
+        const url = document.getElementById("serverUrl").value;
+        myId = document.getElementById("myId").value.trim();
+        if (!url || !myId) return alert("Missing Info");
+
+        ws = new WebSocket(url);
+        ws.onopen = () => {
+            ws.send(JSON.stringify({ userId: myId }));
+            document.getElementById("btnConn").disabled = true;
+            document.getElementById("btnVid").disabled = false;
+            document.getElementById("status").innerText = "Status: 🟢 Connected to Signaling";
+        };
+        ws.onmessage = e => handleSignal(JSON.parse(e.data));
+    }
+
+    async function handleSignal(msg) {
+        const { type, from, data } = msg;
+
+        switch(type) {
+            case 'call-request':
+                incomingCallData = { from, mode: data.mode };
+                document.getElementById("callTitle").innerText = `📞 Call from ${from}`;
+                document.getElementById("incomingModal").style.display = "flex";
+                break;
+            case 'call-accepted':
+                targetId = from;
+                logChat("Call accepted!", "sys");
+                await startWebRTC(true);
+                break;
+            case 'offer':
+                targetId = from;
+                if(!pc) await startWebRTC(false);
+                await pc.setRemoteDescription(new RTCSessionDescription(data));
+                processQueue();
+                const answer = await pc.createAnswer();
+                await pc.setLocalDescription(answer);
+                send(from, "answer", answer);
+                break;
+            case 'answer':
+                await pc.setRemoteDescription(new RTCSessionDescription(data));
+                break;
+            case 'candidate':
+                if (pc && pc.remoteDescription) {
+                    pc.addIceCandidate(new RTCIceCandidate(data)).catch(e=>{});
+                } else {
+                    candidateQueue.push(data);
+                }
+                break;
+        }
+    }
+
+    function send(target, type, data) {
+        ws.send(JSON.stringify({ targetId: target, type: type, data: data }));
+    }
+
+    async function processQueue() {
+        while(candidateQueue.length) {
+            await pc.addIceCandidate(new RTCIceCandidate(candidateQueue.shift()));
+        }
+    }
+
+    // --- 3. USER ACTIONS ---
+    function requestCall() {
+        targetId = document.getElementById("targetId").value.trim();
+        if(!targetId) return alert("Enter Peer ID");
+        send(targetId, "call-request", { mode: 'video' });
+        logChat("Calling " + targetId + "...", "sys");
+    }
+
+    async function answerCall(accept) {
+        document.getElementById("incomingModal").style.display = "none";
+        if (accept) {
+            send(incomingCallData.from, "call-accepted", {});
+            await startWebRTC(false);
+        }
+    }
+
+    function sendChat() {
+        const input = document.getElementById("chatInput");
+        const msg = input.value;
+        if(dataChannel && dataChannel.readyState === 'open' && msg) {
+            dataChannel.send(msg);
+            logChat(msg, "me");
+            input.value = "";
+        }
+    }
+
+    function hangUp() {
+        if(pc) pc.close();
+        if(localStream) localStream.getTracks().forEach(t => t.stop());
+        clearInterval(statsInterval);
+        pc = null; localStream = null; dataChannel = null;
+        document.getElementById("statsBox").innerText = "Call Ended";
+        document.getElementById("localVideo").srcObject = null;
+        document.getElementById("remoteVideo").srcObject = null;
+        toggleButtons(false);
+    }
+
+    // --- 4. WEBRTC CORE ---
+    async function startWebRTC(isInitiator) {
+        logChat("Starting WebRTC connection...", "sys");
+        
+        try {
+            localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+            document.getElementById("localVideo").srcObject = localStream;
+        } catch(e) {
+            alert("Camera Error: " + e);
+            return;
+        }
+
+        pc = new RTCPeerConnection(getIceConfig());
+
+        // Add Local Tracks
+        localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+
+        // Setup Data Channel (Initiator creates it)
+        if (isInitiator) {
+            dataChannel = pc.createDataChannel("chat");
+            setupDataChannel(dataChannel);
+        } else {
+            pc.ondatachannel = (e) => setupDataChannel(e.channel);
+        }
+
+        pc.ontrack = e => {
+            document.getElementById("remoteVideo").srcObject = e.streams[0];
+        };
+
+        pc.onicecandidate = e => {
+            if (e.candidate) send(targetId, "candidate", e.candidate);
+        };
+
+        pc.onconnectionstatechange = () => {
+            const state = pc.connectionState;
+            document.getElementById("status").innerText = "Status: " + state;
+            if(state === 'connected') {
+                toggleButtons(true);
+                startStats();
+            } else if (state === 'failed' || state === 'disconnected') {
+                toggleButtons(false);
+                clearInterval(statsInterval);
+            }
+        };
+
+        if (isInitiator) {
+            const offer = await pc.createOffer();
+            await pc.setLocalDescription(offer);
+            send(targetId, "offer", offer);
+        }
+    }
+
+    function setupDataChannel(dc) {
+        dataChannel = dc;
+        dc.onopen = () => {
+            document.getElementById("btnSend").disabled = false;
+            logChat("Data Channel OPEN (P2P Text Active)", "sys");
+        };
+        dc.onmessage = e => logChat(e.data, "peer");
+    }
+
+    // --- 5. ADVANCED FEATURES ---
+    
+    // Toggle Screen Share
+    async function toggleScreenShare() {
+        try {
+            const screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+            const screenTrack = screenStream.getVideoTracks()[0];
+            
+            // Find the video sender
+            const sender = pc.getSenders().find(s => s.track.kind === 'video');
+            if(sender) {
+                sender.replaceTrack(screenTrack);
+                document.getElementById("localVideo").srcObject = screenStream;
+                
+                // When user stops sharing via browser UI, revert to cam
+                screenTrack.onended = () => {
+                   const camTrack = localStream.getVideoTracks()[0];
+                   sender.replaceTrack(camTrack);
+                   document.getElementById("localVideo").srcObject = localStream;
+                };
+            }
+        } catch(e) { console.error(e); }
+    }
+
+    // Toggle Mute
+    function toggleMute(kind) {
+        const track = localStream.getTracks().find(t => t.kind === kind);
+        if(track) {
+            track.enabled = !track.enabled;
+            const btn = document.getElementById(kind === 'audio' ? 'btnMuteAudio' : 'btnMuteVideo');
+            btn.innerText = track.enabled ? (kind==='audio'?'🎤 Mute Mic':'📷 Stop Cam') : (kind==='audio'?'🎤 Unmute':'📷 Start Cam');
+            btn.style.background = track.enabled ? 'var(--warn)' : 'var(--danger)';
+        }
+    }
+
+    // UI Helper
+    function toggleButtons(active) {
+        document.getElementById("btnHang").disabled = !active;
+        document.getElementById("btnScreen").disabled = !active;
+        document.getElementById("btnMuteAudio").disabled = !active;
+        document.getElementById("btnMuteVideo").disabled = !active;
+        document.getElementById("btnVid").disabled = active;
+    }
+
+    // --- 6. NETWORK STATS (Crucial for testing TURN) ---
+    function startStats() {
+        const statsBox = document.getElementById("statsBox");
+        statsInterval = setInterval(async () => {
+            if(!pc) return;
+            const stats = await pc.getStats();
+            let activePair = null;
+            let packetLoss = 0;
+            let bitrate = 0;
+
+            stats.forEach(report => {
+                // Find active candidate pair
+                if(report.type === 'transport') {
+                    const pair = stats.get(report.selectedCandidatePairId);
+                    if(pair) activePair = pair;
+                }
+                if(report.type === 'inbound-rtp' && report.kind === 'video') {
+                    packetLoss = report.packetsLost;
+                }
+            });
+
+            if(activePair) {
+                const local = stats.get(activePair.localCandidateId);
+                const remote = stats.get(activePair.remoteCandidateId);
+                
+                // Detect connection type
+                const connType = local.candidateType; // 'host', 'srflx' (STUN), 'relay' (TURN)
+                const protocol = local.protocol;      // 'udp' or 'tcp'
+
+                let color = '#0f0'; // Green for P2P
+                if(connType === 'relay') color = '#f0f'; // Purple for TURN
+                
+                statsBox.innerHTML = `
+<span style="color:${color}">TYPE: ${connType.toUpperCase()} (${protocol})</span>
+----------------
+Local:  ${local.ip}:${local.port}
+Remote: ${remote.ip}:${remote.port}
+----------------
+Pkts Lost: ${packetLoss}
+State: ${activePair.state}
+                `.trim();
+            }
+        }, 1000);
+    }
+</script>
+</body>
+</html>

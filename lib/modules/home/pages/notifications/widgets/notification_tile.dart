@@ -2,6 +2,7 @@ import 'package:flutter/material.dart' hide Notification;
 import 'package:flutter/services.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:near_social_mobile/config/animation_constants.dart';
 import 'package:near_social_mobile/config/constants.dart';
 import 'package:near_social_mobile/config/theme.dart';
 import 'package:near_social_mobile/modules/home/apis/models/notification.dart';
@@ -11,6 +12,7 @@ import 'package:near_social_mobile/modules/vms/core/auth_controller.dart';
 import 'package:near_social_mobile/routes/routes.dart';
 import 'package:near_social_mobile/shared_widgets/loading_page_with_after_navigation.dart';
 import 'package:near_social_mobile/shared_widgets/near_network_image.dart';
+import 'package:near_social_mobile/shared_widgets/tappable_scale_widget.dart';
 import 'package:near_social_mobile/utils/date_to_string.dart';
 
 class NotificationTile extends StatelessWidget {
@@ -78,32 +80,33 @@ class NotificationTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 5,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16.0).r,
-      ),
-      child: GestureDetector(
-        onTap: () async {
-          HapticFeedback.lightImpact();
-          if (!postOpeningNotification) {
-            await navigateToAuthorPage();
-            return;
-          }
-          final AuthController authController = Modular.get<AuthController>();
-          Navigator.push(
-            Modular.routerDelegate.navigatorKey.currentContext!,
-            MaterialPageRoute(
-              builder: (context) => LoadingPageWithNavigation(
-                function: () async {
-                  await loadPostToTempPostsList();
-                },
-                route:
-                    ".${Routes.home.postPage}?accountId=${authController.state.accountId}&blockHeight=${notification.notificationType.data["blockHeight"]}&postsViewMode=${PostsViewMode.temporary.index}",
-              ),
+    return TappableScaleWidget(
+      scaleDown: AppAnimations.cardTapScaleDown,
+      onTap: () async {
+        HapticFeedback.lightImpact();
+        if (!postOpeningNotification) {
+          await navigateToAuthorPage();
+          return;
+        }
+        final AuthController authController = Modular.get<AuthController>();
+        Navigator.push(
+          Modular.routerDelegate.navigatorKey.currentContext!,
+          MaterialPageRoute(
+            builder: (context) => LoadingPageWithNavigation(
+              function: () async {
+                await loadPostToTempPostsList();
+              },
+              route:
+                  ".${Routes.home.postPage}?accountId=${authController.state.accountId}&blockHeight=${notification.notificationType.data["blockHeight"]}&postsViewMode=${PostsViewMode.temporary.index}",
             ),
-          );
-        },
+          ),
+        );
+      },
+      child: Card(
+        elevation: 5,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16.0).r,
+        ),
         child: Padding(
           padding: const EdgeInsets.all(15).r,
           child: Column(
@@ -111,7 +114,8 @@ class NotificationTile extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  GestureDetector(
+                  TappableScaleWidget(
+                    scaleDown: AppAnimations.profileTapScaleDown,
                     onTap: () async {
                       HapticFeedback.lightImpact();
                       await navigateToAuthorPage();
@@ -136,8 +140,10 @@ class NotificationTile extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        GestureDetector(
+                        TappableScaleWidget(
+                          scaleDown: AppAnimations.profileTapScaleDown,
                           onTap: () async {
+                            HapticFeedback.lightImpact();
                             await navigateToAuthorPage();
                           },
                           child: Text(

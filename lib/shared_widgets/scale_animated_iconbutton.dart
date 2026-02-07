@@ -8,7 +8,7 @@ class ScaleAnimatedIconButton extends StatefulWidget {
     super.key,
     required this.iconPath,
     this.iconActivatedPath,
-    required this.onPressed,
+    this.onPressed,
     this.activated = false,
     this.size = 20,
     this.activatedColor = Colors.red,
@@ -16,7 +16,7 @@ class ScaleAnimatedIconButton extends StatefulWidget {
 
   final String iconPath;
   final String? iconActivatedPath;
-  final Future<dynamic> Function() onPressed;
+  final Future<dynamic> Function()? onPressed;
   final bool activated;
   final Color activatedColor;
   final int size;
@@ -59,19 +59,21 @@ class _ScaleAnimatedIconButtonState extends State<ScaleAnimatedIconButton>
         animation: _animationController,
         builder: (context, _) {
           return IconButton(
-            onPressed: () async {
-              HapticFeedback.lightImpact();
-              _animationController.repeat();
-              try {
-                await widget.onPressed();
-              } catch (err) {
-                rethrow;
-              } finally {
-                if (mounted) {
-                  _animationController.reset();
-                }
-              }
-            },
+            onPressed: widget.onPressed != null
+                ? () async {
+                    HapticFeedback.lightImpact();
+                    _animationController.repeat();
+                    try {
+                      await widget.onPressed!();
+                    } catch (err) {
+                      rethrow;
+                    } finally {
+                      if (mounted) {
+                        _animationController.reset();
+                      }
+                    }
+                  }
+                : null,
             icon: _animationController.isAnimating
                 ? Transform.scale(
                     scale: _animation.value,
@@ -113,7 +115,7 @@ class ScaleAnimatedIconButtonWithCounter extends StatelessWidget {
     super.key,
     required this.iconPath,
     this.iconActivatedPath,
-    required this.onPressed,
+    this.onPressed,
     this.activated = false,
     this.size = 16,
     this.activatedColor = Colors.red,
@@ -121,7 +123,7 @@ class ScaleAnimatedIconButtonWithCounter extends StatelessWidget {
   });
   final String iconPath;
   final String? iconActivatedPath;
-  final Future<dynamic> Function() onPressed;
+  final Future<dynamic> Function()? onPressed;
   final bool activated;
   final Color activatedColor;
   final int size;
@@ -142,6 +144,7 @@ class ScaleAnimatedIconButtonWithCounter extends StatelessWidget {
         "$count",
         style: TextStyle(
           color: Colors.grey.shade600,
+          fontSize: 14,
         ),
       ),
     ]);

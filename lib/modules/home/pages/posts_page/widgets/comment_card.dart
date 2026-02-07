@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:near_social_mobile/config/animation_constants.dart';
 import 'package:near_social_mobile/config/constants.dart';
-import 'package:near_social_mobile/exceptions/exceptions.dart';
 import 'package:near_social_mobile/modules/home/apis/models/comment.dart';
 import 'package:near_social_mobile/modules/home/apis/models/post.dart';
-import 'package:near_social_mobile/modules/home/pages/posts_page/widgets/create_comment_dialog_body.dart';
+// import 'package:near_social_mobile/modules/home/pages/posts_page/widgets/create_comment_dialog_body.dart';
 import 'package:near_social_mobile/modules/home/pages/posts_page/widgets/more_actions_for_comment_button.dart';
 import 'package:near_social_mobile/modules/home/pages/posts_page/widgets/raw_text_to_content_formatter.dart';
 import 'package:near_social_mobile/modules/home/vms/posts/posts_controller.dart';
@@ -15,6 +15,7 @@ import 'package:near_social_mobile/modules/vms/core/auth_controller.dart';
 import 'package:near_social_mobile/routes/routes.dart';
 import 'package:near_social_mobile/shared_widgets/image_full_screen_page.dart';
 import 'package:near_social_mobile/shared_widgets/scale_animated_iconbutton.dart';
+import 'package:near_social_mobile/shared_widgets/tappable_scale_widget.dart';
 import 'package:near_social_mobile/shared_widgets/two_states_iconbutton.dart';
 import 'package:near_social_mobile/shared_widgets/near_network_image.dart';
 import 'package:near_social_mobile/utils/date_to_string.dart';
@@ -57,7 +58,8 @@ class CommentCard extends StatelessWidget {
                 ),
               ),
             ),
-            GestureDetector(
+            TappableScaleWidget(
+              scaleDown: AppAnimations.profileTapScaleDown,
               onTap: () async {
                 HapticFeedback.lightImpact();
                 await Modular.get<UserListController>()
@@ -154,39 +156,12 @@ class CommentCard extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
+                // Comment reply button disabled (blockchain write)
                 TwoStatesIconButton(
                   iconPath: NearAssets.commentIcon,
-                  onPressed: () {
-                    HapticFeedback.lightImpact();
-                    showDialog(
-                      context: context,
-                      builder: (context) {
-                        return Dialog.fullscreen(
-                          child: CreateCommentDialog(
-                            postsOfAccountId: postsOfAccountId,
-                            postsViewMode: postsViewMode,
-                            descriptionTitle: Text.rich(
-                              style: const TextStyle(fontSize: 14),
-                              TextSpan(
-                                children: [
-                                  const TextSpan(text: "Answer to "),
-                                  TextSpan(
-                                    text: "@${comment.authorInfo.accountId}",
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            post: post,
-                            initialText: "@${comment.authorInfo.accountId}, ",
-                          ),
-                        );
-                      },
-                    );
-                  },
+                  onPressed: null,
                 ),
+                // Like button disabled (blockchain write)
                 ScaleAnimatedIconButtonWithCounter(
                   iconPath: NearAssets.likeIcon,
                   iconActivatedPath: NearAssets.activatedLikeIcon,
@@ -195,23 +170,7 @@ class CommentCard extends StatelessWidget {
                     (element) =>
                         element.accountId == authController.state.accountId,
                   ),
-                  onPressed: () async {
-                    HapticFeedback.lightImpact();
-                    try {
-                      await Modular.get<PostsController>().likeComment(
-                        post: post,
-                        comment: comment,
-                        postsViewMode: postsViewMode,
-                        postsOfAccountId: postsOfAccountId,
-                      );
-                    } catch (err) {
-                      if (err is Exception) {
-                        throw Exception("Failed to like comment");
-                      } else {
-                        rethrow;
-                      }
-                    }
-                  },
+                  onPressed: null,
                 ),
                 if (post.authorInfo.accountId != authController.state.accountId)
                   MoreActionsForCommentButton(comment: comment),

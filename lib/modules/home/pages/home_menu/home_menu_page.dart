@@ -259,6 +259,17 @@ class _HomeMenuPageState extends State<HomeMenuPage>
               sliver: SliverList(
                 delegate: SliverChildListDelegate([
                   _buildMenuTile(
+                    icon: Icon(CupertinoIcons.video_camera_solid,
+                        size: 20,
+                        color: isDark ? Colors.white70 : Colors.black87),
+                    title: "P2P Calls",
+                    isDark: isDark,
+                    onTap: () {
+                      HapticFeedback.lightImpact();
+                      Modular.to.pushNamed(".${Routes.home.p2pCallPage}");
+                    },
+                  ),
+                  _buildMenuTile(
                     icon: Icon(CupertinoIcons.settings_solid,
                         size: 20,
                         color: isDark ? Colors.white70 : Colors.black87),

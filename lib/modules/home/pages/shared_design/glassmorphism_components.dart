@@ -3,6 +3,8 @@ import 'dart:math' as math;
 import 'dart:ui';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:near_social_mobile/config/animation_constants.dart';
 
 // Re-export BackgroundParticle from test page
 export 'package:near_social_mobile/modules/home/pages/modern_design_test/modern_design_test_page.dart'
@@ -56,7 +58,14 @@ Widget buildLivingBackground({
                   child: Opacity(
                     opacity:
                         (math.sin(p.opacityPhase) * 0.04 + 0.05).clamp(0.01, 0.1),
-                    child: Icon(p.icon, size: p.size, color: pColor),
+                    child: p.svgPath != null
+                        ? SvgPicture.asset(
+                            p.svgPath!,
+                            width: p.size,
+                            height: p.size,
+                            colorFilter: ColorFilter.mode(pColor, BlendMode.srcIn),
+                          )
+                        : Icon(p.icon, size: p.size, color: pColor),
                   ),
                 )),
           ],
@@ -74,8 +83,8 @@ Widget buildAnimatedPanel({
   required Widget child,
 }) {
   return AnimatedPositioned(
-    duration: const Duration(milliseconds: 400),
-    curve: Curves.easeOut,
+    duration: AppAnimations.barTransition,
+    curve: AppAnimations.barCurve,
     top: top ? (showBars ? 20 : -100) : null,
     bottom: top ? null : (showBars ? 16 : -100),
     left: 0,
@@ -285,7 +294,7 @@ mixin LivingPageMixin<T extends StatefulWidget>
     hideTimer?.cancel();
   }
 
-  void ensureParticles(Size screenSize, int count, {List<IconData>? icons}) {
+  void ensureParticles(Size screenSize, int count, {List<Object>? icons}) {
     if (particles.isEmpty || lastSize != screenSize) {
       particles = List.generate(
         count,

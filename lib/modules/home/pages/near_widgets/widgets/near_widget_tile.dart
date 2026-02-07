@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:near_social_mobile/config/constants.dart';
-import 'package:near_social_mobile/exceptions/exceptions.dart';
 import 'package:near_social_mobile/modules/home/apis/models/near_widget_info.dart';
 import 'package:near_social_mobile/modules/vms/core/auth_controller.dart';
 import 'package:near_social_mobile/modules/vms/core/models/auth_info.dart';
@@ -95,7 +94,14 @@ class _NearWidgetTileState extends State<NearWidgetTile> {
                           if (await Modular.get<AuthController>()
                                   .getActivationStatus() !=
                               AccountActivationStatus.activated) {
-                            throw AccountNotActivatedException();
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Account not activated. Please activate your account first.'),
+                                ),
+                              );
+                            }
+                            return;
                           }
                           openNearWidget(
                             widgetPath: widget.nearWidget.widgetPath,

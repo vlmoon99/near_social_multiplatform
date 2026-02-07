@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:near_social_mobile/config/animation_constants.dart';
 import 'package:near_social_mobile/config/constants.dart';
 import 'package:near_social_mobile/config/theme.dart';
 import 'package:near_social_mobile/exceptions/exceptions.dart';
@@ -16,7 +17,7 @@ import 'package:near_social_mobile/modules/home/pages/modern_design_test/modern_
 import 'package:near_social_mobile/modules/home/pages/people/widgets/donation_dialog.dart';
 import 'package:near_social_mobile/modules/home/pages/people/widgets/more_actions_for_user_button.dart';
 import 'package:near_social_mobile/modules/home/pages/people/widgets/user_page_tabs/user_posts.dart';
-import 'package:near_social_mobile/modules/home/pages/people/widgets/user_page_tabs/user_widgets.dart';
+// import 'package:near_social_mobile/modules/home/pages/people/widgets/user_page_tabs/user_widgets.dart';
 import 'package:near_social_mobile/modules/home/pages/posts_page/widgets/raw_text_to_content_formatter.dart';
 import 'package:near_social_mobile/modules/home/vms/posts/posts_controller.dart';
 import 'package:near_social_mobile/modules/home/vms/users/user_list_controller.dart';
@@ -27,6 +28,8 @@ import 'package:near_social_mobile/shared_widgets/custom_button.dart';
 import 'package:near_social_mobile/shared_widgets/expandable_wiget.dart';
 import 'package:near_social_mobile/shared_widgets/image_full_screen_page.dart';
 import 'package:near_social_mobile/shared_widgets/near_network_image.dart';
+import 'package:near_social_mobile/shared_widgets/tappable_scale_widget.dart';
+import 'package:near_social_mobile/routes/routes.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class UserPage extends StatefulWidget {
@@ -82,8 +85,16 @@ class _UserPageState extends State<UserPage> with TickerProviderStateMixin {
     if (_showTopBar) setState(() => _showTopBar = false);
     _hideTimer?.cancel();
     _hideTimer = Timer(const Duration(seconds: 3), () {
+      // Only show the bar after scroll stops
       if (mounted) setState(() => _showTopBar = true);
     });
+
+    // Trigger rebuild for scroll-to-top button visibility
+    setState(() {});
+  }
+
+  bool get _canShowScrollToTop {
+    return _scrollController.hasClients && _scrollController.offset > 100;
   }
 
   @override
@@ -104,9 +115,9 @@ class _UserPageState extends State<UserPage> with TickerProviderStateMixin {
       _particles = List.generate(
         18,
         (i) => BackgroundParticle(screenSize, icons: [
-          CupertinoIcons.person_fill,
-          CupertinoIcons.heart_fill,
-          CupertinoIcons.sparkles,
+          'assets/media/icons/near_social_logo.svg',
+          CupertinoIcons.bell_fill,
+          'assets/media/icons/near_social_logo.svg',
         ]),
       );
       _lastSize = screenSize;
@@ -170,8 +181,8 @@ class _UserPageState extends State<UserPage> with TickerProviderStateMixin {
 
   Widget _buildTopBar(bool isDark) {
     return AnimatedPositioned(
-      duration: const Duration(milliseconds: 400),
-      curve: Curves.easeInOutCubic,
+      duration: AppAnimations.barTransition,
+      curve: AppAnimations.barCurve,
       top: _showTopBar ? 20 : -100,
       left: 0,
       right: 0,
@@ -180,7 +191,8 @@ class _UserPageState extends State<UserPage> with TickerProviderStateMixin {
           360,
           Row(
             children: [
-              GestureDetector(
+              TappableScaleWidget(
+                scaleDown: AppAnimations.navButtonScaleDown,
                 onTap: () => Navigator.of(context).pop(),
                 child: Container(
                   width: 32,
@@ -200,23 +212,32 @@ class _UserPageState extends State<UserPage> with TickerProviderStateMixin {
                       fontSize: 17,
                       letterSpacing: -0.5)),
               const Spacer(),
-              GestureDetector(
-                onTap: () {
-                  _scrollController.animateTo(
-                    0,
-                    duration: const Duration(milliseconds: 500),
-                    curve: Curves.easeOut,
-                  );
-                },
-                child: Container(
-                  width: 32,
-                  height: 32,
-                  decoration: BoxDecoration(
-                    color: isDark ? Colors.white : Colors.black,
-                    shape: BoxShape.circle,
+              // Only show scroll-to-top when scrolled past threshold
+              AnimatedOpacity(
+                duration: const Duration(milliseconds: 200),
+                opacity: _canShowScrollToTop ? 1.0 : 0.0,
+                child: IgnorePointer(
+                  ignoring: !_canShowScrollToTop,
+                  child: TappableScaleWidget(
+                    scaleDown: AppAnimations.navButtonScaleDown,
+                    onTap: () {
+                      _scrollController.animateTo(
+                        0,
+                        duration: AppAnimations.slow,
+                        curve: AppAnimations.easeOut,
+                      );
+                    },
+                    child: Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: isDark ? Colors.white : Colors.black,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(CupertinoIcons.arrow_up,
+                          color: isDark ? Colors.black : Colors.white, size: 18),
+                    ),
                   ),
-                  child: Icon(CupertinoIcons.arrow_up,
-                      color: isDark ? Colors.black : Colors.white, size: 18),
                 ),
               ),
             ],
@@ -288,19 +309,13 @@ class _UserPageState extends State<UserPage> with TickerProviderStateMixin {
                       child: _buildDescription(isDark, user),
                     ),
 
-                  // Tab selector
-                  SliverToBoxAdapter(
-                    child: _buildTabSelector(isDark),
-                  ),
+                  // Tab selector removed (Widgets tab disabled)
+                  // SliverToBoxAdapter(
+                  //   child: _buildTabSelector(isDark),
+                  // ),
                 ];
               },
-              body: IndexedStack(
-                index: _selectedTab,
-                children: [
-                  UserPostsView(accountIdOfUser: widget.accountId),
-                  WidgetsView(accountIdOfUser: widget.accountId),
-                ],
-              ),
+              body: UserPostsView(accountIdOfUser: widget.accountId),
             ),
           ),
         );
@@ -365,10 +380,10 @@ class _UserPageState extends State<UserPage> with TickerProviderStateMixin {
         user.followings!.any(
           (element) => element.accountId == authController.state.accountId,
         );
-    final bool inFollowerList = user.followers != null &&
-        user.followers!.any(
-          (follower) => follower.accountId == authController.state.accountId,
-        );
+    // final bool inFollowerList = user.followers != null &&
+    //     user.followers!.any(
+    //       (follower) => follower.accountId == authController.state.accountId,
+    //     );
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -543,33 +558,8 @@ class _UserPageState extends State<UserPage> with TickerProviderStateMixin {
 
                       const SizedBox(height: 16),
 
-                      // Action buttons
-                      if (isOwnProfile)
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 24),
-                          child: CupertinoButton(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 32, vertical: 10),
-                            color: isDark
-                                ? CupertinoColors.white
-                                : CupertinoColors.black,
-                            borderRadius: BorderRadius.circular(20),
-                            onPressed: () {
-                              // Navigate to edit profile
-                            },
-                            child: Text('Edit Profile',
-                                style: TextStyle(
-                                    color: isDark ? Colors.black : Colors.white,
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w600)),
-                          ),
-                        )
-                      else
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 24),
-                          child: _buildActionButtons(
-                              isDark, user, authController, inFollowerList),
-                        ),
+                      // Action buttons removed (blockchain writes disabled)
+                      // Edit Profile, Follow, Poke, Donate — all commented out
 
                       const SizedBox(height: 16),
                     ],
@@ -687,6 +677,40 @@ class _UserPageState extends State<UserPage> with TickerProviderStateMixin {
               fontSize: 14,
               fontWeight: FontWeight.w600,
             ),
+          ),
+        ),
+
+        // P2P Call button
+        CupertinoButton(
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.1)
+              : Colors.black.withValues(alpha: 0.06),
+          borderRadius: BorderRadius.circular(18),
+          onPressed: () {
+            HapticFeedback.lightImpact();
+            Modular.to.pushNamed(
+              '${Routes.home.getRoute(Routes.home.p2pCallPage)}?targetAccountId=${widget.accountId}',
+            );
+          },
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                CupertinoIcons.video_camera_solid,
+                size: 16,
+                color: isDark ? Colors.white : Colors.black,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                "Call",
+                style: TextStyle(
+                  color: isDark ? Colors.white : Colors.black,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
           ),
         ),
       ],
