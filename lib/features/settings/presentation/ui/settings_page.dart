@@ -198,9 +198,9 @@ class _SettingsPageState extends ConsumerState<SettingsPage>
   Future<void> showNearSocialKeysDialog(BuildContext context) async {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final authInfo = ref.read(authControllerProvider);
-    final authSecretKey = authInfo.secretKey;
+    final accountPublicKey = authInfo.accountPublicKey;
     final accountId = authInfo.accountId;
-    final link = "https://near.social/signin#?a=$accountId&k=$authSecretKey";
+    final link = "Account: $accountId\nPublic Key: $accountPublicKey";
 
     if (!context.mounted) return;
     _showGlassDialog(

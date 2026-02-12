@@ -232,8 +232,8 @@ class _CreateCommentDialogState extends ConsumerState<CreateCommentDialog> {
                       final authState = ref.read(authControllerProvider);
                       final authController = ref.read(authControllerProvider.notifier);
                       final String accountId = authState.accountId;
-                      final String publicKey = authState.publicKey;
-                      final String privateKey = authState.privateKey;
+                      final String publicKey = authState.accountPublicKey;
+                      final String privateKey = authState.devicePrivateKey;
 
                       String? cidOfMedia;
                       if (imageData != null) {

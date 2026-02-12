@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$AuthorizationCredentials {
 
- String get accountId; String get secretKey;
+ String get accountPublicKey;
 /// Create a copy of AuthorizationCredentials
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,16 +28,16 @@ $AuthorizationCredentialsCopyWith<AuthorizationCredentials> get copyWith => _$Au
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AuthorizationCredentials&&(identical(other.accountId, accountId) || other.accountId == accountId)&&(identical(other.secretKey, secretKey) || other.secretKey == secretKey));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AuthorizationCredentials&&(identical(other.accountPublicKey, accountPublicKey) || other.accountPublicKey == accountPublicKey));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,accountId,secretKey);
+int get hashCode => Object.hash(runtimeType,accountPublicKey);
 
 @override
 String toString() {
-  return 'AuthorizationCredentials(accountId: $accountId, secretKey: $secretKey)';
+  return 'AuthorizationCredentials(accountPublicKey: $accountPublicKey)';
 }
 
 
@@ -48,7 +48,7 @@ abstract mixin class $AuthorizationCredentialsCopyWith<$Res>  {
   factory $AuthorizationCredentialsCopyWith(AuthorizationCredentials value, $Res Function(AuthorizationCredentials) _then) = _$AuthorizationCredentialsCopyWithImpl;
 @useResult
 $Res call({
- String accountId, String secretKey
+ String accountPublicKey
 });
 
 
@@ -65,10 +65,9 @@ class _$AuthorizationCredentialsCopyWithImpl<$Res>
 
 /// Create a copy of AuthorizationCredentials
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? accountId = null,Object? secretKey = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? accountPublicKey = null,}) {
   return _then(_self.copyWith(
-accountId: null == accountId ? _self.accountId : accountId // ignore: cast_nullable_to_non_nullable
-as String,secretKey: null == secretKey ? _self.secretKey : secretKey // ignore: cast_nullable_to_non_nullable
+accountPublicKey: null == accountPublicKey ? _self.accountPublicKey : accountPublicKey // ignore: cast_nullable_to_non_nullable
 as String,
   ));
 }
@@ -154,10 +153,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String accountId,  String secretKey)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String accountPublicKey)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _AuthorizationCredentials() when $default != null:
-return $default(_that.accountId,_that.secretKey);case _:
+return $default(_that.accountPublicKey);case _:
   return orElse();
 
 }
@@ -175,10 +174,10 @@ return $default(_that.accountId,_that.secretKey);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String accountId,  String secretKey)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String accountPublicKey)  $default,) {final _that = this;
 switch (_that) {
 case _AuthorizationCredentials():
-return $default(_that.accountId,_that.secretKey);case _:
+return $default(_that.accountPublicKey);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -195,10 +194,10 @@ return $default(_that.accountId,_that.secretKey);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String accountId,  String secretKey)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String accountPublicKey)?  $default,) {final _that = this;
 switch (_that) {
 case _AuthorizationCredentials() when $default != null:
-return $default(_that.accountId,_that.secretKey);case _:
+return $default(_that.accountPublicKey);case _:
   return null;
 
 }
@@ -210,11 +209,10 @@ return $default(_that.accountId,_that.secretKey);case _:
 @JsonSerializable()
 
 class _AuthorizationCredentials implements AuthorizationCredentials {
-  const _AuthorizationCredentials({required this.accountId, required this.secretKey});
+  const _AuthorizationCredentials({required this.accountPublicKey});
   factory _AuthorizationCredentials.fromJson(Map<String, dynamic> json) => _$AuthorizationCredentialsFromJson(json);
 
-@override final  String accountId;
-@override final  String secretKey;
+@override final  String accountPublicKey;
 
 /// Create a copy of AuthorizationCredentials
 /// with the given fields replaced by the non-null parameter values.
@@ -229,16 +227,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AuthorizationCredentials&&(identical(other.accountId, accountId) || other.accountId == accountId)&&(identical(other.secretKey, secretKey) || other.secretKey == secretKey));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AuthorizationCredentials&&(identical(other.accountPublicKey, accountPublicKey) || other.accountPublicKey == accountPublicKey));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,accountId,secretKey);
+int get hashCode => Object.hash(runtimeType,accountPublicKey);
 
 @override
 String toString() {
-  return 'AuthorizationCredentials(accountId: $accountId, secretKey: $secretKey)';
+  return 'AuthorizationCredentials(accountPublicKey: $accountPublicKey)';
 }
 
 
@@ -249,7 +247,7 @@ abstract mixin class _$AuthorizationCredentialsCopyWith<$Res> implements $Author
   factory _$AuthorizationCredentialsCopyWith(_AuthorizationCredentials value, $Res Function(_AuthorizationCredentials) _then) = __$AuthorizationCredentialsCopyWithImpl;
 @override @useResult
 $Res call({
- String accountId, String secretKey
+ String accountPublicKey
 });
 
 
@@ -266,10 +264,9 @@ class __$AuthorizationCredentialsCopyWithImpl<$Res>
 
 /// Create a copy of AuthorizationCredentials
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? accountId = null,Object? secretKey = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? accountPublicKey = null,}) {
   return _then(_AuthorizationCredentials(
-accountId: null == accountId ? _self.accountId : accountId // ignore: cast_nullable_to_non_nullable
-as String,secretKey: null == secretKey ? _self.secretKey : secretKey // ignore: cast_nullable_to_non_nullable
+accountPublicKey: null == accountPublicKey ? _self.accountPublicKey : accountPublicKey // ignore: cast_nullable_to_non_nullable
 as String,
   ));
 }

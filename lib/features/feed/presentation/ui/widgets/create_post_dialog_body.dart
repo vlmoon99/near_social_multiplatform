@@ -197,8 +197,8 @@ class _CreatePostModalState extends ConsumerState<CreatePostModal> {
       final authController = ref.read(authControllerProvider.notifier);
 
       final accountId = authState.accountId;
-      final publicKey = authState.publicKey;
-      final privateKey = authState.privateKey;
+      final publicKey = authState.accountPublicKey;
+      final privateKey = authState.devicePrivateKey;
 
       String? cidOfMedia;
       if (_imageData != null) {

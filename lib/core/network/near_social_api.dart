@@ -17,7 +17,6 @@ import 'package:near_social_mobile/features/feed/data/models/like.dart';
 import 'package:near_social_mobile/features/people/data/models/nft.dart';
 import 'package:near_social_mobile/features/notifications/data/models/notification.dart';
 import 'package:near_social_mobile/features/feed/data/models/post.dart';
-import 'package:near_social_mobile/features/auth/data/models/private_key_info.dart';
 import 'package:near_social_mobile/features/feed/data/models/reposter.dart';
 import 'package:near_social_mobile/features/feed/data/models/reposter_info.dart';
 import 'package:near_social_mobile/features/people/data/models/user_storage_info.dart';
@@ -1395,65 +1394,6 @@ class NearSocialApi {
         );
       }
       return notifications;
-    } catch (err) {
-      rethrow;
-    }
-  }
-
-  Future<PrivateKeyInfo> getAccessKeyInfo({
-    required String accountId,
-    required String key,
-  }) async {
-    try {
-      final publicKeyOfSecretKey =
-          nearRpcService.getPublicKeyFromSecretKey(key);
-      final base58PubKey =
-          nearRpcService.getBase58PubKey(publicKeyOfSecretKey);
-      final response = await _dio.post(
-        NearUrls.blockchainRpc,
-        data: {
-          "jsonrpc": "2.0",
-          "id": "dontcare",
-          "method": "query",
-          "params": {
-            "request_type": "view_access_key",
-            "finality": "final",
-            "account_id": accountId,
-            "public_key": base58PubKey
-          }
-        },
-        options: Options(
-          headers: {'Content-Type': 'application/json'},
-        ),
-      );
-      final permission = response.data["result"]?["permission"];
-      if (permission == null) {
-        throw Exception(response.data["result"]["error"].toString());
-      }
-      if (permission is Map && permission.keys.first == "FunctionCall") {
-        return PrivateKeyInfo(
-          publicKey: publicKeyOfSecretKey,
-          privateKey: key,
-          base58PubKey: base58PubKey,
-          privateKeyTypeInfo: PrivateKeyTypeInfo(
-            type: PrivateKeyType.FunctionCall,
-            receiverId: permission["FunctionCall"]["receiver_id"],
-            methodNames: List<String>.from(
-                permission["FunctionCall"]?["method_names"] ?? []),
-          ),
-        );
-      } else if (permission is String && permission == "FullAccess") {
-        return PrivateKeyInfo(
-          publicKey: publicKeyOfSecretKey,
-          privateKey: key,
-          base58PubKey: base58PubKey,
-          privateKeyTypeInfo: const PrivateKeyTypeInfo(
-            type: PrivateKeyType.FullAccess,
-          ),
-        );
-      } else {
-        throw Exception("Unknown permission type");
-      }
     } catch (err) {
       rethrow;
     }

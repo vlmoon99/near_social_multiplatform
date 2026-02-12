@@ -42,7 +42,7 @@ final class OperationQueueControllerProvider
 }
 
 String _$operationQueueControllerHash() =>
-    r'c54d3f55b454836ef68e560777f4e2163e467951';
+    r'0098ad936e0523f4dc980c6c838f7672f9b1fdfa';
 
 abstract class _$OperationQueueController
     extends $Notifier<OperationQueueState> {

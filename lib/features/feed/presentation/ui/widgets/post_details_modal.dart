@@ -492,8 +492,8 @@ class _CommentModalState extends ConsumerState<_CommentModal> {
       final nearSocialApi = ref.read(nearSocialApiProvider);
       final authInfo = ref.read(authControllerProvider);
       final accountId = authInfo.accountId;
-      final publicKey = authInfo.publicKey;
-      final privateKey = authInfo.privateKey;
+      final publicKey = authInfo.accountPublicKey;
+      final privateKey = authInfo.devicePrivateKey;
 
       String? cidOfMedia;
       if (_imageData != null) {

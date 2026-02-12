@@ -41,7 +41,7 @@ final class FilterControllerProvider
   }
 }
 
-String _$filterControllerHash() => r'92782b64aa0563d92542f5609150d353660dbfa1';
+String _$filterControllerHash() => r'89c99bf17f88727a867e36c5941c06a265bb8c5d';
 
 abstract class _$FilterController extends $Notifier<Filters> {
   Filters build();

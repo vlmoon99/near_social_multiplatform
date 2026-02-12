@@ -85,6 +85,22 @@ class CryptoService {
     return 'ed25519:${Base58.encode(privateKey)}';
   }
 
+  static ({Uint8List publicKey, Uint8List privateKey}) generateEd25519KeyPair() {
+    final seed = CryptoUtils.generateCryptographicKey();
+    return deriveKeyPairFromSeed(seed);
+  }
+
+  static String publicKeyToImplicitAccountId(Uint8List publicKey) {
+    if (publicKey.length != 32) {
+      throw ArgumentError('Public key must be exactly 32 bytes.');
+    }
+    final buffer = StringBuffer();
+    for (final byte in publicKey) {
+      buffer.write(byte.toRadixString(16).padLeft(2, '0'));
+    }
+    return buffer.toString();
+  }
+
   static String _stripPrefix(String key) {
     const prefix = 'ed25519:';
     if (key.startsWith(prefix)) {

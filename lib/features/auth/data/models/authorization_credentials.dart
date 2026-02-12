@@ -6,8 +6,7 @@ part 'authorization_credentials.g.dart';
 @freezed
 abstract class AuthorizationCredentials with _$AuthorizationCredentials {
   const factory AuthorizationCredentials({
-    required String accountId,
-    required String secretKey,
+    required String accountPublicKey,
   }) = _AuthorizationCredentials;
 
   factory AuthorizationCredentials.fromJson(Map<String, dynamic> json) =>

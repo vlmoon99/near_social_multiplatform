@@ -206,8 +206,8 @@ class OperationQueueController extends _$OperationQueueController {
   Future<void> _executeOperation(PendingOperation op) async {
     final authState = ref.read(authControllerProvider);
     final accountId = authState.accountId;
-    final publicKey = authState.publicKey;
-    final privateKey = authState.privateKey;
+    final publicKey = authState.accountPublicKey;
+    final privateKey = authState.devicePrivateKey;
 
     switch (op.type) {
       case OperationType.likePost:

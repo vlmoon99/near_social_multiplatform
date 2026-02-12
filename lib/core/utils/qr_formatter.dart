@@ -1,24 +1,18 @@
-import 'package:near_social_mobile/features/auth/data/models/authorization_credentials.dart';
+import 'package:near_social_mobile/core/services/crypto_service.dart';
 
 class QRFormatter {
-  static AuthorizationCredentials convertURLToAuthorizationCredentials(
-      String url) {
-    final accountIdStartIndex = url.indexOf('a=');
-    final secretKeyStartIndex = url.indexOf('&k=');
+  static String parsePublicKey(String qrData) {
+    final trimmed = qrData.trim();
 
-    final accountIdEndIndex = url.indexOf('&', accountIdStartIndex + 2);
-    final secretKeyEndIndex = url.length;
-
-    if (accountIdStartIndex == -1 ||
-        secretKeyStartIndex == -1 ||
-        accountIdEndIndex == -1 ||
-        secretKeyEndIndex == -1) {
-      throw Exception("Invalid QR code format");
+    if (!trimmed.startsWith('ed25519:')) {
+      throw const FormatException(
+        'Invalid QR code format: expected ed25519:<base58>',
+      );
     }
 
-    final accountId = url.substring(accountIdStartIndex + 2, accountIdEndIndex);
-    final secretKey = url.substring(secretKeyStartIndex + 3, secretKeyEndIndex);
+    // Validate by decoding — throws FormatException if invalid
+    CryptoService.publicKeyFromBase58(trimmed);
 
-    return AuthorizationCredentials(accountId: accountId, secretKey: secretKey);
+    return trimmed;
   }
 }

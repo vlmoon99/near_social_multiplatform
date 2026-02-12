@@ -42,7 +42,7 @@ final class UserListControllerProvider
 }
 
 String _$userListControllerHash() =>
-    r'cdc3e7763f69bf430e9002a309a80dad3e490b8a';
+    r'7fab78f4125f198f38a9d0aad985ad21c10b9f62';
 
 abstract class _$UserListController extends $Notifier<UsersList> {
   UsersList build();

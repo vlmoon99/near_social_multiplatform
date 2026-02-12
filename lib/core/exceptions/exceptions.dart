@@ -1,7 +1,6 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 import 'package:near_social_mobile/core/shared_widgets/custom_button.dart';
-import 'package:near_social_mobile/core/shared_widgets/storage_controll_dialogs.dart';
 
 final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>();
 
@@ -81,21 +80,11 @@ class AppException extends AppExceptionAbstract {
   }
 }
 
-class NotEnoughStorageBalanceException extends AppExceptionAbstract {
+class NotEnoughStorageBalanceException extends AppException {
   const NotEnoughStorageBalanceException()
       : super('Not enough storage balance');
-
-  @override
-  Widget dialogWidget(BuildContext context) {
-    return BuyStorageDialog();
-  }
 }
 
-class AccountNotActivatedException extends AppExceptionAbstract {
+class AccountNotActivatedException extends AppException {
   const AccountNotActivatedException() : super('Account not activated');
-
-  @override
-  Widget dialogWidget(BuildContext context) {
-    return ActivateAccountDialog();
-  }
 }

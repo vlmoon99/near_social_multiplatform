@@ -1,5 +1,4 @@
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
@@ -60,22 +59,6 @@ class LoginBody extends StatelessWidget {
               ),
             ],
           ),
-          if (kIsWeb) ...[
-            SizedBox(height: 12.h),
-            CustomButton(
-              primary: false,
-              onPressed: () {
-                context.push(AppRoutes.loginWithKey);
-              },
-              child: Text(
-                "auth.login_with_key".tr(),
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
-              ),
-            ),
-          ],
         ],
       ),
     );

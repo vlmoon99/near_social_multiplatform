@@ -5,9 +5,6 @@ import 'package:near_social_mobile/core/router/routes.dart';
 import 'package:near_social_mobile/features/auth/presentation/providers/auth_controller.dart';
 import 'package:near_social_mobile/features/auth/presentation/ui/start_page.dart';
 import 'package:near_social_mobile/features/auth/presentation/ui/qr_scan_screen.dart';
-import 'package:near_social_mobile/features/auth/presentation/ui/encryption_screen.dart';
-import 'package:near_social_mobile/features/auth/presentation/ui/login_with_key_page.dart';
-import 'package:near_social_mobile/features/auth/data/models/authorization_credentials.dart';
 import 'package:near_social_mobile/features/feed/presentation/ui/home_page.dart';
 import 'package:near_social_mobile/features/feed/presentation/ui/posts_feed_page.dart';
 import 'package:near_social_mobile/features/feed/presentation/ui/post_page.dart';
@@ -20,7 +17,6 @@ import 'package:near_social_mobile/features/settings/presentation/ui/home_menu_p
 import 'package:near_social_mobile/features/settings/presentation/ui/settings_page.dart';
 import 'package:near_social_mobile/features/settings/presentation/ui/blocked_users_page.dart';
 import 'package:near_social_mobile/features/settings/presentation/ui/hidden_posts_users_page.dart';
-import 'package:near_social_mobile/features/key_manager/presentation/ui/key_manager_page.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authControllerProvider);
@@ -48,19 +44,6 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: 'qr-reader',
             builder: (context, state) => const QRReaderScreen(),
-          ),
-          GoRoute(
-            path: 'login-with-key',
-            builder: (context, state) => const LoginWithKeyPage(),
-          ),
-          GoRoute(
-            path: 'encrypt-data',
-            builder: (context, state) {
-              final creds = state.extra as AuthorizationCredentials?;
-              return EncryptionScreen(
-                authorizationCredentials: creds ?? const AuthorizationCredentials(accountId: '', secretKey: ''),
-              );
-            },
           ),
         ],
       ),
@@ -105,10 +88,6 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: 'menu',
             builder: (context, state) => const HomeMenuPage(),
-          ),
-          GoRoute(
-            path: 'key-manager',
-            builder: (context, state) => const KeyManagerPage(),
           ),
           GoRoute(
             path: 'settings',

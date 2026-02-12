@@ -8,7 +8,6 @@ import 'package:near_social_mobile/core/network/near_rpc_service.dart';
 import 'package:near_social_mobile/core/network/near_social_api.dart';
 import 'package:near_social_mobile/features/auth/data/repositories/local_user_data_repository.dart';
 import 'package:near_social_mobile/features/auth/data/repositories/user_data_repository.dart';
-import 'package:near_social_mobile/features/auth/services/web_wallet_service.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'service_providers.g.dart';
@@ -55,9 +54,4 @@ NearSocialApi nearSocialApi(Ref ref) {
 UserDataRepository userDataRepository(Ref ref) {
   final secureStorage = ref.watch(secureStorageProvider);
   return LocalUserDataRepository(secureStorage);
-}
-
-@Riverpod(keepAlive: true)
-WebWalletService webWalletService(Ref ref) {
-  return StubWebWalletService();
 }

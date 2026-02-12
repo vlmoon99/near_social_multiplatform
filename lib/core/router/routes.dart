@@ -1,8 +1,6 @@
 abstract final class AppRoutes {
   static const auth = '/auth';
   static const qrReader = '/auth/qr-reader';
-  static const encryptData = '/auth/encrypt-data';
-  static const loginWithKey = '/auth/login-with-key';
 
   static const home = '/home';
   static const postsFeed = '/home/posts-feed';
@@ -15,9 +13,7 @@ abstract final class AppRoutes {
   static const notifications = '/home/notifications';
 
   static const homeMenu = '/home/menu';
-  static const keyManager = '/home/key-manager';
   static const settings = '/home/settings';
   static const blockedUsers = '/home/blocked-users';
   static const hiddenPosts = '/home/hidden-posts';
-
 }

@@ -32,17 +32,16 @@ class _QRReaderScreenState extends State<QRReaderScreen> {
     for (final barcode in barcodes) {
       if (barcode.rawValue != null) {
         _isProcessing = true;
-        await checkIfQRCodeIsValid(barcode.rawValue!);
+        await _processQRCode(barcode.rawValue!);
         break;
       }
     }
   }
 
-  Future<void> checkIfQRCodeIsValid(String code) async {
+  Future<void> _processQRCode(String code) async {
     try {
-      final authorizationCredentials =
-          QRFormatter.convertURLToAuthorizationCredentials(code);
-      await encryptDataAndLogin(authorizationCredentials);
+      final accountPublicKey = QRFormatter.parsePublicKey(code);
+      await encryptDataAndLogin(accountPublicKey);
       if (mounted) {
         context.go(AppRoutes.home);
       }

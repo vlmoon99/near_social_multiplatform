@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$AuthInfo {
 
- String get accountId; String get publicKey; String get secretKey; String get privateKey; AuthInfoStatus get status; Map<String, PrivateKeyInfo> get additionalStoredKeys; AccountActivationStatus get accountActivationStatus;
+ String get accountId; String get accountPublicKey; String get devicePublicKey; String get devicePrivateKey; AuthInfoStatus get status; AccountActivationStatus get accountActivationStatus;
 /// Create a copy of AuthInfo
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,16 +28,16 @@ $AuthInfoCopyWith<AuthInfo> get copyWith => _$AuthInfoCopyWithImpl<AuthInfo>(thi
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AuthInfo&&(identical(other.accountId, accountId) || other.accountId == accountId)&&(identical(other.publicKey, publicKey) || other.publicKey == publicKey)&&(identical(other.secretKey, secretKey) || other.secretKey == secretKey)&&(identical(other.privateKey, privateKey) || other.privateKey == privateKey)&&(identical(other.status, status) || other.status == status)&&const DeepCollectionEquality().equals(other.additionalStoredKeys, additionalStoredKeys)&&(identical(other.accountActivationStatus, accountActivationStatus) || other.accountActivationStatus == accountActivationStatus));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AuthInfo&&(identical(other.accountId, accountId) || other.accountId == accountId)&&(identical(other.accountPublicKey, accountPublicKey) || other.accountPublicKey == accountPublicKey)&&(identical(other.devicePublicKey, devicePublicKey) || other.devicePublicKey == devicePublicKey)&&(identical(other.devicePrivateKey, devicePrivateKey) || other.devicePrivateKey == devicePrivateKey)&&(identical(other.status, status) || other.status == status)&&(identical(other.accountActivationStatus, accountActivationStatus) || other.accountActivationStatus == accountActivationStatus));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,accountId,publicKey,secretKey,privateKey,status,const DeepCollectionEquality().hash(additionalStoredKeys),accountActivationStatus);
+int get hashCode => Object.hash(runtimeType,accountId,accountPublicKey,devicePublicKey,devicePrivateKey,status,accountActivationStatus);
 
 @override
 String toString() {
-  return 'AuthInfo(accountId: $accountId, publicKey: $publicKey, secretKey: $secretKey, privateKey: $privateKey, status: $status, additionalStoredKeys: $additionalStoredKeys, accountActivationStatus: $accountActivationStatus)';
+  return 'AuthInfo(accountId: $accountId, accountPublicKey: $accountPublicKey, devicePublicKey: $devicePublicKey, devicePrivateKey: $devicePrivateKey, status: $status, accountActivationStatus: $accountActivationStatus)';
 }
 
 
@@ -48,7 +48,7 @@ abstract mixin class $AuthInfoCopyWith<$Res>  {
   factory $AuthInfoCopyWith(AuthInfo value, $Res Function(AuthInfo) _then) = _$AuthInfoCopyWithImpl;
 @useResult
 $Res call({
- String accountId, String publicKey, String secretKey, String privateKey, AuthInfoStatus status, Map<String, PrivateKeyInfo> additionalStoredKeys, AccountActivationStatus accountActivationStatus
+ String accountId, String accountPublicKey, String devicePublicKey, String devicePrivateKey, AuthInfoStatus status, AccountActivationStatus accountActivationStatus
 });
 
 
@@ -65,15 +65,14 @@ class _$AuthInfoCopyWithImpl<$Res>
 
 /// Create a copy of AuthInfo
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? accountId = null,Object? publicKey = null,Object? secretKey = null,Object? privateKey = null,Object? status = null,Object? additionalStoredKeys = null,Object? accountActivationStatus = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? accountId = null,Object? accountPublicKey = null,Object? devicePublicKey = null,Object? devicePrivateKey = null,Object? status = null,Object? accountActivationStatus = null,}) {
   return _then(_self.copyWith(
 accountId: null == accountId ? _self.accountId : accountId // ignore: cast_nullable_to_non_nullable
-as String,publicKey: null == publicKey ? _self.publicKey : publicKey // ignore: cast_nullable_to_non_nullable
-as String,secretKey: null == secretKey ? _self.secretKey : secretKey // ignore: cast_nullable_to_non_nullable
-as String,privateKey: null == privateKey ? _self.privateKey : privateKey // ignore: cast_nullable_to_non_nullable
+as String,accountPublicKey: null == accountPublicKey ? _self.accountPublicKey : accountPublicKey // ignore: cast_nullable_to_non_nullable
+as String,devicePublicKey: null == devicePublicKey ? _self.devicePublicKey : devicePublicKey // ignore: cast_nullable_to_non_nullable
+as String,devicePrivateKey: null == devicePrivateKey ? _self.devicePrivateKey : devicePrivateKey // ignore: cast_nullable_to_non_nullable
 as String,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
-as AuthInfoStatus,additionalStoredKeys: null == additionalStoredKeys ? _self.additionalStoredKeys : additionalStoredKeys // ignore: cast_nullable_to_non_nullable
-as Map<String, PrivateKeyInfo>,accountActivationStatus: null == accountActivationStatus ? _self.accountActivationStatus : accountActivationStatus // ignore: cast_nullable_to_non_nullable
+as AuthInfoStatus,accountActivationStatus: null == accountActivationStatus ? _self.accountActivationStatus : accountActivationStatus // ignore: cast_nullable_to_non_nullable
 as AccountActivationStatus,
   ));
 }
@@ -159,10 +158,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String accountId,  String publicKey,  String secretKey,  String privateKey,  AuthInfoStatus status,  Map<String, PrivateKeyInfo> additionalStoredKeys,  AccountActivationStatus accountActivationStatus)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String accountId,  String accountPublicKey,  String devicePublicKey,  String devicePrivateKey,  AuthInfoStatus status,  AccountActivationStatus accountActivationStatus)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _AuthInfo() when $default != null:
-return $default(_that.accountId,_that.publicKey,_that.secretKey,_that.privateKey,_that.status,_that.additionalStoredKeys,_that.accountActivationStatus);case _:
+return $default(_that.accountId,_that.accountPublicKey,_that.devicePublicKey,_that.devicePrivateKey,_that.status,_that.accountActivationStatus);case _:
   return orElse();
 
 }
@@ -180,10 +179,10 @@ return $default(_that.accountId,_that.publicKey,_that.secretKey,_that.privateKey
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String accountId,  String publicKey,  String secretKey,  String privateKey,  AuthInfoStatus status,  Map<String, PrivateKeyInfo> additionalStoredKeys,  AccountActivationStatus accountActivationStatus)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String accountId,  String accountPublicKey,  String devicePublicKey,  String devicePrivateKey,  AuthInfoStatus status,  AccountActivationStatus accountActivationStatus)  $default,) {final _that = this;
 switch (_that) {
 case _AuthInfo():
-return $default(_that.accountId,_that.publicKey,_that.secretKey,_that.privateKey,_that.status,_that.additionalStoredKeys,_that.accountActivationStatus);case _:
+return $default(_that.accountId,_that.accountPublicKey,_that.devicePublicKey,_that.devicePrivateKey,_that.status,_that.accountActivationStatus);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -200,10 +199,10 @@ return $default(_that.accountId,_that.publicKey,_that.secretKey,_that.privateKey
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String accountId,  String publicKey,  String secretKey,  String privateKey,  AuthInfoStatus status,  Map<String, PrivateKeyInfo> additionalStoredKeys,  AccountActivationStatus accountActivationStatus)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String accountId,  String accountPublicKey,  String devicePublicKey,  String devicePrivateKey,  AuthInfoStatus status,  AccountActivationStatus accountActivationStatus)?  $default,) {final _that = this;
 switch (_that) {
 case _AuthInfo() when $default != null:
-return $default(_that.accountId,_that.publicKey,_that.secretKey,_that.privateKey,_that.status,_that.additionalStoredKeys,_that.accountActivationStatus);case _:
+return $default(_that.accountId,_that.accountPublicKey,_that.devicePublicKey,_that.devicePrivateKey,_that.status,_that.accountActivationStatus);case _:
   return null;
 
 }
@@ -215,21 +214,14 @@ return $default(_that.accountId,_that.publicKey,_that.secretKey,_that.privateKey
 @JsonSerializable()
 
 class _AuthInfo implements AuthInfo {
-  const _AuthInfo({this.accountId = "", this.publicKey = "", this.secretKey = "", this.privateKey = "", this.status = AuthInfoStatus.unauthenticated, final  Map<String, PrivateKeyInfo> additionalStoredKeys = const {}, this.accountActivationStatus = AccountActivationStatus.undefined}): _additionalStoredKeys = additionalStoredKeys;
+  const _AuthInfo({this.accountId = "", this.accountPublicKey = "", this.devicePublicKey = "", this.devicePrivateKey = "", this.status = AuthInfoStatus.unauthenticated, this.accountActivationStatus = AccountActivationStatus.undefined});
   factory _AuthInfo.fromJson(Map<String, dynamic> json) => _$AuthInfoFromJson(json);
 
 @override@JsonKey() final  String accountId;
-@override@JsonKey() final  String publicKey;
-@override@JsonKey() final  String secretKey;
-@override@JsonKey() final  String privateKey;
+@override@JsonKey() final  String accountPublicKey;
+@override@JsonKey() final  String devicePublicKey;
+@override@JsonKey() final  String devicePrivateKey;
 @override@JsonKey() final  AuthInfoStatus status;
- final  Map<String, PrivateKeyInfo> _additionalStoredKeys;
-@override@JsonKey() Map<String, PrivateKeyInfo> get additionalStoredKeys {
-  if (_additionalStoredKeys is EqualUnmodifiableMapView) return _additionalStoredKeys;
-  // ignore: implicit_dynamic_type
-  return EqualUnmodifiableMapView(_additionalStoredKeys);
-}
-
 @override@JsonKey() final  AccountActivationStatus accountActivationStatus;
 
 /// Create a copy of AuthInfo
@@ -245,16 +237,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AuthInfo&&(identical(other.accountId, accountId) || other.accountId == accountId)&&(identical(other.publicKey, publicKey) || other.publicKey == publicKey)&&(identical(other.secretKey, secretKey) || other.secretKey == secretKey)&&(identical(other.privateKey, privateKey) || other.privateKey == privateKey)&&(identical(other.status, status) || other.status == status)&&const DeepCollectionEquality().equals(other._additionalStoredKeys, _additionalStoredKeys)&&(identical(other.accountActivationStatus, accountActivationStatus) || other.accountActivationStatus == accountActivationStatus));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AuthInfo&&(identical(other.accountId, accountId) || other.accountId == accountId)&&(identical(other.accountPublicKey, accountPublicKey) || other.accountPublicKey == accountPublicKey)&&(identical(other.devicePublicKey, devicePublicKey) || other.devicePublicKey == devicePublicKey)&&(identical(other.devicePrivateKey, devicePrivateKey) || other.devicePrivateKey == devicePrivateKey)&&(identical(other.status, status) || other.status == status)&&(identical(other.accountActivationStatus, accountActivationStatus) || other.accountActivationStatus == accountActivationStatus));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,accountId,publicKey,secretKey,privateKey,status,const DeepCollectionEquality().hash(_additionalStoredKeys),accountActivationStatus);
+int get hashCode => Object.hash(runtimeType,accountId,accountPublicKey,devicePublicKey,devicePrivateKey,status,accountActivationStatus);
 
 @override
 String toString() {
-  return 'AuthInfo(accountId: $accountId, publicKey: $publicKey, secretKey: $secretKey, privateKey: $privateKey, status: $status, additionalStoredKeys: $additionalStoredKeys, accountActivationStatus: $accountActivationStatus)';
+  return 'AuthInfo(accountId: $accountId, accountPublicKey: $accountPublicKey, devicePublicKey: $devicePublicKey, devicePrivateKey: $devicePrivateKey, status: $status, accountActivationStatus: $accountActivationStatus)';
 }
 
 
@@ -265,7 +257,7 @@ abstract mixin class _$AuthInfoCopyWith<$Res> implements $AuthInfoCopyWith<$Res>
   factory _$AuthInfoCopyWith(_AuthInfo value, $Res Function(_AuthInfo) _then) = __$AuthInfoCopyWithImpl;
 @override @useResult
 $Res call({
- String accountId, String publicKey, String secretKey, String privateKey, AuthInfoStatus status, Map<String, PrivateKeyInfo> additionalStoredKeys, AccountActivationStatus accountActivationStatus
+ String accountId, String accountPublicKey, String devicePublicKey, String devicePrivateKey, AuthInfoStatus status, AccountActivationStatus accountActivationStatus
 });
 
 
@@ -282,15 +274,14 @@ class __$AuthInfoCopyWithImpl<$Res>
 
 /// Create a copy of AuthInfo
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? accountId = null,Object? publicKey = null,Object? secretKey = null,Object? privateKey = null,Object? status = null,Object? additionalStoredKeys = null,Object? accountActivationStatus = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? accountId = null,Object? accountPublicKey = null,Object? devicePublicKey = null,Object? devicePrivateKey = null,Object? status = null,Object? accountActivationStatus = null,}) {
   return _then(_AuthInfo(
 accountId: null == accountId ? _self.accountId : accountId // ignore: cast_nullable_to_non_nullable
-as String,publicKey: null == publicKey ? _self.publicKey : publicKey // ignore: cast_nullable_to_non_nullable
-as String,secretKey: null == secretKey ? _self.secretKey : secretKey // ignore: cast_nullable_to_non_nullable
-as String,privateKey: null == privateKey ? _self.privateKey : privateKey // ignore: cast_nullable_to_non_nullable
+as String,accountPublicKey: null == accountPublicKey ? _self.accountPublicKey : accountPublicKey // ignore: cast_nullable_to_non_nullable
+as String,devicePublicKey: null == devicePublicKey ? _self.devicePublicKey : devicePublicKey // ignore: cast_nullable_to_non_nullable
+as String,devicePrivateKey: null == devicePrivateKey ? _self.devicePrivateKey : devicePrivateKey // ignore: cast_nullable_to_non_nullable
 as String,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
-as AuthInfoStatus,additionalStoredKeys: null == additionalStoredKeys ? _self._additionalStoredKeys : additionalStoredKeys // ignore: cast_nullable_to_non_nullable
-as Map<String, PrivateKeyInfo>,accountActivationStatus: null == accountActivationStatus ? _self.accountActivationStatus : accountActivationStatus // ignore: cast_nullable_to_non_nullable
+as AuthInfoStatus,accountActivationStatus: null == accountActivationStatus ? _self.accountActivationStatus : accountActivationStatus // ignore: cast_nullable_to_non_nullable
 as AccountActivationStatus,
   ));
 }

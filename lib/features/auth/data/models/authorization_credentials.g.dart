@@ -9,13 +9,9 @@ part of 'authorization_credentials.dart';
 _AuthorizationCredentials _$AuthorizationCredentialsFromJson(
   Map<String, dynamic> json,
 ) => _AuthorizationCredentials(
-  accountId: json['accountId'] as String,
-  secretKey: json['secretKey'] as String,
+  accountPublicKey: json['accountPublicKey'] as String,
 );
 
 Map<String, dynamic> _$AuthorizationCredentialsToJson(
   _AuthorizationCredentials instance,
-) => <String, dynamic>{
-  'accountId': instance.accountId,
-  'secretKey': instance.secretKey,
-};
+) => <String, dynamic>{'accountPublicKey': instance.accountPublicKey};

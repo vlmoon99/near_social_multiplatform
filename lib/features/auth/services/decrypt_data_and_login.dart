@@ -16,7 +16,6 @@ Future<void> decryptDataAndLogin(WidgetRef ref) async {
   final authController = ref.read(authControllerProvider.notifier);
   final Map<String, dynamic> decodedData = jsonDecode(encodedData);
   await authController.login(
-    accountId: decodedData["accountId"],
-    secretKey: decodedData["secretKey"],
+    accountPublicKey: decodedData["accountPublicKey"],
   );
 }

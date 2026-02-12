@@ -8,18 +8,12 @@ part of 'auth_info.dart';
 
 _AuthInfo _$AuthInfoFromJson(Map<String, dynamic> json) => _AuthInfo(
   accountId: json['accountId'] as String? ?? "",
-  publicKey: json['publicKey'] as String? ?? "",
-  secretKey: json['secretKey'] as String? ?? "",
-  privateKey: json['privateKey'] as String? ?? "",
+  accountPublicKey: json['accountPublicKey'] as String? ?? "",
+  devicePublicKey: json['devicePublicKey'] as String? ?? "",
+  devicePrivateKey: json['devicePrivateKey'] as String? ?? "",
   status:
       $enumDecodeNullable(_$AuthInfoStatusEnumMap, json['status']) ??
       AuthInfoStatus.unauthenticated,
-  additionalStoredKeys:
-      (json['additionalStoredKeys'] as Map<String, dynamic>?)?.map(
-        (k, e) =>
-            MapEntry(k, PrivateKeyInfo.fromJson(e as Map<String, dynamic>)),
-      ) ??
-      const {},
   accountActivationStatus:
       $enumDecodeNullable(
         _$AccountActivationStatusEnumMap,
@@ -30,11 +24,10 @@ _AuthInfo _$AuthInfoFromJson(Map<String, dynamic> json) => _AuthInfo(
 
 Map<String, dynamic> _$AuthInfoToJson(_AuthInfo instance) => <String, dynamic>{
   'accountId': instance.accountId,
-  'publicKey': instance.publicKey,
-  'secretKey': instance.secretKey,
-  'privateKey': instance.privateKey,
+  'accountPublicKey': instance.accountPublicKey,
+  'devicePublicKey': instance.devicePublicKey,
+  'devicePrivateKey': instance.devicePrivateKey,
   'status': _$AuthInfoStatusEnumMap[instance.status]!,
-  'additionalStoredKeys': instance.additionalStoredKeys,
   'accountActivationStatus':
       _$AccountActivationStatusEnumMap[instance.accountActivationStatus]!,
 };
