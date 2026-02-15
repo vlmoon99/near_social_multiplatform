@@ -17,6 +17,7 @@ import 'package:near_social_mobile/features/auth/data/models/auth_info.dart';
 import 'package:near_social_mobile/core/models/filters.dart';
 import 'package:near_social_mobile/core/providers/filter_controller.dart';
 import 'package:near_social_mobile/features/feed/presentation/logic/feed_events.dart';
+import 'package:near_social_mobile/core/utils/lru_cache.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'posts_controller.g.dart';
@@ -25,7 +26,7 @@ part 'posts_controller.g.dart';
 class PostsController extends _$PostsController {
   late NearSocialApi _nearSocialApi;
 
-  final Map<String, GeneralAccountInfo> _profileCache = {};
+  final LruCache<String, GeneralAccountInfo> _profileCache = LruCache(500);
 
   int _activeLoads = 0;
   static const int _maxConcurrentLoads = 5;

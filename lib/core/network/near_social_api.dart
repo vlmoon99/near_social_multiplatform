@@ -22,13 +22,14 @@ import 'package:near_social_mobile/features/feed/data/models/reposter_info.dart'
 import 'package:near_social_mobile/features/people/data/models/user_storage_info.dart';
 import 'package:near_social_mobile/core/network/interceptors/retry_on_connection_changed_interceptor.dart';
 import 'package:near_social_mobile/core/utils/is_web_image_avaliable.dart';
+import 'package:near_social_mobile/core/utils/lru_cache.dart';
 
 class NearSocialApi {
   final Dio _dio = Dio();
   final NearRpcService nearRpcService;
 
-  // Cache for block height → DateTime to avoid repeated network calls
-  final Map<int, DateTime> _dateCache = {};
+  // Cache for block height → DateTime to avoid repeated network calls (LRU, max 500)
+  final LruCache<int, DateTime> _dateCache = LruCache(500);
 
   NearSocialApi({required this.nearRpcService}) {
     _dio.options.connectTimeout = const Duration(seconds: 10);

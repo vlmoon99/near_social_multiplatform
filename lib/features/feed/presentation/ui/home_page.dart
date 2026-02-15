@@ -20,7 +20,8 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
+class _HomePageState extends State<HomePage>
+    with TickerProviderStateMixin, WidgetsBindingObserver {
   int _currentIndex = 0;
   final ValueNotifier<bool> _showBars = ValueNotifier(true);
   Timer? _hideTimer;
@@ -29,13 +30,27 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   late List<BackgroundParticle> _particles;
   Size _lastSize = Size.zero;
 
+  /// Tracks which tabs have been visited at least once (for lazy loading)
+  final Set<int> _visitedTabs = {0};
+
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _bgController =
         AnimationController(vsync: this, duration: const Duration(seconds: 1))
           ..repeat();
     _particles = [];
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive) {
+      _bgController.stop();
+    } else if (state == AppLifecycleState.resumed) {
+      _bgController.repeat();
+    }
   }
 
   @override
@@ -59,6 +74,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _bgController.dispose();
     _hideTimer?.cancel();
     _showBars.dispose();
@@ -88,14 +104,23 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
             isDark: isDark,
           ),
 
-          // Page content
+          // Page content (lazy — tabs are created on first visit)
           IndexedStack(
             index: _currentIndex,
             children: [
               PostsFeedPage(onScroll: onChildScroll),
-              PeopleListPage(onScroll: onChildScroll),
-              ChatListPage(onScroll: onChildScroll),
-              HomeMenuPage(onScroll: onChildScroll),
+              if (_visitedTabs.contains(1))
+                PeopleListPage(onScroll: onChildScroll)
+              else
+                const SizedBox.shrink(),
+              if (_visitedTabs.contains(2))
+                ChatListPage(onScroll: onChildScroll)
+              else
+                const SizedBox.shrink(),
+              if (_visitedTabs.contains(3))
+                HomeMenuPage(onScroll: onChildScroll)
+              else
+                const SizedBox.shrink(),
             ],
           ),
 
@@ -200,6 +225,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       scaleDown: AppAnimations.navButtonScaleDown,
       onTap: () {
         setState(() {
+          _visitedTabs.add(targetIndex);
           _currentIndex = targetIndex;
         });
       },

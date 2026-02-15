@@ -39,7 +39,8 @@ class UserPage extends ConsumerStatefulWidget {
   ConsumerState<UserPage> createState() => _UserPageState();
 }
 
-class _UserPageState extends ConsumerState<UserPage> with TickerProviderStateMixin {
+class _UserPageState extends ConsumerState<UserPage>
+    with TickerProviderStateMixin, WidgetsBindingObserver {
   final ScrollController _scrollController = ScrollController();
   final ValueNotifier<bool> _showTopBar = ValueNotifier(true);
   final ValueNotifier<bool> _canScrollToTop = ValueNotifier(false);
@@ -51,6 +52,7 @@ class _UserPageState extends ConsumerState<UserPage> with TickerProviderStateMix
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _scrollController.addListener(_handleScroll);
     _bgController =
         AnimationController(vsync: this, duration: const Duration(seconds: 1))
@@ -88,7 +90,18 @@ class _UserPageState extends ConsumerState<UserPage> with TickerProviderStateMix
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive) {
+      _bgController.stop();
+    } else if (state == AppLifecycleState.resumed) {
+      _bgController.repeat();
+    }
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _bgController.dispose();
     _scrollController.dispose();
     _hideTimer?.cancel();

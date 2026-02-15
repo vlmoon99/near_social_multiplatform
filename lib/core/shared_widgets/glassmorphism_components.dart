@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:math' as math;
 import 'dart:ui';
 import 'package:flutter/cupertino.dart';
@@ -308,43 +307,3 @@ class GlassSearchBar extends StatelessWidget {
   }
 }
 
-/// Mixin providing common living background + auto-hide bar boilerplate
-mixin LivingPageMixin<T extends StatefulWidget>
-    on State<T>, TickerProviderStateMixin<T> {
-  late final ScrollController livingScrollController = ScrollController();
-  late final AnimationController bgController =
-      AnimationController(vsync: this, duration: const Duration(seconds: 1))
-        ..repeat();
-  bool showBars = true;
-  Timer? hideTimer;
-  late List<BackgroundParticle> particles = [];
-  Size lastSize = Size.zero;
-
-  void handleScroll() {
-    if (showBars) setState(() => showBars = false);
-    hideTimer?.cancel();
-    hideTimer = Timer(const Duration(seconds: 3), () {
-      if (mounted) setState(() => showBars = true);
-    });
-  }
-
-  void initLivingPage() {
-    livingScrollController.addListener(handleScroll);
-  }
-
-  void disposeLivingPage() {
-    bgController.dispose();
-    livingScrollController.dispose();
-    hideTimer?.cancel();
-  }
-
-  void ensureParticles(Size screenSize, int count, {List<Object>? icons}) {
-    if (particles.isEmpty || lastSize != screenSize) {
-      particles = List.generate(
-        count,
-        (i) => BackgroundParticle(screenSize, icons: icons),
-      );
-      lastSize = screenSize;
-    }
-  }
-}

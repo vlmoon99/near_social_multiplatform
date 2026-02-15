@@ -208,7 +208,10 @@ class _NotificationsPageState extends ConsumerState<NotificationsPage>
                     right: 16,
                     top: index == 1 ? 5 : 0,
                   ),
-                  child: NotificationTile(notification: notification),
+                  child: NotificationTile(
+                    key: ValueKey('${notification.authorInfo.accountId}_${notification.blockHeight}'),
+                    notification: notification,
+                  ),
                 );
               },
               itemCount: notifications.length + 2,

@@ -256,6 +256,7 @@ class _NotificationsModalState extends ConsumerState<NotificationsModal> {
             return Padding(
               padding: const EdgeInsets.only(bottom: 8),
               child: _GlassNotificationTile(
+                key: ValueKey('${notifications[index].authorInfo.accountId}_${notifications[index].blockHeight}'),
                 notification: notifications[index],
                 isDark: isDark,
                 onNavigate: () => Navigator.pop(context),
@@ -275,6 +276,7 @@ class _GlassNotificationTile extends StatelessWidget {
   final VoidCallback onNavigate;
 
   const _GlassNotificationTile({
+    super.key,
     required this.notification,
     required this.isDark,
     required this.onNavigate,
