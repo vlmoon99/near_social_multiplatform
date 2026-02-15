@@ -292,22 +292,17 @@ class _HomeMenuPageState extends ConsumerState<HomeMenuPage>
   Widget _buildProfileHeader(bool isDark, authInfo) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: ClipRRect(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: isDark
+            ? Colors.white.withValues(alpha: 0.06)
+            : Colors.white.withValues(alpha: 0.75),
         borderRadius: BorderRadius.circular(32),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-          child: Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: isDark
-                  ? Colors.white.withValues(alpha: 0.06)
-                  : Colors.white.withValues(alpha: 0.75),
-              borderRadius: BorderRadius.circular(32),
-              border: Border.all(
-                  color: isDark
-                      ? Colors.white10
-                      : Colors.white.withValues(alpha: 0.5)),
-            ),
+        border: Border.all(
+            color: isDark
+                ? Colors.white10
+                : Colors.white.withValues(alpha: 0.5)),
+      ),
             child: Column(
               children: [
                 // Avatar
@@ -389,9 +384,6 @@ class _HomeMenuPageState extends ConsumerState<HomeMenuPage>
                 ),
               ],
             ),
-          ),
-        ),
-      ),
     );
   }
 
@@ -422,39 +414,33 @@ class _HomeMenuPageState extends ConsumerState<HomeMenuPage>
 
   Widget _statBox(String val, String lab, bool isDark) {
     return Expanded(
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(24),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-          child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            decoration: BoxDecoration(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        decoration: BoxDecoration(
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.04)
+              : Colors.white.withValues(alpha: 0.5),
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(
               color: isDark
-                  ? Colors.white.withValues(alpha: 0.04)
-                  : Colors.white.withValues(alpha: 0.5),
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(
-                  color: isDark
-                      ? Colors.white12
-                      : Colors.white.withValues(alpha: 0.6)),
-            ),
-            child: Column(
-              children: [
-                Text(val,
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: isDark ? Colors.white : Colors.black,
-                    ),
-                    overflow: TextOverflow.ellipsis),
-                Text(lab,
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: isDark ? Colors.white54 : Colors.black54,
-                    )),
-              ],
-            ),
-          ),
+                  ? Colors.white12
+                  : Colors.white.withValues(alpha: 0.6)),
+        ),
+        child: Column(
+          children: [
+            Text(val,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? Colors.white : Colors.black,
+                ),
+                overflow: TextOverflow.ellipsis),
+            Text(lab,
+                style: TextStyle(
+                  fontSize: 11,
+                  color: isDark ? Colors.white54 : Colors.black54,
+                )),
+          ],
         ),
       ),
     );
@@ -470,40 +456,32 @@ class _HomeMenuPageState extends ConsumerState<HomeMenuPage>
       onTap: onTap,
       child: Container(
         margin: const EdgeInsets.only(top: 12),
-        child: ClipRRect(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.06)
+              : Colors.white.withValues(alpha: 0.65),
           borderRadius: BorderRadius.circular(24),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-            child: Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: isDark
-                    ? Colors.white.withValues(alpha: 0.06)
-                    : Colors.white.withValues(alpha: 0.65),
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(
-                    color: isDark
-                        ? Colors.white10
-                        : Colors.white.withValues(alpha: 0.4)),
-              ),
-              child: Row(
-                children: [
-                  icon,
-                  const SizedBox(width: 16),
-                  Text(title,
-                      style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 15,
-                        color: isDark ? Colors.white : Colors.black,
-                      )),
-                  const Spacer(),
-                  Icon(CupertinoIcons.chevron_right,
-                      size: 14,
-                      color: isDark ? Colors.white38 : Colors.black38),
-                ],
-              ),
-            ),
-          ),
+          border: Border.all(
+              color: isDark
+                  ? Colors.white10
+                  : Colors.white.withValues(alpha: 0.4)),
+        ),
+        child: Row(
+          children: [
+            icon,
+            const SizedBox(width: 16),
+            Text(title,
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 15,
+                  color: isDark ? Colors.white : Colors.black,
+                )),
+            const Spacer(),
+            Icon(CupertinoIcons.chevron_right,
+                size: 14,
+                color: isDark ? Colors.white38 : Colors.black38),
+          ],
         ),
       ),
     );
@@ -514,38 +492,30 @@ class _HomeMenuPageState extends ConsumerState<HomeMenuPage>
       onTap: _onLogoutTap,
       child: Container(
         margin: const EdgeInsets.only(top: 4),
-        child: ClipRRect(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: isDark
+              ? Colors.red.withValues(alpha: 0.15)
+              : Colors.red.withValues(alpha: 0.08),
           borderRadius: BorderRadius.circular(24),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-            child: Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: isDark
-                    ? Colors.red.withValues(alpha: 0.15)
-                    : Colors.red.withValues(alpha: 0.08),
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(
-                    color: isDark
-                        ? Colors.red.withValues(alpha: 0.3)
-                        : Colors.red.withValues(alpha: 0.2)),
-              ),
-              child: Row(
-                children: [
-                  Icon(CupertinoIcons.square_arrow_left,
-                      size: 20, color: Colors.redAccent),
-                  const SizedBox(width: 16),
-                  Text("common.logout".tr(),
-                      style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 15,
-                        color: Colors.redAccent,
-                      )),
-                  const Spacer(),
-                ],
-              ),
-            ),
-          ),
+          border: Border.all(
+              color: isDark
+                  ? Colors.red.withValues(alpha: 0.3)
+                  : Colors.red.withValues(alpha: 0.2)),
+        ),
+        child: Row(
+          children: [
+            Icon(CupertinoIcons.square_arrow_left,
+                size: 20, color: Colors.redAccent),
+            const SizedBox(width: 16),
+            Text("common.logout".tr(),
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 15,
+                  color: Colors.redAccent,
+                )),
+            const Spacer(),
+          ],
         ),
       ),
     );

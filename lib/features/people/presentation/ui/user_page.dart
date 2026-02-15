@@ -360,18 +360,10 @@ class _UserPageState extends ConsumerState<UserPage> with TickerProviderStateMix
         user.followings!.any(
           (element) => element.accountId == authInfo.accountId,
         );
-    // final bool inFollowerList = user.followers != null &&
-    //     user.followers!.any(
-    //       (follower) => follower.accountId == authInfo.accountId,
-    //     );
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(32),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-          child: Container(
+      child: Container(
             decoration: BoxDecoration(
               color: isDark
                   ? Colors.white.withValues(alpha: 0.06)
@@ -382,6 +374,7 @@ class _UserPageState extends ConsumerState<UserPage> with TickerProviderStateMix
                       ? Colors.white10
                       : Colors.white.withValues(alpha: 0.5)),
             ),
+            clipBehavior: Clip.antiAlias,
             child: Column(
               children: [
                 // Background image
@@ -585,8 +578,6 @@ class _UserPageState extends ConsumerState<UserPage> with TickerProviderStateMix
                 ),
               ],
             ),
-          ),
-        ),
       ),
     );
   }
@@ -618,38 +609,32 @@ class _UserPageState extends ConsumerState<UserPage> with TickerProviderStateMix
 
   Widget _statBox(String val, String lab, bool isDark) {
     return Expanded(
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(24),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-          child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            decoration: BoxDecoration(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        decoration: BoxDecoration(
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.04)
+              : Colors.white.withValues(alpha: 0.5),
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(
               color: isDark
-                  ? Colors.white.withValues(alpha: 0.04)
-                  : Colors.white.withValues(alpha: 0.5),
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(
-                  color: isDark
-                      ? Colors.white12
-                      : Colors.white.withValues(alpha: 0.6)),
-            ),
-            child: Column(
-              children: [
-                Text(val,
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: isDark ? Colors.white : Colors.black,
-                    )),
-                Text(lab,
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: isDark ? Colors.white54 : Colors.black54,
-                    )),
-              ],
-            ),
-          ),
+                  ? Colors.white12
+                  : Colors.white.withValues(alpha: 0.6)),
+        ),
+        child: Column(
+          children: [
+            Text(val,
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? Colors.white : Colors.black,
+                )),
+            Text(lab,
+                style: TextStyle(
+                  fontSize: 11,
+                  color: isDark ? Colors.white54 : Colors.black54,
+                )),
+          ],
         ),
       ),
     );
@@ -659,31 +644,23 @@ class _UserPageState extends ConsumerState<UserPage> with TickerProviderStateMix
     final linktree = user.generalAccountInfo.linktree as Map<String, dynamic>;
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: ClipRRect(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: isDark
+            ? Colors.white.withValues(alpha: 0.06)
+            : Colors.white.withValues(alpha: 0.65),
         borderRadius: BorderRadius.circular(24),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              color: isDark
-                  ? Colors.white.withValues(alpha: 0.06)
-                  : Colors.white.withValues(alpha: 0.65),
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(
-                  color: isDark
-                      ? Colors.white10
-                      : Colors.white.withValues(alpha: 0.4)),
-            ),
-            child: Wrap(
-              spacing: 4,
-              runSpacing: 4,
-              children: linktree.entries.map((pair) {
-                return _socialLinkButton(pair.key, pair.value, isDark);
-              }).toList(),
-            ),
-          ),
-        ),
+        border: Border.all(
+            color: isDark
+                ? Colors.white10
+                : Colors.white.withValues(alpha: 0.4)),
+      ),
+      child: Wrap(
+        spacing: 4,
+        runSpacing: 4,
+        children: linktree.entries.map((pair) {
+          return _socialLinkButton(pair.key, pair.value, isDark);
+        }).toList(),
       ),
     );
   }
@@ -732,24 +709,19 @@ class _UserPageState extends ConsumerState<UserPage> with TickerProviderStateMix
   Widget _buildTags(bool isDark, dynamic user) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: ClipRRect(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isDark
+            ? Colors.white.withValues(alpha: 0.06)
+            : Colors.white.withValues(alpha: 0.65),
         borderRadius: BorderRadius.circular(24),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
-          child: Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: isDark
-                  ? Colors.white.withValues(alpha: 0.06)
-                  : Colors.white.withValues(alpha: 0.65),
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(
-                  color: isDark
-                      ? Colors.white10
-                      : Colors.white.withValues(alpha: 0.4)),
-            ),
-            child: Wrap(
+        border: Border.all(
+            color: isDark
+                ? Colors.white10
+                : Colors.white.withValues(alpha: 0.4)),
+      ),
+      child: Wrap(
               spacing: 6,
               runSpacing: 6,
               children: [
@@ -791,41 +763,30 @@ class _UserPageState extends ConsumerState<UserPage> with TickerProviderStateMix
                       ),
                     );
                   }),
-              ],
-            ),
+            ],
           ),
-        ),
-      ),
     );
   }
 
   Widget _buildDescription(bool isDark, dynamic user) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: ClipRRect(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isDark
+            ? Colors.white.withValues(alpha: 0.06)
+            : Colors.white.withValues(alpha: 0.65),
         borderRadius: BorderRadius.circular(24),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
-          child: Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: isDark
-                  ? Colors.white.withValues(alpha: 0.06)
-                  : Colors.white.withValues(alpha: 0.65),
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(
-                  color: isDark
-                      ? Colors.white10
-                      : Colors.white.withValues(alpha: 0.4)),
-            ),
-            child: CollapseWidget(
-              children: RawTextToContentFormatter(
-                rawText: user.generalAccountInfo.description,
-                imageHeight: 0.2.sh,
-              ),
-            ),
-          ),
+        border: Border.all(
+            color: isDark
+                ? Colors.white10
+                : Colors.white.withValues(alpha: 0.4)),
+      ),
+      child: CollapseWidget(
+        children: RawTextToContentFormatter(
+          rawText: user.generalAccountInfo.description,
+          imageHeight: 0.2.sh,
         ),
       ),
     );

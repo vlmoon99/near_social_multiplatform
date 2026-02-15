@@ -199,7 +199,9 @@ Widget buildCircleIcon(IconData icon, bool isDark, {double size = 32}) {
   );
 }
 
-/// Glass container widget for cards and sections
+/// Glass container widget for cards and sections.
+/// Set [useBlur] to true only for static overlays (modals, fixed bars).
+/// For scrollable content, keep it false to avoid expensive BackdropFilter.
 class GlassContainer extends StatelessWidget {
   final Widget child;
   final bool isDark;
@@ -207,6 +209,7 @@ class GlassContainer extends StatelessWidget {
   final EdgeInsetsGeometry? padding;
   final EdgeInsetsGeometry? margin;
   final double blurSigma;
+  final bool useBlur;
 
   const GlassContainer({
     super.key,
@@ -216,32 +219,39 @@ class GlassContainer extends StatelessWidget {
     this.padding,
     this.margin,
     this.blurSigma = 20,
+    this.useBlur = false,
   });
 
   @override
   Widget build(BuildContext context) {
+    final decoration = BoxDecoration(
+      color: isDark
+          ? Colors.white.withValues(alpha: 0.06)
+          : Colors.white.withValues(alpha: 0.65),
+      borderRadius: BorderRadius.circular(borderRadius),
+      border: Border.all(
+          color: isDark
+              ? Colors.white10
+              : Colors.white.withValues(alpha: 0.4)),
+    );
+
+    final inner = Container(
+      padding: padding ?? const EdgeInsets.all(16),
+      decoration: decoration,
+      child: child,
+    );
+
     return Container(
       margin: margin ?? const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(borderRadius),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: blurSigma, sigmaY: blurSigma),
-          child: Container(
-            padding: padding ?? const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: isDark
-                  ? Colors.white.withValues(alpha: 0.06)
-                  : Colors.white.withValues(alpha: 0.65),
+      child: useBlur
+          ? ClipRRect(
               borderRadius: BorderRadius.circular(borderRadius),
-              border: Border.all(
-                  color: isDark
-                      ? Colors.white10
-                      : Colors.white.withValues(alpha: 0.4)),
-            ),
-            child: child,
-          ),
-        ),
-      ),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: blurSigma, sigmaY: blurSigma),
+                child: inner,
+              ),
+            )
+          : inner,
     );
   }
 }
@@ -263,41 +273,35 @@ class GlassSearchBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(22),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-            decoration: BoxDecoration(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+        decoration: BoxDecoration(
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.08)
+              : Colors.white.withValues(alpha: 0.8),
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(
               color: isDark
-                  ? Colors.white.withValues(alpha: 0.08)
-                  : Colors.white.withValues(alpha: 0.8),
-              borderRadius: BorderRadius.circular(22),
-              border: Border.all(
-                  color: isDark
-                      ? Colors.white12
-                      : Colors.black.withValues(alpha: 0.1)),
-              boxShadow: [
-                BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.05), blurRadius: 15)
-              ],
-            ),
-            child: CupertinoTextField(
-              controller: controller,
-              placeholder: placeholder,
-              placeholderStyle:
-                  TextStyle(color: isDark ? Colors.white38 : Colors.black45),
-              prefix: const Padding(
-                padding: EdgeInsets.only(left: 8),
-                child: Icon(CupertinoIcons.search,
-                    size: 22, color: CupertinoColors.systemGrey),
-              ),
-              decoration: null,
-              style: TextStyle(
-                  color: isDark ? Colors.white : Colors.black, fontSize: 16),
-            ),
+                  ? Colors.white12
+                  : Colors.black.withValues(alpha: 0.1)),
+          boxShadow: [
+            BoxShadow(
+                color: Colors.black.withValues(alpha: 0.05), blurRadius: 15)
+          ],
+        ),
+        child: CupertinoTextField(
+          controller: controller,
+          placeholder: placeholder,
+          placeholderStyle:
+              TextStyle(color: isDark ? Colors.white38 : Colors.black45),
+          prefix: const Padding(
+            padding: EdgeInsets.only(left: 8),
+            child: Icon(CupertinoIcons.search,
+                size: 22, color: CupertinoColors.systemGrey),
           ),
+          decoration: null,
+          style: TextStyle(
+              color: isDark ? Colors.white : Colors.black, fontSize: 16),
         ),
       ),
     );
