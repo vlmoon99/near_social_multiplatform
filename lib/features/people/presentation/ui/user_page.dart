@@ -41,7 +41,8 @@ class UserPage extends ConsumerStatefulWidget {
 
 class _UserPageState extends ConsumerState<UserPage> with TickerProviderStateMixin {
   final ScrollController _scrollController = ScrollController();
-  bool _showTopBar = true;
+  final ValueNotifier<bool> _showTopBar = ValueNotifier(true);
+  final ValueNotifier<bool> _canScrollToTop = ValueNotifier(false);
   Timer? _hideTimer;
   late List<BackgroundParticle> _particles;
   late AnimationController _bgController;
@@ -77,19 +78,13 @@ class _UserPageState extends ConsumerState<UserPage> with TickerProviderStateMix
   }
 
   void _handleScroll() {
-    if (_showTopBar) setState(() => _showTopBar = false);
+    if (_showTopBar.value) _showTopBar.value = false;
     _hideTimer?.cancel();
     _hideTimer = Timer(const Duration(seconds: 3), () {
-      // Only show the bar after scroll stops
-      if (mounted) setState(() => _showTopBar = true);
+      if (mounted) _showTopBar.value = true;
     });
-
-    // Trigger rebuild for scroll-to-top button visibility
-    setState(() {});
-  }
-
-  bool get _canShowScrollToTop {
-    return _scrollController.hasClients && _scrollController.offset > 100;
+    final canScroll = _scrollController.hasClients && _scrollController.offset > 100;
+    if (_canScrollToTop.value != canScroll) _canScrollToTop.value = canScroll;
   }
 
   @override
@@ -97,6 +92,8 @@ class _UserPageState extends ConsumerState<UserPage> with TickerProviderStateMix
     _bgController.dispose();
     _scrollController.dispose();
     _hideTimer?.cancel();
+    _showTopBar.dispose();
+    _canScrollToTop.dispose();
     super.dispose();
   }
 
@@ -170,12 +167,16 @@ class _UserPageState extends ConsumerState<UserPage> with TickerProviderStateMix
   }
 
   Widget _buildTopBar(bool isDark) {
-    return AnimatedPositioned(
-      duration: AppAnimations.barTransition,
-      curve: AppAnimations.barCurve,
-      top: _showTopBar ? 20 : -100,
-      left: 0,
-      right: 0,
+    return ValueListenableBuilder<bool>(
+      valueListenable: _showTopBar,
+      builder: (context, showTopBar, child) => AnimatedPositioned(
+        duration: AppAnimations.barTransition,
+        curve: AppAnimations.barCurve,
+        top: showTopBar ? 20 : -100,
+        left: 0,
+        right: 0,
+        child: child!,
+      ),
       child: Center(
         child: _glassBar(
           360,
@@ -202,30 +203,32 @@ class _UserPageState extends ConsumerState<UserPage> with TickerProviderStateMix
                       fontSize: 17,
                       letterSpacing: -0.5)),
               const Spacer(),
-              // Only show scroll-to-top when scrolled past threshold
-              AnimatedOpacity(
-                duration: const Duration(milliseconds: 200),
-                opacity: _canShowScrollToTop ? 1.0 : 0.0,
-                child: IgnorePointer(
-                  ignoring: !_canShowScrollToTop,
-                  child: TappableScaleWidget(
-                    scaleDown: AppAnimations.navButtonScaleDown,
-                    onTap: () {
-                      _scrollController.animateTo(
-                        0,
-                        duration: AppAnimations.slow,
-                        curve: AppAnimations.easeOut,
-                      );
-                    },
-                    child: Container(
-                      width: 32,
-                      height: 32,
-                      decoration: BoxDecoration(
-                        color: isDark ? Colors.white : Colors.black,
-                        shape: BoxShape.circle,
+              ValueListenableBuilder<bool>(
+                valueListenable: _canScrollToTop,
+                builder: (context, canScroll, _) => AnimatedOpacity(
+                  duration: const Duration(milliseconds: 200),
+                  opacity: canScroll ? 1.0 : 0.0,
+                  child: IgnorePointer(
+                    ignoring: !canScroll,
+                    child: TappableScaleWidget(
+                      scaleDown: AppAnimations.navButtonScaleDown,
+                      onTap: () {
+                        _scrollController.animateTo(
+                          0,
+                          duration: AppAnimations.slow,
+                          curve: AppAnimations.easeOut,
+                        );
+                      },
+                      child: Container(
+                        width: 32,
+                        height: 32,
+                        decoration: BoxDecoration(
+                          color: isDark ? Colors.white : Colors.black,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(CupertinoIcons.arrow_up,
+                            color: isDark ? Colors.black : Colors.white, size: 18),
                       ),
-                      child: Icon(CupertinoIcons.arrow_up,
-                          color: isDark ? Colors.black : Colors.white, size: 18),
                     ),
                   ),
                 ),

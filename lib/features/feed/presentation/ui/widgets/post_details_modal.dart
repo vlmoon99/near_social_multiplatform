@@ -119,17 +119,15 @@ class _PostDetailsModalState extends ConsumerState<PostDetailsModal> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final authInfo = ref.read(authControllerProvider);
-    ref.watch(postsControllerProvider);
     final filters = ref.watch(filterControllerProvider);
-    final postsController = ref.read(postsControllerProvider.notifier);
-
-    final posts = postsController.getPostsDueToPostsViewMode(
-        widget.postsViewMode, widget.postsOfAccountId);
-    final post = posts.firstWhere(
-      (e) =>
-          e.blockHeight == widget.blockHeight &&
-          e.authorInfo.accountId == widget.accountId,
-    );
+    final post = ref.watch(postsControllerProvider.select(
+      (postsState) => postsState.getPost(
+        authorId: widget.accountId,
+        blockHeight: widget.blockHeight,
+        postsViewMode: widget.postsViewMode,
+        postsOfAccountId: widget.postsOfAccountId,
+      ),
+    ));
 
     return Center(
       child: ConstrainedBox(

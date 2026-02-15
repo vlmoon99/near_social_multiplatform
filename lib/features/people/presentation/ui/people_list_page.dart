@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -23,15 +25,26 @@ class _PeopleListPageState extends ConsumerState<PeopleListPage>
 
   final ScrollController _scrollController = ScrollController();
   final TextEditingController searchController = TextEditingController();
+  Timer? _debounce;
+  String _searchQuery = '';
 
   @override
   void initState() {
     super.initState();
-    searchController.addListener(() {
-      setState(() {});
-    });
+    searchController.addListener(_onSearchChanged);
     _scrollController.addListener(() {
       widget.onScroll?.call();
+    });
+  }
+
+  void _onSearchChanged() {
+    _debounce?.cancel();
+    _debounce = Timer(const Duration(milliseconds: 300), () {
+      if (mounted && _searchQuery != searchController.text) {
+        setState(() {
+          _searchQuery = searchController.text;
+        });
+      }
     });
   }
 
@@ -49,6 +62,7 @@ class _PeopleListPageState extends ConsumerState<PeopleListPage>
 
   @override
   void dispose() {
+    _debounce?.cancel();
     searchController.dispose();
     _scrollController.dispose();
     super.dispose();
@@ -64,18 +78,13 @@ class _PeopleListPageState extends ConsumerState<PeopleListPage>
       return const Center(child: SpinnerLoadingIndicator());
     }
 
-    final users = searchController.text != ""
-        ? userListState.cachedUsers.entries
-            .where(
-              (entry) {
-                return entry.key.contains(
-                  RegExp(searchController.text, caseSensitive: false),
-                );
-              },
-            )
+    final query = _searchQuery.toLowerCase();
+    final users = query.isEmpty
+        ? userListState.cachedUsers.values.toList()
+        : userListState.cachedUsers.entries
+            .where((entry) => entry.key.toLowerCase().contains(query))
             .map((e) => e.value)
-            .toList()
-        : userListState.cachedUsers.values.toList();
+            .toList();
 
     return Center(
       child: ConstrainedBox(
@@ -100,7 +109,10 @@ class _PeopleListPageState extends ConsumerState<PeopleListPage>
                   (context, index) {
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 8),
-                      child: UserTile(user: users[index]),
+                      child: UserTile(
+                        key: ValueKey(users[index].generalAccountInfo.accountId),
+                        user: users[index],
+                      ),
                     );
                   },
                   childCount: users.length,

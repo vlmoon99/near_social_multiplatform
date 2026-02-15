@@ -398,36 +398,20 @@ class NearSocialApi {
         blockHeight: blockHeight,
       );
 
-      final List<Comment> comments = [];
-
-      for (final info in commentsInfoCreation) {
-        // final CommentBody commentBody = await getCommentContent(
-        //   accountId: info.accountId,
-        //   blockHeight: info.blockHeight,
-        // );
-        // final date = await getDateOfBlockHeight(
-        //   blockHeight: info.blockHeight,
-        // );
-
-        final authorInfo = await getGeneralAccountInfo(
-          accountId: info.accountId,
-        );
-
-        // final likes = await getLikesOfComment(
-        //   accountId: info.accountId,
-        //   blockHeight: info.blockHeight,
-        // );
-
-        comments.add(
-          Comment(
+      final comments = await Future.wait(
+        commentsInfoCreation.map((info) async {
+          final authorInfo = await getGeneralAccountInfo(
+            accountId: info.accountId,
+          );
+          return Comment(
             authorInfo: authorInfo,
             blockHeight: info.blockHeight,
             commentBody: const CommentBody(text: "Loading...", mediaLink: null),
             date: DateTime.now(),
             likeList: const [],
-          ),
-        );
-      }
+          );
+        }),
+      );
 
       return comments;
     } catch (err) {
@@ -1367,19 +1351,20 @@ class NearSocialApi {
         },
       );
       final data = List<Map<String, dynamic>>.from(response.data);
-      final List<Notification> notifications = [];
 
-      for (var notificationData in data) {
-        final accoundIdOfNotificationCreator = notificationData["accountId"];
-        final blockHeight = notificationData["blockHeight"];
-        final GeneralAccountInfo authorInfo = await getGeneralAccountInfo(
-            accountId: accoundIdOfNotificationCreator);
-        final DateTime date =
-            await getDateOfBlockHeight(blockHeight: blockHeight);
-        final typeOfNotification =
-            getNotificationType(notificationData["value"]["type"]);
-        notifications.add(
-          Notification(
+      final notifications = await Future.wait(
+        data.map((notificationData) async {
+          final accoundIdOfNotificationCreator = notificationData["accountId"];
+          final blockHeight = notificationData["blockHeight"];
+          final results = await Future.wait([
+            getGeneralAccountInfo(accountId: accoundIdOfNotificationCreator),
+            getDateOfBlockHeight(blockHeight: blockHeight),
+          ]);
+          final authorInfo = results[0] as GeneralAccountInfo;
+          final date = results[1] as DateTime;
+          final typeOfNotification =
+              getNotificationType(notificationData["value"]["type"]);
+          return Notification(
             authorInfo: authorInfo,
             blockHeight: blockHeight,
             date: date,
@@ -1390,9 +1375,9 @@ class NearSocialApi {
                 typeOfNotification,
               ),
             ),
-          ),
-        );
-      }
+          );
+        }),
+      );
       return notifications;
     } catch (err) {
       rethrow;

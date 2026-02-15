@@ -49,11 +49,11 @@ class _PostsFeedPageState extends ConsumerState<PostsFeedPage>
         filterController.loadFilters();
       }
       final postsController = ref.read(postsControllerProvider.notifier);
-      final postsState = ref.read(postsControllerProvider);
-      if (postsState.status == PostLoadingStatus.initial) {
+      final postsStatus = ref.read(postsControllerProvider).status;
+      if (postsStatus == PostLoadingStatus.initial) {
         postsController.loadPosts(postsViewMode: PostsViewMode.main);
       }
-      if (postsState.status == PostLoadingStatus.loaded) {
+      if (postsStatus == PostLoadingStatus.loaded) {
         postsController.checkPostsForFullLoadAndLoadIfNecessary(
           postsViewMode: PostsViewMode.main,
           filters: filterState,
@@ -71,20 +71,21 @@ class _PostsFeedPageState extends ConsumerState<PostsFeedPage>
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    final postsState = ref.watch(postsControllerProvider);
     final filterState = ref.watch(filterControllerProvider);
-    final postsController = ref.read(postsControllerProvider.notifier);
-
     final filterUtil = FiltersUtil(filters: filterState);
-    final posts = postsState.posts
-        .where((post) => !filterUtil.postIsHided(
-            post.authorInfo.accountId, post.blockHeight))
-        .toList();
+    final postsController = ref.read(postsControllerProvider.notifier);
+    final status = ref.watch(postsControllerProvider.select((s) => s.status));
+    final posts = ref.watch(postsControllerProvider.select(
+      (s) => s.posts
+          .where((post) => !filterUtil.postIsHided(
+              post.authorInfo.accountId, post.blockHeight))
+          .toList(),
+    ));
 
-    if (postsState.status == PostLoadingStatus.loaded ||
-        postsState.status == PostLoadingStatus.loadingMorePosts) {
+    if (status == PostLoadingStatus.loaded ||
+        status == PostLoadingStatus.loadingMorePosts) {
       if (posts.isEmpty &&
-          postsState.status == PostLoadingStatus.loaded) {
+          status == PostLoadingStatus.loaded) {
         postsController.loadMorePosts(
             postsViewMode: PostsViewMode.main,
             filters: filterState);
@@ -110,7 +111,7 @@ class _PostsFeedPageState extends ConsumerState<PostsFeedPage>
                 widget.onScroll?.call();
                 // Load more posts when reaching 2/3 of the list
                 if (index >= (posts.length * 2 / 3).round() &&
-                    postsState.status !=
+                    status !=
                         PostLoadingStatus.loadingMorePosts) {
                   postsController.loadMorePosts(
                     postsViewMode: PostsViewMode.main,
@@ -122,7 +123,7 @@ class _PostsFeedPageState extends ConsumerState<PostsFeedPage>
               itemBuilder: (context, index) {
                 if (index == posts.length) {
                   // Loading indicator / end of list
-                  if (postsState.status ==
+                  if (status ==
                       PostLoadingStatus.loadingMorePosts) {
                     return const Center(child: SpinnerLoadingIndicator());
                   }

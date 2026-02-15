@@ -2,7 +2,6 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:near_social_mobile/features/feed/data/models/post.dart';
 import 'package:near_social_mobile/features/feed/presentation/ui/widgets/post_card.dart';
 import 'package:near_social_mobile/features/feed/presentation/providers/posts_controller.dart';
 import 'package:near_social_mobile/core/shared_widgets/custom_button.dart';
@@ -26,12 +25,12 @@ class _UserPostsViewState extends ConsumerState<UserPostsView> {
 
   @override
   Widget build(BuildContext context) {
-    final postsState = ref.watch(postsControllerProvider);
-    if (postsState.postsOfAccounts[widget.accountIdOfUser] == null) {
+    final posts = ref.watch(postsControllerProvider.select(
+      (s) => s.postsOfAccounts[widget.accountIdOfUser],
+    ));
+    if (posts == null) {
       return const Center(child: SpinnerLoadingIndicator());
     }
-    final List<Post> posts =
-        postsState.postsOfAccounts[widget.accountIdOfUser]!;
     if (posts.isEmpty) {
       return Center(child: Text("people.no_posts".tr()));
     }

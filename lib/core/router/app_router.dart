@@ -20,13 +20,15 @@ import 'package:near_social_mobile/features/settings/presentation/ui/hidden_post
 import 'package:near_social_mobile/features/chat/presentation/ui/chat_room_page.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
-  final authState = ref.watch(authControllerProvider);
+  final accountId = ref.watch(
+    authControllerProvider.select((s) => s.accountId),
+  );
 
   return GoRouter(
     navigatorKey: rootNavigatorKey,
     initialLocation: AppRoutes.auth,
     redirect: (context, state) {
-      final isAuthenticated = authState.accountId.isNotEmpty;
+      final isAuthenticated = accountId.isNotEmpty;
       final isAuthRoute = state.matchedLocation.startsWith(AppRoutes.auth);
 
       if (!isAuthenticated && !isAuthRoute) {

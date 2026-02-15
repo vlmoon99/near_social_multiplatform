@@ -95,7 +95,7 @@ class AuthController extends _$AuthController {
     return CryptoService.signMessage(devicePrivKeyBytes, message);
   }
 
-  Future<AccountActivationStatus> getActivationStatus() async {
+  Future<AccountActivationStatus> getActivationStatus({int retries = 3}) async {
     try {
       if (state.accountActivationStatus !=
           AccountActivationStatus.activated) {
@@ -111,7 +111,11 @@ class AuthController extends _$AuthController {
         return state.accountActivationStatus;
       }
     } catch (err) {
-      return getActivationStatus();
+      if (retries > 0) {
+        await Future.delayed(const Duration(seconds: 2));
+        return getActivationStatus(retries: retries - 1);
+      }
+      return AccountActivationStatus.notActivated;
     }
   }
 

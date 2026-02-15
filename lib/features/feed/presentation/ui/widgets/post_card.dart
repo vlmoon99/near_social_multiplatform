@@ -18,7 +18,7 @@ import 'package:near_social_mobile/core/shared_widgets/scale_animated_iconbutton
 import 'package:near_social_mobile/core/shared_widgets/near_network_image.dart';
 import 'package:near_social_mobile/core/shared_widgets/tappable_scale_widget.dart';
 import 'package:near_social_mobile/core/utils/date_to_string.dart';
-import 'package:near_social_mobile/core/utils/no_scrollbar_behavior.dart';
+
 
 class PostCard extends ConsumerWidget {
   const PostCard({
@@ -39,16 +39,16 @@ class PostCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final authState = ref.watch(authControllerProvider);
-    final postsState = ref.watch(postsControllerProvider);
-
-    final currentPost = postsState.getPost(
-      authorId: post.authorInfo.accountId,
-      blockHeight: post.blockHeight,
-      postsViewMode: postsViewMode,
-      postsOfAccountId: postsOfAccountId,
-      reposterInfo: post.reposterInfo,
-    );
+    final accountId = ref.watch(authControllerProvider.select((s) => s.accountId));
+    final currentPost = ref.watch(postsControllerProvider.select(
+      (postsState) => postsState.getPost(
+        authorId: post.authorInfo.accountId,
+        blockHeight: post.blockHeight,
+        postsViewMode: postsViewMode,
+        postsOfAccountId: postsOfAccountId,
+        reposterInfo: post.reposterInfo,
+      ),
+    ));
 
     return RepaintBoundary(
       child: GestureDetector(
@@ -207,29 +207,29 @@ class PostCard extends ConsumerWidget {
                     constraints: BoxConstraints(
                       maxHeight: maxContentHeight.h,
                     ),
-                    child: ScrollConfiguration(
-                      behavior: NoScrollbarScrollBehavior(),
-                      child: ListView(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        children: [
-                          RawTextToContentFormatter(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Flexible(
+                          child: RawTextToContentFormatter(
                             rawText: currentPost.postBody.text.trim(),
                             heroAnimForImages: false,
                             imageHeight: .5.sh,
                             responsive: false,
                           ),
-                          if (currentPost.postBody.mediaLink != null) ...[
-                            ConstrainedBox(
+                        ),
+                        if (currentPost.postBody.mediaLink != null)
+                          Flexible(
+                            child: ConstrainedBox(
                               constraints: BoxConstraints(maxHeight: .5.sh),
                               child: NearNetworkImage(
                                 imageUrl: currentPost.postBody.mediaLink!,
                                 boxFit: BoxFit.contain,
                               ),
                             ),
-                          ],
-                        ],
-                      ),
+                          ),
+                      ],
                     ),
                   ),
                   Row(
@@ -242,7 +242,7 @@ class PostCard extends ConsumerWidget {
                         activated: currentPost.likeList.any(
                           (element) =>
                               element.accountId ==
-                              authState.accountId,
+                              accountId,
                         ),
                         onPressed: null,
                         count: currentPost.likeList.length,
@@ -254,7 +254,7 @@ class PostCard extends ConsumerWidget {
                         activated: currentPost.repostList.any(
                           (element) =>
                               element.accountId ==
-                              authState.accountId,
+                              accountId,
                         ),
                         activatedColor: Colors.green,
                         onPressed: null,
