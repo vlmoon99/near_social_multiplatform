@@ -9,6 +9,7 @@ import 'package:near_social_mobile/features/feed/data/models/post.dart';
 import 'package:near_social_mobile/features/feed/presentation/providers/posts_controller.dart';
 import 'package:near_social_mobile/features/auth/presentation/providers/auth_controller.dart';
 import 'package:near_social_mobile/features/auth/data/models/auth_info.dart';
+import 'package:near_social_mobile/core/shared_widgets/app_toast.dart';
 import 'package:near_social_mobile/core/shared_widgets/custom_button.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:near_social_mobile/core/providers/service_providers.dart';
@@ -280,11 +281,7 @@ class _CreateCommentDialogState extends ConsumerState<CreateCommentDialog> {
                             });
                           },
                         );
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text("feed.comment_added_soon".tr()),
-                          ),
-                        );
+                        showAppToast(context, "feed.comment_added_soon".tr());
                         Navigator.of(context).pop();
                       } catch (err) {
                         if (err is Exception) {

@@ -11,6 +11,7 @@ import 'package:near_social_mobile/features/feed/presentation/providers/posts_co
 import 'package:near_social_mobile/features/auth/presentation/providers/auth_controller.dart';
 import 'package:near_social_mobile/core/providers/filter_controller.dart';
 import 'package:near_social_mobile/core/providers/service_providers.dart';
+import 'package:near_social_mobile/core/shared_widgets/app_toast.dart';
 import 'package:near_social_mobile/core/shared_widgets/custom_button.dart';
 
 class MoreActionsForPostButton extends ConsumerWidget {
@@ -65,11 +66,7 @@ class MoreActionsForPostButton extends ConsumerWidget {
                       );
                       Clipboard.setData(ClipboardData(text: urlOfPost));
                       Navigator.of(context).pop();
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text("feed.post_url_copied".tr()),
-                        ),
-                      );
+                      showAppToast(context, "feed.post_url_copied".tr());
                     },
                   ),
                   if (postsViewMode == PostsViewMode.main &&

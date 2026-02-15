@@ -14,6 +14,7 @@ import 'package:near_social_mobile/features/people/presentation/providers/user_l
 import 'package:near_social_mobile/features/auth/presentation/providers/auth_controller.dart';
 import 'package:near_social_mobile/core/providers/filter_controller.dart';
 import 'package:near_social_mobile/core/router/routes.dart';
+import 'package:near_social_mobile/core/shared_widgets/app_toast.dart';
 import 'package:near_social_mobile/core/shared_widgets/near_network_image.dart';
 import 'package:near_social_mobile/core/shared_widgets/spinner_loading_indicator.dart';
 
@@ -357,12 +358,7 @@ class _HomeMenuPageState extends ConsumerState<HomeMenuPage>
                     HapticFeedback.lightImpact();
                     Clipboard.setData(ClipboardData(
                         text: authInfo.accountId));
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                            "people.account_id_copied".tr(namedArgs: {"accountId": authInfo.accountId})),
-                      ),
-                    );
+                    showAppToast(context, "people.account_id_copied".tr(namedArgs: {"accountId": authInfo.accountId}));
                   },
                   child: Text(
                     "@${authInfo.accountId}",

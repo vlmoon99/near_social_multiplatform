@@ -11,6 +11,7 @@ import 'package:near_social_mobile/features/feed/presentation/ui/posts_feed_page
 import 'package:near_social_mobile/core/shared_widgets/glassmorphism_components.dart';
 import 'package:near_social_mobile/core/shared_widgets/tappable_scale_widget.dart';
 import 'package:near_social_mobile/core/utils/check_for_jailbreak.dart';
+import 'package:near_social_mobile/features/chat/presentation/ui/chat_list_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -93,6 +94,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
             children: [
               PostsFeedPage(onScroll: onChildScroll),
               PeopleListPage(onScroll: onChildScroll),
+              ChatListPage(onScroll: onChildScroll),
               HomeMenuPage(onScroll: onChildScroll),
             ],
           ),
@@ -164,7 +166,8 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                 children: [
                   _navBtn(CupertinoIcons.house_fill, 0, isDark),
                   _navBtn(CupertinoIcons.person_2_fill, 1, isDark),
-                  _navBtn(CupertinoIcons.person_fill, 2, isDark),
+                  _navBtn(CupertinoIcons.chat_bubble_2_fill, 2, isDark),
+                  _navBtn(CupertinoIcons.person_fill, 3, isDark),
                 ],
               ),
               isDark,
@@ -183,6 +186,8 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       case 1:
         return 'Users';
       case 2:
+        return 'Chat';
+      case 3:
         return 'Profile';
       default:
         return 'Near Social';

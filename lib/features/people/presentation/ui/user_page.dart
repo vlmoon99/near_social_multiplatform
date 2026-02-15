@@ -24,7 +24,10 @@ import 'package:near_social_mobile/core/providers/filter_controller.dart';
 import 'package:near_social_mobile/core/shared_widgets/expandable_wiget.dart';
 import 'package:near_social_mobile/core/shared_widgets/image_full_screen_page.dart';
 import 'package:near_social_mobile/core/shared_widgets/near_network_image.dart';
+import 'package:near_social_mobile/core/shared_widgets/app_toast.dart';
 import 'package:near_social_mobile/core/shared_widgets/tappable_scale_widget.dart';
+import 'package:near_social_mobile/core/router/routes.dart';
+import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class UserPage extends ConsumerStatefulWidget {
@@ -491,12 +494,7 @@ class _UserPageState extends ConsumerState<UserPage> with TickerProviderStateMix
                           Clipboard.setData(
                             ClipboardData(text: user.generalAccountInfo.accountId),
                           );
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                  "AccountId ${user.generalAccountInfo.accountId} copied to clipboard"),
-                            ),
-                          );
+                          showAppToast(context, "AccountId ${user.generalAccountInfo.accountId} copied to clipboard");
                         },
                         child: Text(
                           "@${user.generalAccountInfo.accountId}",
@@ -532,8 +530,51 @@ class _UserPageState extends ConsumerState<UserPage> with TickerProviderStateMix
 
                       const SizedBox(height: 16),
 
-                      // Action buttons removed (blockchain writes disabled)
-                      // Edit Profile, Follow, Poke, Donate — all commented out
+                      // Chat & call buttons
+                      if (!isOwnProfile)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 24),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              _actionChip(
+                                icon: CupertinoIcons.chat_bubble_fill,
+                                label: "Chat",
+                                color: CupertinoColors.activeBlue,
+                                isDark: isDark,
+                                onTap: () {
+                                  context.push(
+                                    '${AppRoutes.chatRoom}?targetAccountId=${user.generalAccountInfo.accountId}',
+                                  );
+                                },
+                              ),
+                              const SizedBox(width: 8),
+                              _actionChip(
+                                icon: CupertinoIcons.phone_fill,
+                                label: "Call",
+                                color: CupertinoColors.activeGreen,
+                                isDark: isDark,
+                                onTap: () {
+                                  context.push(
+                                    '${AppRoutes.chatRoom}?targetAccountId=${user.generalAccountInfo.accountId}',
+                                  );
+                                },
+                              ),
+                              const SizedBox(width: 8),
+                              _actionChip(
+                                icon: CupertinoIcons.video_camera_solid,
+                                label: "Video",
+                                color: CupertinoColors.systemPurple,
+                                isDark: isDark,
+                                onTap: () {
+                                  context.push(
+                                    '${AppRoutes.chatRoom}?targetAccountId=${user.generalAccountInfo.accountId}',
+                                  );
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
 
                       const SizedBox(height: 16),
                     ],
@@ -782,6 +823,45 @@ class _UserPageState extends ConsumerState<UserPage> with TickerProviderStateMix
               ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _actionChip({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required bool isDark,
+    required VoidCallback onTap,
+  }) {
+    return TappableScaleWidget(
+      scaleDown: AppAnimations.navButtonScaleDown,
+      onTap: () {
+        HapticFeedback.lightImpact();
+        onTap();
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          color: color.withValues(alpha: isDark ? 0.2 : 0.12),
+          border: Border.all(color: color.withValues(alpha: 0.3)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 16, color: color),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: color,
+              ),
+            ),
+          ],
         ),
       ),
     );

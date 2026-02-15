@@ -115,9 +115,12 @@ class UserListController extends _$UserListController {
       final List<String> userTags =
           await _nearSocialApi.getUserTagsOfAccount(accountId: accountId);
 
+      final user = state.activeUsers[accountId];
+      if (user == null) return;
+
       state = state.copyWith(
         activeUsers: Map.of(state.activeUsers)
-          ..[accountId] = state.activeUsers[accountId]!.copyWith(
+          ..[accountId] = user.copyWith(
             followings: followings,
             followers: followers,
             userTags: userTags,
@@ -197,10 +200,11 @@ class UserListController extends _$UserListController {
       final List<String> userTags =
           await _nearSocialApi.getUserTagsOfAccount(accountId: accountId);
       final user = state.activeUsers[accountId];
+      if (user == null) return;
 
       state = state.copyWith(
         activeUsers: Map<String, FullUserInfo>.from(state.activeUsers)
-          ..[accountId] = user!.copyWith(
+          ..[accountId] = user.copyWith(
             generalAccountInfo: generalAccountInfo,
             followings: followings,
             followers: followers,
@@ -220,9 +224,11 @@ class UserListController extends _$UserListController {
     try {
       final nfts =
           await _nearSocialApi.getNftsOfAccount(accountIdOfUser: accountId);
+      final user = state.activeUsers[accountId];
+      if (user == null) return;
       state = state.copyWith(
         activeUsers: Map.of(state.activeUsers)
-          ..[accountId] = state.activeUsers[accountId]!.copyWith(
+          ..[accountId] = user.copyWith(
             nfts: nfts,
           ),
       );

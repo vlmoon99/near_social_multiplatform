@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:near_social_mobile/core/utils/qr_formatter.dart';
 import 'package:near_social_mobile/features/auth/services/encrypt_data_and_login.dart';
+import 'package:near_social_mobile/core/shared_widgets/app_toast.dart';
 import 'package:near_social_mobile/core/router/routes.dart';
 
 class QRReaderScreen extends StatefulWidget {
@@ -48,14 +49,7 @@ class _QRReaderScreenState extends State<QRReaderScreen> {
     } catch (err) {
       _isProcessing = false;
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(err.toString()),
-            shape: const RoundedRectangleBorder(
-              borderRadius: BorderRadius.vertical(top: Radius.circular(15)),
-            ),
-          ),
-        );
+        showAppToast(context, err.toString());
       }
     }
   }

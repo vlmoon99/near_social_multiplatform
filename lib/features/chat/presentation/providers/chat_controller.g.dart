@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'user_list_controller.dart';
+part of 'chat_controller.dart';
 
 // **************************************************************************
 // RiverpodGenerator
@@ -9,53 +9,52 @@ part of 'user_list_controller.dart';
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
 
-@ProviderFor(UserListController)
-const userListControllerProvider = UserListControllerProvider._();
+@ProviderFor(ChatController)
+const chatControllerProvider = ChatControllerProvider._();
 
-final class UserListControllerProvider
-    extends $NotifierProvider<UserListController, UsersList> {
-  const UserListControllerProvider._()
+final class ChatControllerProvider
+    extends $NotifierProvider<ChatController, ChatState> {
+  const ChatControllerProvider._()
     : super(
         from: null,
         argument: null,
         retry: null,
-        name: r'userListControllerProvider',
+        name: r'chatControllerProvider',
         isAutoDispose: false,
         dependencies: null,
         $allTransitiveDependencies: null,
       );
 
   @override
-  String debugGetCreateSourceHash() => _$userListControllerHash();
+  String debugGetCreateSourceHash() => _$chatControllerHash();
 
   @$internal
   @override
-  UserListController create() => UserListController();
+  ChatController create() => ChatController();
 
   /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(UsersList value) {
+  Override overrideWithValue(ChatState value) {
     return $ProviderOverride(
       origin: this,
-      providerOverride: $SyncValueProvider<UsersList>(value),
+      providerOverride: $SyncValueProvider<ChatState>(value),
     );
   }
 }
 
-String _$userListControllerHash() =>
-    r'43e358b166899e6727f33b7ad056d9ba2aa600b6';
+String _$chatControllerHash() => r'd632422cc57a5a6b76c42e75fa07ec6fa9912e62';
 
-abstract class _$UserListController extends $Notifier<UsersList> {
-  UsersList build();
+abstract class _$ChatController extends $Notifier<ChatState> {
+  ChatState build();
   @$mustCallSuper
   @override
   void runBuild() {
     final created = build();
-    final ref = this.ref as $Ref<UsersList, UsersList>;
+    final ref = this.ref as $Ref<ChatState, ChatState>;
     final element =
         ref.element
             as $ClassProviderElement<
-              AnyNotifier<UsersList, UsersList>,
-              UsersList,
+              AnyNotifier<ChatState, ChatState>,
+              ChatState,
               Object?,
               Object?
             >;

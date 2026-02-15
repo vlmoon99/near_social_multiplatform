@@ -12,6 +12,7 @@ import 'package:near_social_mobile/features/feed/presentation/providers/posts_co
 import 'package:near_social_mobile/features/auth/presentation/providers/auth_controller.dart';
 import 'package:near_social_mobile/features/auth/data/models/auth_info.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:near_social_mobile/core/shared_widgets/app_toast.dart';
 import 'package:near_social_mobile/core/providers/service_providers.dart';
 
 /// Открывает модальное окно создания поста.
@@ -236,14 +237,7 @@ class _CreatePostModalState extends ConsumerState<CreatePostModal> {
         });
       });
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          behavior: SnackBarBehavior.floating,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-          content: Text("feed.post_added_soon".tr()),
-        ),
-      );
+      showAppToast(context, "feed.post_added_soon".tr());
       Navigator.pop(context);
     } catch (err) {
       setState(() => _isSending = false);

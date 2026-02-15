@@ -17,6 +17,7 @@ import 'package:near_social_mobile/features/settings/presentation/ui/home_menu_p
 import 'package:near_social_mobile/features/settings/presentation/ui/settings_page.dart';
 import 'package:near_social_mobile/features/settings/presentation/ui/blocked_users_page.dart';
 import 'package:near_social_mobile/features/settings/presentation/ui/hidden_posts_users_page.dart';
+import 'package:near_social_mobile/features/chat/presentation/ui/chat_room_page.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authControllerProvider);
@@ -100,6 +101,12 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: 'hidden-posts',
             builder: (context, state) => const HiddenPostsUsersPage(),
+          ),
+          GoRoute(
+            path: 'chat-room',
+            builder: (context, state) => ChatRoomPage(
+              targetAccountId: state.uri.queryParameters['targetAccountId'] ?? '',
+            ),
           ),
         ],
       ),

@@ -136,6 +136,7 @@ class _StartSplashPageState extends State<StartSplashPage>
                                     },
                                   )
                                 : const LoginBody(),
+
                           )
                         : const SizedBox.shrink(),
                   );

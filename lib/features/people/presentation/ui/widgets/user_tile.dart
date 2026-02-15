@@ -8,6 +8,7 @@ import 'package:near_social_mobile/features/people/data/models/user_list_state.d
 import 'package:near_social_mobile/core/router/routes.dart';
 import 'package:go_router/go_router.dart';
 import 'package:near_social_mobile/core/shared_widgets/near_network_image.dart';
+import 'package:near_social_mobile/core/shared_widgets/app_toast.dart';
 import 'package:near_social_mobile/core/shared_widgets/tappable_scale_widget.dart';
 
 class UserTile extends StatelessWidget {
@@ -72,16 +73,25 @@ class UserTile extends StatelessWidget {
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
-                          Text(
-                            "@${user.generalAccountInfo.accountId}",
-                            overflow: TextOverflow.ellipsis,
-                            maxLines: 1,
-                            style: user.generalAccountInfo.name != ""
-                                ? const TextStyle(
-                                    color: NEARColors.grey,
-                                    fontSize: 13,
-                                  )
-                                : const TextStyle(fontWeight: FontWeight.bold),
+                          GestureDetector(
+                            onLongPress: () {
+                              HapticFeedback.lightImpact();
+                              Clipboard.setData(
+                                ClipboardData(text: user.generalAccountInfo.accountId),
+                              );
+                              showAppToast(context, "AccountId ${user.generalAccountInfo.accountId} copied to clipboard");
+                            },
+                            child: Text(
+                              "@${user.generalAccountInfo.accountId}",
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
+                              style: user.generalAccountInfo.name != ""
+                                  ? const TextStyle(
+                                      color: NEARColors.grey,
+                                      fontSize: 13,
+                                    )
+                                  : const TextStyle(fontWeight: FontWeight.bold),
+                            ),
                           ),
                         ],
                       ),

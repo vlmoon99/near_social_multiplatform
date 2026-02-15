@@ -27,6 +27,7 @@ import 'package:near_social_mobile/core/shared_widgets/image_full_screen_page.da
 import 'package:image_picker/image_picker.dart';
 import 'package:near_social_mobile/core/shared_widgets/near_network_image.dart';
 import 'package:near_social_mobile/core/shared_widgets/scale_animated_iconbutton.dart';
+import 'package:near_social_mobile/core/shared_widgets/app_toast.dart';
 import 'package:near_social_mobile/core/shared_widgets/spinner_loading_indicator.dart';
 import 'package:near_social_mobile/core/shared_widgets/tappable_scale_widget.dart';
 import 'package:near_social_mobile/core/shared_widgets/two_states_iconbutton.dart';
@@ -538,9 +539,7 @@ class _CommentModalState extends ConsumerState<_CommentModal> {
       });
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("feed.comment_added_soon".tr())),
-        );
+        showAppToast(context, "feed.comment_added_soon".tr());
         Navigator.pop(context);
       }
     } catch (err) {

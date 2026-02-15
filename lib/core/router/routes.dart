@@ -12,6 +12,8 @@ abstract final class AppRoutes {
 
   static const notifications = '/home/notifications';
 
+  static const chatRoom = '/home/chat-room';
+
   static const homeMenu = '/home/menu';
   static const settings = '/home/settings';
   static const blockedUsers = '/home/blocked-users';

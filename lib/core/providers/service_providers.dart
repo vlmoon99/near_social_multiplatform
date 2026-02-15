@@ -6,8 +6,11 @@ import 'package:near_social_mobile/core/config/constants.dart';
 import 'package:near_social_mobile/core/network/interceptors/retry_on_connection_changed_interceptor.dart';
 import 'package:near_social_mobile/core/network/near_rpc_service.dart';
 import 'package:near_social_mobile/core/network/near_social_api.dart';
+import 'package:near_social_mobile/core/services/secure_storage_service.dart';
 import 'package:near_social_mobile/features/auth/data/repositories/local_user_data_repository.dart';
 import 'package:near_social_mobile/features/auth/data/repositories/user_data_repository.dart';
+import 'package:near_social_mobile/features/chat/data/services/chat_encryption_service.dart';
+import 'package:near_social_mobile/features/chat/data/services/chat_storage_service.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'service_providers.g.dart';
@@ -54,4 +57,21 @@ NearSocialApi nearSocialApi(Ref ref) {
 UserDataRepository userDataRepository(Ref ref) {
   final secureStorage = ref.watch(secureStorageProvider);
   return LocalUserDataRepository(secureStorage);
+}
+
+@Riverpod(keepAlive: true)
+ChatEncryptionService chatEncryptionService(Ref ref) {
+  return ChatEncryptionService();
+}
+
+@Riverpod(keepAlive: true)
+CryptoStorageService cryptoStorageService(Ref ref) {
+  final secureStorage = ref.watch(secureStorageProvider);
+  return CryptoStorageService(secureStorage: secureStorage);
+}
+
+@Riverpod(keepAlive: true)
+ChatStorageService chatStorageService(Ref ref) {
+  final cryptoStorage = ref.watch(cryptoStorageServiceProvider);
+  return ChatStorageService(cryptoStorage: cryptoStorage);
 }

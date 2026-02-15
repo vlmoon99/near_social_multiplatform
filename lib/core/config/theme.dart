@@ -29,7 +29,7 @@ class NEARColors {
   static const Color slate = Color(0xFF3F4246);
 }
 
-ThemeData get appTheme => ThemeData(
+ThemeData get appThemeLight => ThemeData(
       textTheme: GoogleFonts.manropeTextTheme(),
       useMaterial3: true,
       colorScheme: const ColorScheme.light(
@@ -70,5 +70,52 @@ ThemeData get appTheme => ThemeData(
         style: ButtonStyle(
           foregroundColor: WidgetStatePropertyAll(NEARColors.white),
         ),
+      ),
+    );
+
+ThemeData get appThemeDark => ThemeData(
+      brightness: Brightness.dark,
+      textTheme: GoogleFonts.manropeTextTheme(ThemeData.dark().textTheme),
+      useMaterial3: true,
+      colorScheme: const ColorScheme.dark(
+        primary: AppColors.primary,
+        onPrimary: AppColors.onPrimary,
+        secondary: AppColors.secondary,
+        onSecondary: AppColors.onSecondary,
+        surface: Color(0xFF121212),
+        onSurface: NEARColors.white,
+      ),
+      scaffoldBackgroundColor: const Color(0xFF000000),
+      appBarTheme: const AppBarTheme(
+        surfaceTintColor: Colors.transparent,
+        systemOverlayStyle: SystemUiOverlayStyle.light,
+        backgroundColor: NEARColors.black,
+        foregroundColor: NEARColors.white,
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.primary,
+          side: const BorderSide(color: Color(0xff4c5155)),
+          foregroundColor: NEARColors.white,
+        ),
+      ),
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(8).r),
+          enableFeedback: true,
+        ),
+      ),
+      bottomAppBarTheme: const BottomAppBarThemeData(
+        color: NEARColors.black,
+        surfaceTintColor: Colors.transparent,
+      ),
+      iconButtonTheme: const IconButtonThemeData(
+        style: ButtonStyle(
+          foregroundColor: WidgetStatePropertyAll(NEARColors.white),
+        ),
+      ),
+      cardTheme: const CardThemeData(
+        color: Color(0xFF1E1E1E),
       ),
     );

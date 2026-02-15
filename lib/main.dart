@@ -9,6 +9,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:near_social_mobile/core/config/theme.dart';
 import 'package:near_social_mobile/core/exceptions/exceptions.dart';
 import 'package:near_social_mobile/core/l10n/localizations_strings.dart';
+import 'package:near_social_mobile/core/providers/theme_controller.dart';
 import 'package:near_social_mobile/core/router/app_router.dart';
 
 void main() async {
@@ -59,6 +60,7 @@ class NearSocialApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(routerProvider);
+    final themeMode = ref.watch(themeControllerProvider);
     return ScreenUtilInit(
       builder: (_, __) {
         return MaterialApp.router(
@@ -68,7 +70,9 @@ class NearSocialApp extends ConsumerWidget {
           localizationsDelegates: context.localizationDelegates,
           supportedLocales: context.supportedLocales,
           locale: context.locale,
-          theme: appTheme,
+          theme: appThemeLight,
+          darkTheme: appThemeDark,
+          themeMode: themeMode,
         );
       },
     );

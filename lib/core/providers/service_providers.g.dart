@@ -225,3 +225,147 @@ final class UserDataRepositoryProvider
 
 String _$userDataRepositoryHash() =>
     r'5639e3ea7d55449e2a58893a004a3b64b8d52ea6';
+
+@ProviderFor(chatEncryptionService)
+const chatEncryptionServiceProvider = ChatEncryptionServiceProvider._();
+
+final class ChatEncryptionServiceProvider
+    extends
+        $FunctionalProvider<
+          ChatEncryptionService,
+          ChatEncryptionService,
+          ChatEncryptionService
+        >
+    with $Provider<ChatEncryptionService> {
+  const ChatEncryptionServiceProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'chatEncryptionServiceProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$chatEncryptionServiceHash();
+
+  @$internal
+  @override
+  $ProviderElement<ChatEncryptionService> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  ChatEncryptionService create(Ref ref) {
+    return chatEncryptionService(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(ChatEncryptionService value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<ChatEncryptionService>(value),
+    );
+  }
+}
+
+String _$chatEncryptionServiceHash() =>
+    r'89bcf2216fc41e3c2de95586620a0245f63f9c44';
+
+@ProviderFor(cryptoStorageService)
+const cryptoStorageServiceProvider = CryptoStorageServiceProvider._();
+
+final class CryptoStorageServiceProvider
+    extends
+        $FunctionalProvider<
+          CryptoStorageService,
+          CryptoStorageService,
+          CryptoStorageService
+        >
+    with $Provider<CryptoStorageService> {
+  const CryptoStorageServiceProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'cryptoStorageServiceProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$cryptoStorageServiceHash();
+
+  @$internal
+  @override
+  $ProviderElement<CryptoStorageService> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  CryptoStorageService create(Ref ref) {
+    return cryptoStorageService(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(CryptoStorageService value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<CryptoStorageService>(value),
+    );
+  }
+}
+
+String _$cryptoStorageServiceHash() =>
+    r'21615d73f6d273da234c1ba17e6220eefd582158';
+
+@ProviderFor(chatStorageService)
+const chatStorageServiceProvider = ChatStorageServiceProvider._();
+
+final class ChatStorageServiceProvider
+    extends
+        $FunctionalProvider<
+          ChatStorageService,
+          ChatStorageService,
+          ChatStorageService
+        >
+    with $Provider<ChatStorageService> {
+  const ChatStorageServiceProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'chatStorageServiceProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$chatStorageServiceHash();
+
+  @$internal
+  @override
+  $ProviderElement<ChatStorageService> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  ChatStorageService create(Ref ref) {
+    return chatStorageService(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(ChatStorageService value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<ChatStorageService>(value),
+    );
+  }
+}
+
+String _$chatStorageServiceHash() =>
+    r'81a4364eb610fa4ece6aeb2b47fec418ce043ae6';

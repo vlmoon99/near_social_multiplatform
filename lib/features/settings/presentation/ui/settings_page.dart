@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:near_social_mobile/core/shared_widgets/app_toast.dart';
 import 'package:near_social_mobile/core/shared_widgets/glassmorphism_components.dart';
 import 'package:near_social_mobile/features/notifications/presentation/providers/notifications_controller.dart';
 import 'package:near_social_mobile/features/feed/presentation/providers/posts_controller.dart';
@@ -14,6 +15,7 @@ import 'package:near_social_mobile/features/auth/presentation/providers/auth_con
 import 'package:near_social_mobile/core/providers/filter_controller.dart';
 import 'package:near_social_mobile/core/router/routes.dart';
 import 'package:near_social_mobile/core/providers/service_providers.dart';
+import 'package:near_social_mobile/core/providers/theme_controller.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
 class SettingsPage extends ConsumerStatefulWidget {
@@ -163,15 +165,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage>
                               isDark: isDark,
                               onTap: () {
                                 Clipboard.setData(ClipboardData(text: chatKey));
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    behavior: SnackBarBehavior.floating,
-                                    shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(14)),
-                                    content:
-                                        Text("settings.key_copied".tr()),
-                                  ),
-                                );
+                                showAppToast(context, "settings.key_copied".tr());
                                 Navigator.pop(ctx);
                               },
                             ),
@@ -333,6 +327,8 @@ class _SettingsPageState extends ConsumerState<SettingsPage>
       _lastSize = screenSize;
     }
 
+    final themeMode = ref.watch(themeControllerProvider);
+
     final settingsItems = [
       _SettingsItem(
         icon: CupertinoIcons.lock_fill,
@@ -429,13 +425,11 @@ class _SettingsPageState extends ConsumerState<SettingsPage>
 
                     // Settings list
                     Expanded(
-                      child: ListView.builder(
+                      child: ListView(
                         padding: const EdgeInsets.fromLTRB(16, 8, 16, 120),
                         physics: const BouncingScrollPhysics(),
-                        itemCount: settingsItems.length,
-                        itemBuilder: (context, index) {
-                          final item = settingsItems[index];
-                          return Padding(
+                        children: [
+                          ...settingsItems.map((item) => Padding(
                             padding: const EdgeInsets.only(bottom: 12),
                             child: GestureDetector(
                               onTap: item.onTap,
@@ -498,8 +492,97 @@ class _SettingsPageState extends ConsumerState<SettingsPage>
                                 ),
                               ),
                             ),
-                          );
-                        },
+                          )),
+
+                          // Theme toggle
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: GlassContainer(
+                              isDark: isDark,
+                              margin: EdgeInsets.zero,
+                              padding: const EdgeInsets.all(20),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    width: 48,
+                                    height: 48,
+                                    decoration: BoxDecoration(
+                                      color: isDark
+                                          ? Colors.white.withValues(alpha: 0.1)
+                                          : Colors.black.withValues(alpha: 0.06),
+                                      borderRadius: BorderRadius.circular(14),
+                                    ),
+                                    child: Icon(
+                                      isDark ? CupertinoIcons.moon_fill : CupertinoIcons.sun_max_fill,
+                                      size: 24,
+                                      color: isDark ? Colors.white : Colors.black,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          "settings.appearance".tr(),
+                                          style: TextStyle(
+                                            fontSize: 17,
+                                            fontWeight: FontWeight.w700,
+                                            color: isDark ? Colors.white : Colors.black,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 3),
+                                        Text(
+                                          themeMode == ThemeMode.dark
+                                              ? "settings.theme_dark".tr()
+                                              : themeMode == ThemeMode.light
+                                                  ? "settings.theme_light".tr()
+                                                  : "settings.theme_system".tr(),
+                                          style: TextStyle(
+                                            fontSize: 13,
+                                            color: isDark ? Colors.white54 : Colors.black45,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  CupertinoSlidingSegmentedControl<ThemeMode>(
+                                    groupValue: themeMode,
+                                    backgroundColor: isDark
+                                        ? Colors.white.withValues(alpha: 0.08)
+                                        : Colors.black.withValues(alpha: 0.06),
+                                    thumbColor: isDark
+                                        ? const Color(0xFF2C2C2E)
+                                        : Colors.white,
+                                    children: {
+                                      ThemeMode.light: Padding(
+                                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                                        child: Icon(CupertinoIcons.sun_max_fill, size: 16,
+                                            color: isDark ? Colors.white70 : Colors.black87),
+                                      ),
+                                      ThemeMode.system: Padding(
+                                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                                        child: Icon(CupertinoIcons.device_phone_portrait, size: 16,
+                                            color: isDark ? Colors.white70 : Colors.black87),
+                                      ),
+                                      ThemeMode.dark: Padding(
+                                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                                        child: Icon(CupertinoIcons.moon_fill, size: 16,
+                                            color: isDark ? Colors.white70 : Colors.black87),
+                                      ),
+                                    },
+                                    onValueChanged: (mode) {
+                                      if (mode != null) {
+                                        HapticFeedback.lightImpact();
+                                        ref.read(themeControllerProvider.notifier).setThemeMode(mode);
+                                      }
+                                    },
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
