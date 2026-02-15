@@ -1,5 +1,6 @@
 import 'dart:ui';
 
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -7,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import 'package:near_social_mobile/core/config/constants.dart';
+import 'package:near_social_mobile/features/feed/data/models/post.dart';
 import 'package:near_social_mobile/features/feed/presentation/ui/widgets/comment_card.dart';
 import 'package:near_social_mobile/features/feed/presentation/ui/widgets/create_comment_dialog_body.dart';
 import 'package:near_social_mobile/features/feed/presentation/ui/widgets/more_actions_for_post_button.dart';
@@ -59,11 +61,14 @@ class _PostPageState extends ConsumerState<PostPage> with TickerProviderStateMix
       final postsController = ref.read(postsControllerProvider.notifier);
       final posts = postsController.getPostsDueToPostsViewMode(
           widget.postsViewMode, widget.postsOfAccountId);
-      if (posts.firstWhere((element) {
-            return element.blockHeight == widget.blockHeight &&
-                element.authorInfo.accountId == widget.accountId;
-          }).commentList ==
-          null) {
+      final post = posts.cast<Post?>().firstWhere(
+            (element) =>
+                element!.blockHeight == widget.blockHeight &&
+                element.authorInfo.accountId == widget.accountId,
+            orElse: () => null,
+          );
+      if (post == null) return;
+      if (post.commentList == null) {
         postsController.loadCommentsOfPost(
           accountId: widget.accountId,
           blockHeight: widget.blockHeight,
@@ -87,11 +92,14 @@ class _PostPageState extends ConsumerState<PostPage> with TickerProviderStateMix
         final postsController = ref.read(postsControllerProvider.notifier);
         final posts = postsController.getPostsDueToPostsViewMode(
             widget.postsViewMode, widget.postsOfAccountId);
-        final post = posts.firstWhere((element) =>
-            element.blockHeight == widget.blockHeight &&
-            element.authorInfo.accountId == widget.accountId);
+        final post = posts.cast<Post?>().firstWhere(
+            (element) =>
+                element!.blockHeight == widget.blockHeight &&
+                element.authorInfo.accountId == widget.accountId,
+            orElse: () => null,
+          );
 
-        if (post.commentList != null) {
+        if (post?.commentList != null) {
           await postsController.updateCommentsOfPost(
             accountId: widget.accountId,
             blockHeight: widget.blockHeight,
@@ -117,7 +125,12 @@ class _PostPageState extends ConsumerState<PostPage> with TickerProviderStateMix
     final screenSize = MediaQuery.of(context).size;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final authState = ref.watch(authControllerProvider);
-    ref.watch(postsControllerProvider);
+    ref.watch(postsControllerProvider.select((s) => s.getPost(
+      authorId: widget.accountId,
+      blockHeight: widget.blockHeight,
+      postsViewMode: widget.postsViewMode,
+      postsOfAccountId: widget.postsOfAccountId,
+    )));
     final filterState = ref.watch(filterControllerProvider);
     final postsController = ref.read(postsControllerProvider.notifier);
 
@@ -140,9 +153,22 @@ class _PostPageState extends ConsumerState<PostPage> with TickerProviderStateMix
               builder: (context) {
                 final posts = postsController.getPostsDueToPostsViewMode(
                     widget.postsViewMode, widget.postsOfAccountId);
-                final post = posts.firstWhere((element) =>
-                    element.blockHeight == widget.blockHeight &&
-                    element.authorInfo.accountId == widget.accountId);
+                final post = posts.cast<Post?>().firstWhere(
+                    (element) =>
+                        element!.blockHeight == widget.blockHeight &&
+                        element.authorInfo.accountId == widget.accountId,
+                    orElse: () => null,
+                  );
+                if (post == null) {
+                  return Center(
+                    child: Text(
+                      'Post not found',
+                      style: TextStyle(
+                        color: isDark ? Colors.white54 : Colors.black45,
+                      ),
+                    ),
+                  );
+                }
                 return Column(
                   children: [
                     // Header
@@ -173,7 +199,7 @@ class _PostPageState extends ConsumerState<PostPage> with TickerProviderStateMix
                           ),
                           const SizedBox(width: 16),
                           Text(
-                            'Post',
+                            "feed.post".tr(),
                             style: TextStyle(
                               fontSize: 24,
                               fontWeight: FontWeight.w800,
@@ -351,9 +377,9 @@ class _PostPageState extends ConsumerState<PostPage> with TickerProviderStateMix
                                                       fontSize: 14),
                                                   TextSpan(
                                                     children: [
-                                                      const TextSpan(
+                                                      TextSpan(
                                                           text:
-                                                              "Answer to "),
+                                                              "feed.answer_to".tr()),
                                                       TextSpan(
                                                         text:
                                                             "@${post.authorInfo.accountId}",
@@ -438,7 +464,7 @@ class _PostPageState extends ConsumerState<PostPage> with TickerProviderStateMix
                           Padding(
                             padding: const EdgeInsets.only(left: 4),
                             child: Text(
-                              'Comments',
+                              "feed.comments".tr(),
                               style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.w700,
@@ -466,7 +492,7 @@ class _PostPageState extends ConsumerState<PostPage> with TickerProviderStateMix
                                         vertical: 32),
                                     child: Center(
                                       child: Text(
-                                        'No comments yet',
+                                        "feed.no_comments".tr(),
                                         style: TextStyle(
                                           fontSize: 15,
                                           color: isDark

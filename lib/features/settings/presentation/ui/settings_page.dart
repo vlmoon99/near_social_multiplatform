@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:ui';
 
 import 'package:easy_localization/easy_localization.dart';
@@ -7,14 +6,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:near_social_mobile/core/shared_widgets/app_toast.dart';
 import 'package:near_social_mobile/core/shared_widgets/glassmorphism_components.dart';
 import 'package:near_social_mobile/features/notifications/presentation/providers/notifications_controller.dart';
 import 'package:near_social_mobile/features/feed/presentation/providers/posts_controller.dart';
 import 'package:near_social_mobile/features/auth/presentation/providers/auth_controller.dart';
 import 'package:near_social_mobile/core/providers/filter_controller.dart';
 import 'package:near_social_mobile/core/router/routes.dart';
-import 'package:near_social_mobile/core/providers/service_providers.dart';
 import 'package:near_social_mobile/core/providers/theme_controller.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
@@ -92,103 +89,6 @@ class _SettingsPageState extends ConsumerState<SettingsPage>
     );
   }
 
-  Future<void> showChatKeysDialog(BuildContext context) async {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final secureStorage = ref.read(secureStorageProvider);
-    final keysJson = await secureStorage.read(key: "session_keys") ?? '{}';
-    final keys = jsonDecode(keysJson) as Map<String, dynamic>;
-
-    final String chatKey = keys.toString();
-
-    if (!context.mounted) return;
-    _showGlassDialog(
-      context: context,
-      isDark: isDark,
-      builder: (ctx) {
-        return Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 500),
-            child: Container(
-              margin: const EdgeInsets.all(32),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(28),
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 40, sigmaY: 40),
-                  child: Container(
-                    padding: const EdgeInsets.all(24),
-                    decoration: BoxDecoration(
-                      color: isDark
-                          ? Colors.black.withValues(alpha: 0.7)
-                          : Colors.white.withValues(alpha: 0.85),
-                      borderRadius: BorderRadius.circular(28),
-                      border: Border.all(
-                        color: isDark ? Colors.white24 : Colors.black12,
-                      ),
-                    ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          'Chat Keys',
-                          style: TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: -0.5,
-                            color: isDark ? Colors.white : Colors.black,
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                        Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: isDark
-                                ? Colors.white.withValues(alpha: 0.05)
-                                : Colors.black.withValues(alpha: 0.04),
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          child: Text(
-                            "${chatKey.substring(0, chatKey.length > 200 ? 200 : chatKey.length)}...",
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontFamily: 'monospace',
-                              color: isDark ? Colors.white70 : Colors.black54,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: [
-                            _glassButton(
-                              label: "settings.copy".tr(),
-                              icon: CupertinoIcons.doc_on_doc,
-                              isDark: isDark,
-                              onTap: () {
-                                Clipboard.setData(ClipboardData(text: chatKey));
-                                showAppToast(context, "settings.key_copied".tr());
-                                Navigator.pop(ctx);
-                              },
-                            ),
-                            _glassButton(
-                              label: "common.close".tr(),
-                              icon: CupertinoIcons.xmark,
-                              isDark: isDark,
-                              onTap: () => Navigator.pop(ctx),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-
   Future<void> showNearSocialKeysDialog(BuildContext context) async {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final authInfo = ref.read(authControllerProvider);
@@ -214,8 +114,8 @@ class _SettingsPageState extends ConsumerState<SettingsPage>
                     padding: const EdgeInsets.all(24),
                     decoration: BoxDecoration(
                       color: isDark
-                          ? Colors.black.withValues(alpha: 0.7)
-                          : Colors.white.withValues(alpha: 0.85),
+                          ? Colors.black.withValues(alpha: 0.5)
+                          : Colors.white.withValues(alpha: 0.65),
                       borderRadius: BorderRadius.circular(28),
                       border: Border.all(
                         color: isDark ? Colors.white24 : Colors.black12,
@@ -331,15 +231,6 @@ class _SettingsPageState extends ConsumerState<SettingsPage>
 
     final settingsItems = [
       _SettingsItem(
-        icon: CupertinoIcons.lock_fill,
-        title: "settings.chat_keys".tr(),
-        subtitle: "settings.chat_keys_subtitle".tr(),
-        onTap: () {
-          HapticFeedback.lightImpact();
-          showChatKeysDialog(context);
-        },
-      ),
-      _SettingsItem(
         icon: CupertinoIcons.qrcode,
         title: "settings.near_social_key".tr(),
         subtitle: "settings.near_social_key_subtitle".tr(),
@@ -411,7 +302,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage>
                           ),
                           const SizedBox(width: 16),
                           Text(
-                            'Settings',
+                            "settings.title".tr(),
                             style: TextStyle(
                               fontSize: 28,
                               fontWeight: FontWeight.w800,

@@ -150,8 +150,8 @@ class _PostDetailsModalState extends ConsumerState<PostDetailsModal> {
               filter: ImageFilter.blur(sigmaX: 60, sigmaY: 60),
               child: Material(
                 color: isDark
-                    ? Colors.black.withValues(alpha: 0.7)
-                    : Colors.white.withValues(alpha: 0.8),
+                    ? Colors.black.withValues(alpha: 0.5)
+                    : Colors.white.withValues(alpha: 0.6),
                 child: Column(
                   children: [
                     _buildModalHeader(context, isDark, post),
@@ -168,7 +168,7 @@ class _PostDetailsModalState extends ConsumerState<PostDetailsModal> {
                               padding:
                                   const EdgeInsets.fromLTRB(20, 24, 20, 10),
                               child: Text(
-                                'Comments',
+                                "feed.comments".tr(),
                                 style: TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.w800,
@@ -229,7 +229,7 @@ class _PostDetailsModalState extends ConsumerState<PostDetailsModal> {
             ),
           ),
           Text(
-            'Post',
+            "feed.post".tr(),
             style: TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 17,
@@ -405,7 +405,7 @@ class _PostDetailsModalState extends ConsumerState<PostDetailsModal> {
           padding: const EdgeInsets.symmetric(vertical: 32),
           child: Center(
             child: Text(
-              'No comments yet',
+              "feed.no_comments".tr(),
               style: TextStyle(
                 fontSize: 15,
                 color: isDark ? Colors.white38 : Colors.black26,
@@ -579,8 +579,8 @@ class _CommentModalState extends ConsumerState<_CommentModal> {
                 filter: ImageFilter.blur(sigmaX: 40, sigmaY: 40),
                 child: Material(
                   color: isDark
-                      ? Colors.black.withValues(alpha: 0.85)
-                      : Colors.white.withValues(alpha: 0.95),
+                      ? Colors.black.withValues(alpha: 0.65)
+                      : Colors.white.withValues(alpha: 0.75),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [

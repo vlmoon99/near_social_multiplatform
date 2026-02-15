@@ -1,5 +1,6 @@
 import 'dart:ui';
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:near_social_mobile/features/feed/presentation/ui/widgets/post_card.dart';
@@ -89,6 +90,32 @@ class _PostsFeedPageState extends ConsumerState<PostsFeedPage>
         postsController.loadMorePosts(
             postsViewMode: PostsViewMode.main,
             filters: filterState);
+      }
+
+      if (posts.isEmpty) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        return Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                CupertinoIcons.doc_text_search,
+                size: 48,
+                color: isDark ? Colors.white30 : Colors.black26,
+              ),
+              const SizedBox(height: 12),
+              Text(
+                status == PostLoadingStatus.loadingMorePosts
+                    ? 'Loading posts...'
+                    : 'No posts to show',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: isDark ? Colors.white54 : Colors.black45,
+                ),
+              ),
+            ],
+          ),
+        );
       }
 
       return LayoutBuilder(

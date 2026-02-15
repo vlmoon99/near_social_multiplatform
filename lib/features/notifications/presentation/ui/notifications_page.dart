@@ -1,4 +1,5 @@
 import 'package:easy_localization/easy_localization.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart' hide Notification;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -127,19 +128,22 @@ class _NotificationsPageState extends ConsumerState<NotificationsPage>
             },
           );
 
+          final isDark = Theme.of(context).brightness == Brightness.dark;
           return Center(
-            child: ListView(
-              controller: _scrollController,
-              physics: const BouncingScrollPhysics(),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const SizedBox(height: 300),
-                Center(
-                  child: Text(
-                    "notifications.no_notifications".tr(),
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18,
-                    ),
+                Icon(
+                  CupertinoIcons.bell_slash,
+                  size: 48,
+                  color: isDark ? Colors.white30 : Colors.black26,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  "notifications.no_notifications".tr(),
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: isDark ? Colors.white54 : Colors.black45,
                   ),
                 ),
               ],

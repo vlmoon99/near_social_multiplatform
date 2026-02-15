@@ -1,26 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:near_social_mobile/core/config/theme.dart';
 
 class CustomButton extends StatelessWidget {
   const CustomButton({
     this.primary = false,
     super.key,
     required this.onPressed,
-    // required this.label,
     required this.child,
-    // this.labelColor,
   });
 
   final bool primary;
   final Function()? onPressed;
-  // final String label;
   final Widget child;
-  // final Color? labelColor;
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final foreground = isDark ? Colors.white : Colors.black;
+    final background = isDark ? Colors.white.withValues(alpha: 0.12) : Colors.white;
+    final primaryFg = isDark ? Colors.black : Colors.white;
+    final primaryBg = isDark ? Colors.white : Colors.black;
+    final borderColor = isDark ? Colors.white38 : Colors.black;
+
     return FilledButton(
       onPressed: () {
         HapticFeedback.lightImpact();
@@ -29,14 +31,14 @@ class CustomButton extends StatelessWidget {
         }
       },
       style: FilledButton.styleFrom(
-        backgroundColor: primary ? NEARColors.black : NEARColors.white,
-        foregroundColor: primary ? NEARColors.white : NEARColors.black,
-        disabledForegroundColor: primary ? NEARColors.white : NEARColors.black,
-        disabledBackgroundColor: primary ? NEARColors.black : NEARColors.white,
+        backgroundColor: primary ? primaryBg : background,
+        foregroundColor: primary ? primaryFg : foreground,
+        disabledForegroundColor: primary ? primaryFg : foreground,
+        disabledBackgroundColor: primary ? primaryBg : background,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8).r,
-          side: const BorderSide(
-            color: NEARColors.black,
+          side: BorderSide(
+            color: borderColor,
             width: 2,
           ),
         ),

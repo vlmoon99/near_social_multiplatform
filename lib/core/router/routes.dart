@@ -5,8 +5,6 @@ abstract final class AppRoutes {
   static const home = '/home';
   static const postsFeed = '/home/posts-feed';
   static const post = '/home/post';
-  static const smartFeed = '/home/smart-feed';
-
   static const peopleList = '/home/people';
   static const userProfile = '/home/profile';
 

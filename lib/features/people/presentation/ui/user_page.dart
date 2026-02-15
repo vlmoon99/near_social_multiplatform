@@ -1,6 +1,4 @@
 import 'dart:async';
-import 'dart:math' as math;
-import 'dart:ui';
 
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/cupertino.dart';
@@ -134,48 +132,16 @@ class _UserPageState extends ConsumerState<UserPage>
     return Scaffold(
       body: Stack(
         children: [
-          _buildLivingBackground(screenSize, isDark),
+          buildLivingBackground(
+            controller: _bgController,
+            particles: _particles,
+            screenSize: screenSize,
+            isDark: isDark,
+          ),
           _buildContent(isDark, userIsBlocked, screenSize),
           _buildTopBar(isDark),
         ],
       ),
-    );
-  }
-
-  Widget _buildLivingBackground(Size screenSize, bool isDark) {
-    return AnimatedBuilder(
-      animation: _bgController,
-      builder: (context, child) {
-        for (var p in _particles) {
-          p.update(screenSize);
-        }
-        return Stack(
-          children: [
-            Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: isDark
-                      ? [const Color(0xFF000000), const Color(0xFF0A0A1F)]
-                      : [const Color(0xFFE5E5EA), const Color(0xFFD1D1D6)],
-                ),
-              ),
-            ),
-            ...(_particles.map((p) => Positioned(
-                  left: p.position.dx,
-                  top: p.position.dy,
-                  child: Opacity(
-                    opacity:
-                        (math.sin(p.opacityPhase) * 0.04 + 0.05).clamp(0.01, 0.1),
-                    child: Icon(p.icon,
-                        size: p.size,
-                        color: isDark ? Colors.white : Colors.black45),
-                  ),
-                ))),
-          ],
-        );
-      },
     );
   }
 
@@ -191,7 +157,7 @@ class _UserPageState extends ConsumerState<UserPage>
         child: child!,
       ),
       child: Center(
-        child: _glassBar(
+        child: buildGlassBar(
           360,
           Row(
             children: [
@@ -348,7 +314,7 @@ class _UserPageState extends ConsumerState<UserPage>
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      "User is blocked",
+                      "people.user_blocked".tr(),
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
@@ -477,7 +443,7 @@ class _UserPageState extends ConsumerState<UserPage>
                               child: Text(
                                 user.generalAccountInfo.name.isNotEmpty
                                     ? user.generalAccountInfo.name
-                                    : "No Name",
+                                    : "people.no_name".tr(),
                                 style: TextStyle(
                                   fontSize: 22,
                                   fontWeight: FontWeight.bold,
@@ -550,30 +516,6 @@ class _UserPageState extends ConsumerState<UserPage>
                                 icon: CupertinoIcons.chat_bubble_fill,
                                 label: "Chat",
                                 color: CupertinoColors.activeBlue,
-                                isDark: isDark,
-                                onTap: () {
-                                  context.push(
-                                    '${AppRoutes.chatRoom}?targetAccountId=${user.generalAccountInfo.accountId}',
-                                  );
-                                },
-                              ),
-                              const SizedBox(width: 8),
-                              _actionChip(
-                                icon: CupertinoIcons.phone_fill,
-                                label: "Call",
-                                color: CupertinoColors.activeGreen,
-                                isDark: isDark,
-                                onTap: () {
-                                  context.push(
-                                    '${AppRoutes.chatRoom}?targetAccountId=${user.generalAccountInfo.accountId}',
-                                  );
-                                },
-                              ),
-                              const SizedBox(width: 8),
-                              _actionChip(
-                                icon: CupertinoIcons.video_camera_solid,
-                                label: "Video",
-                                color: CupertinoColors.systemPurple,
                                 isDark: isDark,
                                 onTap: () {
                                   context.push(
@@ -839,54 +781,6 @@ class _UserPageState extends ConsumerState<UserPage>
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-
-  Widget _glassBar(double width, Widget child, bool isDark) {
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(40),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.15),
-            blurRadius: 35,
-          )
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(40),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 35, sigmaY: 35),
-          child: Container(
-            width: width,
-            height: 56,
-            padding: const EdgeInsets.symmetric(horizontal: 18),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: isDark
-                    ? [
-                        Colors.white.withValues(alpha: 0.14),
-                        Colors.white.withValues(alpha: 0.06)
-                      ]
-                    : [
-                        Colors.white.withValues(alpha: 0.95),
-                        Colors.white.withValues(alpha: 0.85)
-                      ],
-              ),
-              borderRadius: BorderRadius.circular(40),
-              border: Border.all(
-                color: isDark
-                    ? Colors.white24
-                    : Colors.black.withValues(alpha: 0.12),
-                width: 1.2,
-              ),
-            ),
-            child: child,
-          ),
         ),
       ),
     );

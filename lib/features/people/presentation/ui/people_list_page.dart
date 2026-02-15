@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -101,24 +102,49 @@ class _PeopleListPageState extends ConsumerState<PeopleListPage>
                 placeholder: 'Search for people...',
               ),
             ),
-            SliverPadding(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-              sliver: SliverList(
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) {
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: UserTile(
-                        key: ValueKey(users[index].generalAccountInfo.accountId),
-                        user: users[index],
+            if (users.isEmpty && query.isNotEmpty)
+              SliverFillRemaining(
+                hasScrollBody: false,
+                child: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        CupertinoIcons.person_2,
+                        size: 48,
+                        color: isDark ? Colors.white30 : Colors.black26,
                       ),
-                    );
-                  },
-                  childCount: users.length,
+                      const SizedBox(height: 12),
+                      Text(
+                        "people.no_users_found".tr(),
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: isDark ? Colors.white54 : Colors.black45,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              )
+            else
+              SliverPadding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+                sliver: SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) {
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: UserTile(
+                          key: ValueKey(users[index].generalAccountInfo.accountId),
+                          user: users[index],
+                        ),
+                      );
+                    },
+                    childCount: users.length,
+                  ),
                 ),
               ),
-            ),
             const SliverToBoxAdapter(child: SizedBox(height: 90)),
           ],
         ),

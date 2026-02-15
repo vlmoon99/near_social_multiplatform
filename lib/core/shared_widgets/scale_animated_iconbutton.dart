@@ -131,7 +131,10 @@ class ScaleAnimatedIconButtonWithCounter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(children: [
+    final isDisabled = onPressed == null;
+    return Opacity(
+      opacity: isDisabled ? 0.35 : 1.0,
+      child: Row(children: [
       ScaleAnimatedIconButton(
         iconPath: iconPath,
         iconActivatedPath: iconActivatedPath,
@@ -143,10 +146,11 @@ class ScaleAnimatedIconButtonWithCounter extends StatelessWidget {
       Text(
         "$count",
         style: TextStyle(
-          color: Colors.grey.shade600,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
           fontSize: 14,
         ),
       ),
-    ]);
+    ]),
+    );
   }
 }

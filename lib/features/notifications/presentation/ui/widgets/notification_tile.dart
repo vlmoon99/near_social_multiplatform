@@ -173,7 +173,7 @@ class NotificationTile extends ConsumerWidget {
                                   notification.date),
                               style: TextStyle(
                                 fontSize: 12,
-                                color: Colors.grey.shade600,
+                                color: Theme.of(context).colorScheme.onSurfaceVariant,
                               ),
                             ),
                           ],

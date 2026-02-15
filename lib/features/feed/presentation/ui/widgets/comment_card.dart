@@ -54,7 +54,7 @@ class CommentCard extends ConsumerWidget {
               child: Text(
                 formatDateDependingOnCurrentTime(comment.date),
                 style: TextStyle(
-                  color: Colors.grey.shade600,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                   fontSize: 12,
                 ),
               ),

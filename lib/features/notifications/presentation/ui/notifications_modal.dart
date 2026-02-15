@@ -130,8 +130,8 @@ class _NotificationsModalState extends ConsumerState<NotificationsModal> {
               filter: ImageFilter.blur(sigmaX: 60, sigmaY: 60),
               child: Material(
                 color: isDark
-                    ? Colors.black.withValues(alpha: 0.7)
-                    : Colors.white.withValues(alpha: 0.85),
+                    ? Colors.black.withValues(alpha: 0.5)
+                    : Colors.white.withValues(alpha: 0.65),
                 child: Column(
                   children: [
                     _buildHeader(isDark),

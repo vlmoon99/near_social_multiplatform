@@ -8,7 +8,6 @@ import 'package:near_social_mobile/features/auth/presentation/ui/qr_scan_screen.
 import 'package:near_social_mobile/features/feed/presentation/ui/home_page.dart';
 import 'package:near_social_mobile/features/feed/presentation/ui/posts_feed_page.dart';
 import 'package:near_social_mobile/features/feed/presentation/ui/post_page.dart';
-import 'package:near_social_mobile/features/feed/presentation/ui/smart_feed_page.dart';
 import 'package:near_social_mobile/features/feed/presentation/providers/posts_controller.dart';
 import 'package:near_social_mobile/features/people/presentation/ui/people_list_page.dart';
 import 'package:near_social_mobile/features/people/presentation/ui/user_page.dart';
@@ -69,10 +68,6 @@ final routerProvider = Provider<GoRouter>((ref) {
                 postsOfAccountId: state.uri.queryParameters['postsOfAccountId'],
               );
             },
-          ),
-          GoRoute(
-            path: 'smart-feed',
-            builder: (context, state) => const SmartFeedPage(),
           ),
           GoRoute(
             path: 'people',

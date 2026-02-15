@@ -91,7 +91,7 @@ class PostCard extends ConsumerWidget {
                     child: Text(
                       formatDateDependingOnCurrentTime(currentPost.date),
                       style: TextStyle(
-                        color: Colors.grey.shade600,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                         fontSize: 12,
                       ),
                     ),
@@ -120,7 +120,7 @@ class PostCard extends ConsumerWidget {
                         padding: const EdgeInsets.symmetric(vertical: 3).r,
                         child: Text(
                           "Reposted by ${currentPost.reposterInfo?.accountInfo.name ?? ""} @${currentPost.reposterInfo!.accountInfo.accountId}",
-                          style: TextStyle(color: Colors.grey.shade600),
+                          style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
                         ),
                       ),
                     ),
@@ -203,33 +203,62 @@ class PostCard extends ConsumerWidget {
                     ),
                   ),
                   SizedBox(height: 10.h),
-                  ConstrainedBox(
-                    constraints: BoxConstraints(
-                      maxHeight: maxContentHeight.h,
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Flexible(
-                          child: RawTextToContentFormatter(
-                            rawText: currentPost.postBody.text.trim(),
-                            heroAnimForImages: false,
-                            imageHeight: .5.sh,
-                            responsive: false,
+                  ClipRect(
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        maxHeight: maxContentHeight.h,
+                      ),
+                      child: Stack(
+                        children: [
+                          SingleChildScrollView(
+                            physics: const NeverScrollableScrollPhysics(),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                RawTextToContentFormatter(
+                                  rawText: currentPost.postBody.text.trim(),
+                                  heroAnimForImages: false,
+                                  imageHeight: .5.sh,
+                                  responsive: false,
+                                ),
+                                if (currentPost.postBody.mediaLink != null)
+                                  Center(
+                                    child: ConstrainedBox(
+                                      constraints: BoxConstraints(maxHeight: .5.sh),
+                                      child: NearNetworkImage(
+                                        imageUrl: currentPost.postBody.mediaLink!,
+                                        boxFit: BoxFit.contain,
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
                           ),
-                        ),
-                        if (currentPost.postBody.mediaLink != null)
-                          Flexible(
-                            child: ConstrainedBox(
-                              constraints: BoxConstraints(maxHeight: .5.sh),
-                              child: NearNetworkImage(
-                                imageUrl: currentPost.postBody.mediaLink!,
-                                boxFit: BoxFit.contain,
+                          Positioned(
+                            left: 0,
+                            right: 0,
+                            bottom: 0,
+                            height: 40.h,
+                            child: IgnorePointer(
+                              child: DecoratedBox(
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topCenter,
+                                    end: Alignment.bottomCenter,
+                                    colors: [
+                                      Theme.of(context).cardTheme.color?.withValues(alpha: 0) ??
+                                          Theme.of(context).cardColor.withValues(alpha: 0),
+                                      Theme.of(context).cardTheme.color ??
+                                          Theme.of(context).cardColor,
+                                    ],
+                                  ),
+                                ),
                               ),
                             ),
                           ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                   Row(

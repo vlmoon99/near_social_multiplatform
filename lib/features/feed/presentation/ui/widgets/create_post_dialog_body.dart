@@ -93,8 +93,8 @@ class _CreatePostModalState extends ConsumerState<CreatePostModal> {
                 padding: const EdgeInsets.all(28),
                 decoration: BoxDecoration(
                   color: isDark
-                      ? Colors.white.withValues(alpha: 0.08)
-                      : Colors.white.withValues(alpha: 0.80),
+                      ? Colors.white.withValues(alpha: 0.06)
+                      : Colors.white.withValues(alpha: 0.60),
                   borderRadius: BorderRadius.circular(28),
                   border:
                       Border.all(color: isDark ? Colors.white24 : Colors.black12),
@@ -274,8 +274,8 @@ class _CreatePostModalState extends ConsumerState<CreatePostModal> {
               filter: ImageFilter.blur(sigmaX: 60, sigmaY: 60),
               child: Material(
                 color: isDark
-                    ? Colors.black.withValues(alpha: 0.7)
-                    : Colors.white.withValues(alpha: 0.8),
+                    ? Colors.black.withValues(alpha: 0.5)
+                    : Colors.white.withValues(alpha: 0.6),
                 child: Column(
                   children: [
                     // Header
@@ -332,7 +332,7 @@ class _CreatePostModalState extends ConsumerState<CreatePostModal> {
                                       ),
                                     )
                                   : Text(
-                                      'Post',
+                                      "feed.post".tr(),
                                       style: TextStyle(
                                         fontWeight: FontWeight.bold,
                                         fontSize: 14,

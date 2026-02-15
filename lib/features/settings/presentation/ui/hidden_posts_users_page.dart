@@ -22,8 +22,6 @@ class HiddenPostsUsersPage extends ConsumerWidget {
           ),
         ),
         centerTitle: true,
-        leadingWidth: 0,
-        leading: const SizedBox.shrink(),
       ),
       body: Builder(
         builder: (context) {

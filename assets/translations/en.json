@@ -102,5 +102,27 @@
   "chat.security_local_storage": "Chat history is stored locally on your device, encrypted with AES-256. It never leaves your device.",
   "chat.security_warning": "Warning: Chats are stored only on this device. They will not transfer to other devices and will be lost if the app is uninstalled.",
   "chat.security_no_server": "No messages pass through or are stored on any server. Communication is fully peer-to-peer.",
-  "chat.clear_history": "Clear History"
+  "chat.clear_history": "Clear History",
+
+  "feed.post": "Post",
+  "feed.post_not_found": "Post not found",
+  "feed.no_posts": "No posts to show",
+  "feed.loading_posts": "Loading posts...",
+  "feed.hide_post": "Hide this post",
+  "feed.hide_post_confirm": "Are you sure you want to hide this post?",
+  "feed.hide_post_hint": "You can always restore them later through \"Hidden content\" tab in the \"Settings\"",
+  "feed.hide_user_posts": "Hide posts of this user",
+  "feed.hide_user_posts_confirm": "Are you sure you want to hide posts of this user?",
+  "feed.answer_to": "Answer to ",
+  "feed.comments": "Comments",
+  "feed.no_comments": "No comments yet",
+
+  "people.user_blocked": "User is blocked",
+  "people.block_user": "Block user",
+  "people.unblock_user": "Unblock user",
+  "people.block_confirm": "Are you sure you want to block this user?",
+  "people.block_hint": "You can always unblock user later through \"Blocked Users\" tab in the \"Settings\"",
+  "people.block_hint_full": "You will not be able to see user's posts, comments and notifications. You can always unblock user later through \"Blocked Users\" tab in the \"Settings\"",
+  "people.unblock_confirm": "Are you sure you want to unblock this user?",
+  "people.no_users_found": "No users found"
 }

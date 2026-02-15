@@ -23,23 +23,27 @@ class TwoStatesIconButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return IconButton(
-      onPressed: onPressed,
-      icon: iconActivatedPath != null && activated
-          ? SvgPicture.asset(
-              iconActivatedPath!,
-              width: size.h,
-              height: size.h,
-              color: activatedColor,
-            )
-          : SvgPicture.asset(
-              iconPath,
-              color: activated ? activatedColor : NEARColors.grey,
-              width: size.h,
-              height: size.h,
-            ),
-      style: const ButtonStyle(
-        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+    final isDisabled = onPressed == null;
+    return Opacity(
+      opacity: isDisabled ? 0.35 : 1.0,
+      child: IconButton(
+        onPressed: onPressed,
+        icon: iconActivatedPath != null && activated
+            ? SvgPicture.asset(
+                iconActivatedPath!,
+                width: size.h,
+                height: size.h,
+                color: activatedColor,
+              )
+            : SvgPicture.asset(
+                iconPath,
+                color: activated ? activatedColor : NEARColors.grey,
+                width: size.h,
+                height: size.h,
+              ),
+        style: const ButtonStyle(
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        ),
       ),
     );
   }
