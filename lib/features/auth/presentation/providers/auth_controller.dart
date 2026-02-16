@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:near_social_mobile/core/config/constants.dart';
+import 'package:near_social_mobile/core/network/near_rpc_service.dart';
 import 'package:near_social_mobile/core/network/near_social_api.dart';
 import 'package:near_social_mobile/core/providers/service_providers.dart';
 import 'package:near_social_mobile/core/services/crypto_service.dart';
@@ -17,11 +18,13 @@ part 'auth_controller.g.dart';
 @Riverpod(keepAlive: true)
 class AuthController extends _$AuthController {
   late NearSocialApi _nearSocialApi;
+  late NearRpcService _nearRpcService;
   late UserDataRepository _userDataRepository;
 
   @override
   AuthInfo build() {
     _nearSocialApi = ref.watch(nearSocialApiProvider);
+    _nearRpcService = ref.watch(nearRpcServiceProvider);
     _userDataRepository = ref.watch(userDataRepositoryProvider);
     return const AuthInfo();
   }
@@ -30,6 +33,9 @@ class AuthController extends _$AuthController {
     switch (event) {
       case LoginEvent(:final accountPublicKey):
         await login(accountPublicKey: accountPublicKey);
+      case WalletLoginEvent(:final accountId, :final accountPublicKey):
+        await walletLogin(
+            accountId: accountId, accountPublicKey: accountPublicKey);
       case LogoutEvent():
         await logout();
       case GetActivationStatusEvent():
@@ -81,6 +87,70 @@ class AuthController extends _$AuthController {
       state = state.copyWith(
         accountId: accountId,
         accountPublicKey: accountPublicKey,
+        devicePublicKey: devicePubKeyStr,
+        devicePrivateKey: devicePrivKeyStr,
+        status: AuthInfoStatus.authenticated,
+      );
+    } catch (err) {
+      rethrow;
+    }
+  }
+
+  /// Logs in using a named account ID from a wallet connection.
+  ///
+  /// If [accountPublicKey] is not provided, queries the NEAR RPC for a
+  /// full-access key belonging to [accountId].
+  Future<void> walletLogin({
+    required String accountId,
+    String? accountPublicKey,
+  }) async {
+    try {
+      // 1. Resolve public key
+      String publicKey = accountPublicKey ?? '';
+      if (publicKey.isEmpty) {
+        final rpcKey = await _nearRpcService.getFullAccessPublicKey(accountId);
+        if (rpcKey == null) {
+          throw Exception('No full-access key found for $accountId');
+        }
+        publicKey = rpcKey;
+      }
+
+      // 2. Generate device Ed25519 keypair
+      final deviceKeyPair = CryptoService.generateEd25519KeyPair();
+      final devicePubKeyStr = base64.encode(deviceKeyPair.publicKey);
+      final devicePrivKeyStr = base64.encode(deviceKeyPair.privateKey);
+
+      // 3. Sign a verification message with device key
+      final messageBytes =
+          Uint8List.fromList(utf8.encode("NEAR Social verification"));
+      final signatureBytes =
+          CryptoService.signMessage(deviceKeyPair.privateKey, messageBytes);
+      final signedMessage = base64.encode(signatureBytes);
+
+      // 4. Create session via repository
+      final verificationResult =
+          await _userDataRepository.verifyAndCreateSession(
+        accountId: accountId,
+        signature: signedMessage,
+        publicKeyStr: publicKey,
+        encryptionPublicKey: devicePubKeyStr,
+        encryptionPrivateKey: devicePrivKeyStr,
+      );
+
+      if (!verificationResult.success) {
+        await logout();
+        throw Exception(
+            verificationResult.errorMessage ?? "Verification failed");
+      }
+
+      if (kIsWeb) {
+        Permission.notification.request();
+      }
+
+      // 5. Update state — use accountId directly (named account, not derived)
+      state = state.copyWith(
+        accountId: accountId,
+        accountPublicKey: publicKey,
         devicePublicKey: devicePubKeyStr,
         devicePrivateKey: devicePrivKeyStr,
         status: AuthInfoStatus.authenticated,

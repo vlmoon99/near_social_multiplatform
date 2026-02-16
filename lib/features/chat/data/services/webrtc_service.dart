@@ -1,18 +1,32 @@
 import 'dart:async';
 
 import 'package:flutter_webrtc/flutter_webrtc.dart';
+import 'package:near_social_mobile/features/chat/data/services/signaling_service.dart';
 
 class WebRTCService {
-  static const Map<String, dynamic> _iceConfig = {
-    'iceServers': [
+  final TurnCredentials? _turnCredentials;
+
+  WebRTCService({TurnCredentials? turnCredentials})
+      : _turnCredentials = turnCredentials;
+
+  Map<String, dynamic> get _iceConfig {
+    final iceServers = <Map<String, dynamic>>[
       {'urls': 'stun:stun.l.google.com:19302'},
-      {
-        'urls': 'turn:p2ptest1.duckdns.org:3478',
-        'username': 'myuser',
-        'credential': 'mypassword',
-      },
-    ],
-  };
+      {'urls': 'stun:stun1.l.google.com:19302'},
+      {'urls': 'stun:stun2.l.google.com:19302'},
+      {'urls': 'stun:global.stun.twilio.com:3478'},
+    ];
+
+    if (_turnCredentials != null) {
+      iceServers.add({
+        'urls': 'turn:${_turnCredentials.host}:3478?transport=tcp',
+        'username': _turnCredentials.username,
+        'credential': _turnCredentials.password,
+      });
+    }
+
+    return {'iceServers': iceServers};
+  }
 
   RTCPeerConnection? peerConnection;
   RTCDataChannel? dataChannel;

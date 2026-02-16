@@ -19,6 +19,7 @@
   "auth.decrypt": "Decrypt",
   "auth.verification_failed": "Verification failed",
   "auth.invalid_key_format": "Key must start with ed25519:",
+  "auth.connect_wallet": "Connect with NEAR Wallet",
 
   "feed.comment_added_soon": "Your comment will be added soon",
   "feed.post_added_soon": "Your post will be added soon.",

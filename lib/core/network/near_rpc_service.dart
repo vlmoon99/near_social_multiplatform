@@ -444,6 +444,33 @@ class NearRpcService {
   }
 
   // ---------------------------------------------------------------------------
+  // Access key list
+  // ---------------------------------------------------------------------------
+
+  /// Queries the full list of access keys for [accountId].
+  ///
+  /// Returns the first full-access public key in `ed25519:<base58>` format,
+  /// or `null` if none found.
+  Future<String?> getFullAccessPublicKey(String accountId) async {
+    final response = await _rpcCall('query', {
+      'request_type': 'view_access_key_list',
+      'finality': 'final',
+      'account_id': accountId,
+    });
+
+    final result = response.data as Map<String, dynamic>;
+    final keys = (result['result']?['keys'] as List<dynamic>?) ?? [];
+
+    for (final key in keys) {
+      final accessKey = key['access_key'] as Map<String, dynamic>?;
+      if (accessKey != null && accessKey['permission'] == 'FullAccess') {
+        return key['public_key'] as String?;
+      }
+    }
+    return null;
+  }
+
+  // ---------------------------------------------------------------------------
   // Transaction info (nonce + block hash)
   // ---------------------------------------------------------------------------
 

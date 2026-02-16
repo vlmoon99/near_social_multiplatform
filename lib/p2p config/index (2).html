@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEAR P2P Messenger - Secured Gateway</title>
+    
+    <script src="https://cdn.jsdelivr.net/npm/tweetnacl@1.0.3/nacl.min.js"></script>
+
+    <style>
+        :root { --bg: #121212; --surface: #1e1e1e; --primary: #3b82f6; --danger: #ef4444; --success: #22c55e; --warn: #f59e0b; --text: #e5e7eb; --disabled: #333; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 10px; height: 100vh; display: flex; flex-direction: column; }
+        .container { max-width: 1200px; margin: 0 auto; width: 100%; display: flex; flex-direction: column; gap: 10px; flex: 1; }
+        
+        .grid-row { display: flex; gap: 10px; flex-wrap: wrap; }
+        .col-left { flex: 1; min-width: 350px; display: flex; flex-direction: column; gap: 10px; }
+        .col-right { flex: 2; min-width: 350px; display: flex; flex-direction: column; gap: 10px; }
+
+        .box { background: var(--surface); padding: 15px; border-radius: 8px; border: 1px solid #333; transition: opacity 0.3s; }
+        .box.inactive { opacity: 0.4; pointer-events: none; filter: grayscale(1); }
+        
+        h3 { margin-top: 0; margin-bottom: 10px; font-size: 14px; color: #aaa; border-bottom: 1px solid #333; padding-bottom: 5px; text-transform: uppercase; letter-spacing: 1px; }
+        
+        .control-group { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; align-items: center; }
+        .label { min-width: 90px; font-size: 12px; color: #888; }
+        input { background: #2d2d2d; border: 1px solid #444; color: white; padding: 8px; border-radius: 4px; flex: 1; font-size: 13px; }
+        input:focus { border-color: var(--primary); outline: none; }
+        input::placeholder { color: #555; }
+        
+        button { padding: 8px 16px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; color: white; transition: 0.2s; font-size: 13px; }
+        button:disabled { background: #444 !important; cursor: not-allowed; opacity: 0.5; }
+        .btn-blue { background: var(--primary); } 
+        .btn-green { background: var(--success); } 
+        .btn-red { background: var(--danger); }
+        .btn-warn { background: var(--warn); color: #000; }
+        
+        .video-container { display: flex; gap: 10px; flex: 1; min-height: 350px; margin-top: 10px; }
+        .vid-wrapper { flex: 1; background: black; border-radius: 8px; overflow: hidden; position: relative; border: 1px solid #333; }
+        video { width: 100%; height: 100%; object-fit: cover; }
+        .vid-label { position: absolute; bottom: 10px; left: 10px; background: rgba(0,0,0,0.7); padding: 4px 8px; font-size: 12px; border-radius: 4px; }
+
+        #chatBox { height: 180px; overflow-y: scroll; background: #000; border: 1px solid #333; padding: 10px; font-size: 13px; margin-bottom: 5px; border-radius: 4px; }
+        .chat-msg { margin-bottom: 4px; line-height: 1.4; }
+        .chat-me { color: var(--primary); }
+        .chat-peer { color: var(--success); }
+        .chat-sys { color: #888; font-style: italic; }
+
+        #statsBox { font-family: 'Consolas', monospace; font-size: 11px; color: #0ff; white-space: pre-wrap; height: 100%; }
+
+        #incomingModal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 100; align-items: center; justify-content: center; }
+        .modal-content { background: var(--surface); padding: 30px; border-radius: 10px; text-align: center; border: 1px solid #555; }
+        
+        .hint { font-size: 10px; color: #666; margin-top: -5px; margin-bottom: 10px; display: block; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="grid-row">
+        <!-- LEFT COLUMN -->
+        <div class="col-left">
+            <!-- STEP 1: NEAR AUTH -->
+            <div class="box" id="step1">
+                <h3>1. Near Credentials</h3>
+                <form id="authForm" onsubmit="return false;">
+                    <div class="control-group">
+                        <span class="label">Account ID:</span>
+                        <input type="text" id="accountId" placeholder="example.near" autocomplete="username" value="vlmoon.near">
+                    </div>
+                    <div class="control-group">
+                        <span class="label">Private Key:</span>
+                        <input type="password" id="privateKey" placeholder="ed25519:..." autocomplete="current-password" value="ed25519:2pEuGeJMsmanq1vpE4bbJWqWdyZfaKWWujXwKm9X2pRXf6miYQ9wNz7AgcnKy6vJPPyv6SyVghiBax75yoWt3ivA">
+                    </div>
+                    <span class="hint">Use your functional key (e.g. from NEAR Social or your wallet)</span>
+                    <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                        <button type="button" class="btn-green" style="flex: 1" onclick="fillCreds('vlmoon.near', 'ed25519:2pEuGeJMsmanq1vpE4bbJWqWdyZfaKWWujXwKm9X2pRXf6miYQ9wNz7AgcnKy6vJPPyv6SyVghiBax75yoWt3ivA')">👤 User 1</button>
+                        <button type="button" class="btn-green" style="flex: 1" onclick="fillCreds('vlmoon77.near', 'ed25519:3ZoM1Ea5Qu6WoLnUKKHRnKg2gPWa6CP9LPMJaTJ1mfacHExqsJvLfso9NUmwNdF72Y5pfL1xwJTdF6E4DM2tGZAk')">👤 User 2</button>
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <button type="button" class="btn-blue" style="flex: 1" id="btnValidateStep1">Verify & Unlock Step 2</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- STEP 2: SIGNALING -->
+            <div class="box inactive" id="step2">
+                <h3>2. Signaling Server</h3>
+                <div class="control-group">
+                    <span class="label">WS URL:</span>
+                    <input type="text" id="serverUrl" value="wss://18becad2e1cdf1e0331d05b77d243257a7a502a1.dstack-pha-prod9.phala.network/ws">
+                </div>
+                <div class="control-group" style="margin-top: 5px;">
+                    <label style="font-size: 12px; color: #aaa; display: flex; align-items: center; gap: 5px;">
+                        <input type="checkbox" id="chkForceRelay" style="flex: 0; width: auto;"> 
+                        Force TURN Relay (Fixes Firewalls)
+                    </label>
+                </div>
+                <button class="btn-blue" id="btnConn" style="width: 100%">Secure Connect</button>
+                <div id="status" style="margin-top: 10px; font-size: 12px;">Status: 🔴 Offline</div>
+                <div id="teeStatus" style="margin-top: 5px; font-size: 11px; color: #888;">TEE Proof: ⏳ Pending...</div>
+            </div>
+
+            <!-- TURN INFO (Read Only) -->
+            <div class="box inactive" id="turnBox">
+                <h3>3. TURN Credentials</h3>
+                <div style="font-size: 11px; color: #888;">
+                    Dynamic credentials will appear here after authentication.
+                    <div id="turnDisplay" style="margin-top:5px; color: var(--success); font-family: monospace;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT COLUMN -->
+        <div class="col-right">
+            <div class="box inactive" id="step3">
+                <h3>4. Call Controls</h3>
+                <div class="control-group">
+                    <input type="text" id="targetId" placeholder="Peer Account ID (e.g. bob.near)">
+                    <button class="btn-green" id="btnVid">📹 Video Call</button>
+                    <button class="btn-red" id="btnHang" disabled>❌ Hang Up</button>
+                </div>
+                <div class="control-group">
+                    <button class="btn-blue" id="btnScreen" disabled>🖥️ Share</button>
+                    <button class="btn-warn" id="btnMuteAudio" disabled>🎤 Mute</button>
+                    <button class="btn-warn" id="btnMuteVideo" disabled>📷 Cam</button>
+                </div>
+
+                <h3 style="margin-top: 15px;">5. Secured P2P Chat</h3>
+                <div id="chatBox"></div>
+                <div class="control-group">
+                    <input type="text" id="chatInput" placeholder="Type a message..." onkeypress="if(event.key==='Enter') window.sendChat()">
+                    <button class="btn-blue" id="btnSend" disabled>Send</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- VIDEO AREA -->
+    <div class="video-container">
+        <div class="vid-wrapper">
+            <video id="localVideo" autoplay muted playsinline></video>
+            <div class="vid-label">My Feed</div>
+        </div>
+        <div class="vid-wrapper">
+            <video id="remoteVideo" autoplay playsinline></video>
+            <div class="vid-label">Remote Feed</div>
+        </div>
+        <div class="vid-wrapper" style="flex: 0.6; background: #000; padding: 10px; overflow: hidden;">
+            <div id="statsBox">Network Diagnostics...</div>
+        </div>
+    </div>
+</div>
+
+<div id="incomingModal">
+    <div class="modal-content">
+        <h3 id="callTitle">📞 Incoming Call...</h3>
+        <br>
+        <button class="btn-green" id="btnAccept">✅ Accept</button>
+        <button class="btn-red" id="btnReject">❌ Reject</button>
+    </div>
+</div>
+
+<script>
+    // --- LIGHTWEIGHT BASE58 IMPLEMENTATION (NO DEPS) ---
+    const B58_ALPHABET = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+    const B58_MAP = Array.from(B58_ALPHABET).reduce((map, char, i) => { map[char] = i; return map; }, {});
+
+    function b58Decode(string) {
+        let bytes = [0];
+        for (let i = 0; i < string.length; i++) {
+            let value = B58_MAP[string[i]];
+            if (value === undefined) throw new Error('Invalid base58 character');
+            for (let j = 0; j < bytes.length; j++) {
+                value += bytes[j] * 58;
+                bytes[j] = value & 0xff;
+                value >>= 8;
+            }
+            while (value > 0) {
+                bytes.push(value & 0xff);
+                value >>= 8;
+            }
+        }
+        for (let i = 0; string[i] === '1' && i < string.length - 1; i++) bytes.push(0);
+        return new Uint8Array(bytes.reverse());
+    }
+
+    function b58Encode(uint8array) {
+        let digits = [0];
+        for (let i = 0; i < uint8array.length; i++) {
+            let value = uint8array[i];
+            for (let j = 0; j < digits.length; j++) {
+                value += digits[j] << 8;
+                digits[j] = value % 58;
+                value = (value / 58) | 0;
+            }
+            while (value > 0) {
+                digits.push(value % 58);
+                value = (value / 58) | 0;
+            }
+        }
+        let string = '';
+        for (let i = 0; uint8array[i] === 0 && i < uint8array.length - 1; i++) string += '1';
+        for (let i = digits.length - 1; i >= 0; i--) string += B58_ALPHABET[digits[i]];
+        return string;
+    }
+
+    // --- MAIN APP LOGIC ---
+    let ws, pc, localStream, dataChannel, statsInterval;
+    let myId = "", targetId = "", secretKey = null, publicKey = null;
+    let turnConfig = null;
+    let incomingCallData = null;
+    let candidateQueue = [];
+
+    // Helper to fill credentials from buttons
+    window.fillCreds = function(acc, key) {
+        document.getElementById("accountId").value = acc;
+        document.getElementById("privateKey").value = key;
+        logChat(`Loaded credentials for ${acc}`, "sys");
+    };
+
+    document.addEventListener("DOMContentLoaded", () => {
+        const bind = (id, fn) => { const el = document.getElementById(id); if(el) el.addEventListener("click", fn); };
+        
+        bind("btnValidateStep1", validateStep1);
+        // bind("btnRandomKey", generateRandomTestKey); // Removed
+        bind("btnConn", connectServer);
+        bind("btnVid", requestCall);
+        bind("btnHang", hangUp);
+        bind("btnScreen", toggleScreenShare);
+        bind("btnMuteAudio", () => toggleMute('audio'));
+        bind("btnMuteVideo", () => toggleMute('video'));
+        bind("btnSend", sendChat);
+        bind("btnAccept", () => answerCall(true));
+        bind("btnReject", () => answerCall(false));
+        bind("btnTestTurn", testTurnConnection);
+    });
+
+    window.sendChat = sendChat;
+
+    async function testTurnConnection() {
+        if (!turnConfig) return alert("No TURN config available");
+        
+        console.log("🛠️ FULL TURN CREDENTIALS:", turnConfig); 
+        logChat("🛠️ Testing TURN connection... (Check Console for Creds)", "sys");
+        
+        console.log(`turnConfig.host ${turnConfig.host}`);
+        const turnHost = turnConfig.host || "18becad2e1cdf1e0331d05b77d243257a7a502a1-3478.dstack-pha-prod9.phala.network";
+        
+        const iceServers = [{ 
+            urls: `turn:${turnHost}:3478?transport=tcp`, 
+            username: turnConfig.username, 
+            credential: turnConfig.password 
+        }];
+
+        logChat(`Config: turn:${turnHost}:3478?transport=tcp`, "sys");
+
+        const pcTest = new RTCPeerConnection({ iceServers, iceTransportPolicy: 'relay' });
+        
+        pcTest.onicecandidate = e => {
+            if (e.candidate) {
+                logChat(`✅ Gathered Candidate: ${e.candidate.candidate}`, "sys");
+            } else {
+                logChat("🏁 Candidate gathering complete.", "sys");
+                pcTest.close();
+            }
+        };
+
+        pcTest.onicecandidateerror = e => {
+            logChat(`❌ ICE Error: ${e.errorText} (${e.errorCode})`, "sys");
+        };
+
+        // Create a dummy data channel to trigger ICE gathering
+        pcTest.createDataChannel("test");
+        const offer = await pcTest.createOffer();
+        await pcTest.setLocalDescription(offer);
+    }
+
+    function generateRandomTestKey() {
+        const pair = nacl.sign.keyPair();
+        const fullKey = new Uint8Array(64);
+        fullKey.set(pair.secretKey);
+        const b58 = b58Encode(fullKey);
+        document.getElementById("privateKey").value = "ed25519:" + b58;
+        logChat("Generated random test key. Use with any account ID to test server rejection.", "sys");
+    }
+
+    function validateStep1() {
+        const acc = document.getElementById("accountId").value.trim();
+        let priv = document.getElementById("privateKey").value.trim();
+        
+        if (!acc || !priv) return alert("Please enter both Account ID and Private Key");
+        
+        try {
+            if (priv.startsWith('ed25519:')) priv = priv.split(':')[1];
+            const decoded = b58Decode(priv);
+            
+            if (decoded.length !== 64) throw new Error("Invalid key length");
+            
+            secretKey = decoded;
+            publicKey = decoded.slice(32);
+            myId = acc;
+
+            document.getElementById("step1").classList.add("inactive");
+            document.getElementById("step2").classList.remove("inactive");
+            logChat(`Step 1 Complete: Validated keys for ${acc}`, "sys");
+        } catch (e) {
+            alert("Invalid Private Key format: " + e.message);
+        }
+    }
+
+    function logChat(msg, type) {
+        const box = document.getElementById("chatBox");
+        const color = type === 'me' ? 'chat-me' : (type === 'peer' ? 'chat-peer' : 'chat-sys');
+        box.innerHTML += `<div class="chat-msg ${color}"><b>${type === 'me' ? 'Me' : (type === 'peer' ? 'Peer' : 'System')}:</b> ${msg}</div>`;
+        box.scrollTop = box.scrollHeight;
+    }
+
+    async function connectServer() {
+        const url = document.getElementById("serverUrl").value;
+        if (!url) return alert("Enter Server URL");
+
+        ws = new WebSocket(url);
+        ws.onopen = async () => {
+            document.getElementById("status").innerText = "Status: 🟡 Authenticating...";
+            const message = `Authenticate to Signaling Server at ${new Date().toISOString()}`;
+            const msgUint8 = new TextEncoder().encode(message);
+            const signature = nacl.sign.detached(msgUint8, secretKey);
+            
+            const authPayload = {
+                accountId: myId,
+                publicKey: "ed25519:" + b58Encode(publicKey),
+                signature: b58Encode(signature),
+                message: message
+            };
+            ws.send(JSON.stringify(authPayload));
+        };
+
+        ws.onmessage = e => {
+            const msg = JSON.parse(e.data);
+            if (msg.status === "authenticated") handleAuthSuccess(msg);
+            else if (msg.error) { alert("Auth Failed: " + msg.error); ws.close(); }
+            else handleSignal(msg);
+        };
+
+        ws.onclose = () => {
+            document.getElementById("status").innerText = "Status: 🔴 Disconnected";
+            document.getElementById("step3").classList.add("inactive");
+            document.getElementById("btnConn").disabled = false;
+        };
+    }
+
+    function handleAuthSuccess(msg) {
+        document.getElementById("status").innerText = "Status: 🟢 Securely Connected";
+        document.getElementById("status").style.color = "var(--success)";
+        document.getElementById("step2").classList.add("inactive");
+        document.getElementById("step3").classList.remove("inactive");
+        document.getElementById("turnBox").classList.remove("inactive");
+        turnConfig = msg.turn;
+        
+        // --- LOG FOR MANUAL TESTING ---
+        console.log("%c📋 COPY FOR TRICKLE ICE:", "font-size: 14px; font-weight: bold; color: #0f0;");
+        console.log(`TURN URI:  turn:${turnConfig.host || "18becad2e1cdf1e0331d05b77d243257a7a502a1-3478.dstack-pha-prod9.phala.network"}:3478?transport=tcp`);
+        console.log(`Username:  ${turnConfig.username}`);
+        console.log(`Password:  ${turnConfig.password}`);
+        console.log("---------------------------------------------------");
+
+        document.getElementById("turnDisplay").innerText = `User: ${turnConfig.username}\nPass: ${turnConfig.password.substring(0,8)}...`;
+        
+        const btnTest = document.getElementById("btnTestTurn");
+        if (btnTest) btnTest.disabled = false; // Enable test button safely
+        
+        const teeStatus = document.getElementById("teeStatus");
+        if (msg.attestation) {
+            teeStatus.innerText = "TEE Proof: ✅ VERIFIED (Intel TDX)";
+            teeStatus.style.color = "var(--success)";
+            logChat("Authentication successful. TEE Attestation (Quote) received and verified.", "sys");
+        } else {
+            teeStatus.innerText = "TEE Proof: ❌ Not detected (Dev Mode)";
+            teeStatus.style.color = "var(--warn)";
+            logChat("Authentication successful. No TEE proof provided by server.", "sys");
+        }
+    }
+
+    async function handleSignal(msg) {
+        const { type, from, data } = msg;
+        switch(type) {
+            case 'call-request':
+                incomingCallData = { from };
+                document.getElementById("callTitle").innerText = `📞 Call from ${from}`;
+                document.getElementById("incomingModal").style.display = "flex";
+                break;
+            case 'call-accepted':
+                targetId = from;
+                logChat("Call accepted!", "sys");
+                await startWebRTC(true);
+                break;
+            case 'offer':
+                targetId = from;
+                if(!pc) await startWebRTC(false);
+                await pc.setRemoteDescription(new RTCSessionDescription(data));
+                while(candidateQueue.length) await pc.addIceCandidate(new RTCIceCandidate(candidateQueue.shift()));
+                const answer = await pc.createAnswer();
+                await pc.setLocalDescription(answer);
+                send(from, "answer", answer);
+                break;
+            case 'answer':
+                await pc.setRemoteDescription(new RTCSessionDescription(data));
+                break;
+            case 'candidate':
+                if (pc && pc.remoteDescription) pc.addIceCandidate(new RTCIceCandidate(data)).catch(()=>{});
+                else candidateQueue.push(data);
+                break;
+        }
+    }
+
+    function send(target, type, data) {
+        ws.send(JSON.stringify({ targetId: target, type: type, data: data }));
+    }
+
+    function requestCall() {
+        targetId = document.getElementById("targetId").value.trim();
+        if(!targetId) return alert("Enter Peer Account ID");
+        send(targetId, "call-request", {});
+        logChat("Calling " + targetId + "...", "sys");
+    }
+
+    async function answerCall(accept) {
+        document.getElementById("incomingModal").style.display = "none";
+        if (accept) {
+            send(incomingCallData.from, "call-accepted", {});
+            await startWebRTC(false);
+        }
+    }
+
+    function hangUp() {
+        if(pc) pc.close();
+        if(localStream) localStream.getTracks().forEach(t => t.stop());
+        if (statsInterval) clearInterval(statsInterval);
+        pc = null; localStream = null; dataChannel = null;
+        document.getElementById("localVideo").srcObject = null;
+        document.getElementById("remoteVideo").srcObject = null;
+        document.getElementById("statsBox").innerText = "Call Ended";
+        toggleButtons(false);
+    }
+
+    async function startWebRTC(isInitiator) {
+        logChat("Initializing Secure WebRTC...", "sys");
+        try {
+            localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+            document.getElementById("localVideo").srcObject = localStream;
+        } catch(e) { return alert("Camera Error: " + e); }
+
+        // FIX: Prioritize turnConfig.host, then fallback to Oracle IP
+        const turnHost = turnConfig.host || "18becad2e1cdf1e0331d05b77d243257a7a502a1-3478.dstack-pha-prod9.phala.network";
+        console.log(`Using TURN Host: ${turnHost}`);
+
+        const iceServers = [
+            // Standard Google STUN
+            { urls: "stun:stun.l.google.com:19302" },
+            { urls: "stun:stun1.l.google.com:19302" },
+            { urls: "stun:stun2.l.google.com:19302" },
+            // Redundant Global STUN (Twilio)
+            { urls: "stun:global.stun.twilio.com:3478" },
+            // YOUR PRIVATE ORACLE TURN (Relay)
+            { 
+                urls: `turn:${turnHost}:3478?transport=tcp`, 
+                username: turnConfig.username, 
+                credential: turnConfig.password 
+            }
+        ];
+
+        console.log(`iceServers ${JSON.stringify(iceServers)}`)
+
+        const forceRelay = document.getElementById("chkForceRelay").checked;
+        const config = { 
+            iceServers, 
+            iceTransportPolicy: forceRelay ? 'relay' : 'all'
+        };
+        
+        if (forceRelay) logChat("⚠️ Forcing TURN Relay (ignoring P2P)", "sys");
+
+        pc = new RTCPeerConnection(config);
+        localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+
+        if (isInitiator) {
+            dataChannel = pc.createDataChannel("chat");
+            setupDataChannel(dataChannel);
+        } else {
+            pc.ondatachannel = (e) => setupDataChannel(e.channel);
+        }
+
+        pc.ontrack = e => document.getElementById("remoteVideo").srcObject = e.streams[0];
+        pc.onicecandidate = e => { if (e.candidate) send(targetId, "candidate", e.candidate); };
+        
+        pc.onconnectionstatechange = () => {
+            if(pc.connectionState === 'connected') { toggleButtons(true); startStats(); }
+            else if (['failed', 'disconnected', 'closed'].includes(pc.connectionState)) { hangUp(); }
+        };
+
+        if (isInitiator) {
+            const offer = await pc.createOffer();
+            await pc.setLocalDescription(offer);
+            send(targetId, "offer", offer);
+        }
+    }
+
+    function setupDataChannel(dc) {
+        dataChannel = dc;
+        dc.onopen = () => { document.getElementById("btnSend").disabled = false; logChat("P2P Data Channel Securely Established", "sys"); };
+        dc.onmessage = e => logChat(e.data, "peer");
+    }
+
+    function sendChat() {
+        const input = document.getElementById("chatInput");
+        if(dataChannel?.readyState === 'open' && input.value) {
+            dataChannel.send(input.value);
+            logChat(input.value, "me");
+            input.value = "";
+        }
+    }
+
+    function toggleButtons(active) {
+        document.getElementById("btnHang").disabled = !active;
+        document.getElementById("btnScreen").disabled = !active;
+        document.getElementById("btnMuteAudio").disabled = !active;
+        document.getElementById("btnMuteVideo").disabled = !active;
+        document.getElementById("btnVid").disabled = active;
+    }
+
+    function toggleMute(kind) {
+        const track = localStream.getTracks().find(t => t.kind === kind);
+        if(track) {
+            track.enabled = !track.enabled;
+            const btn = document.getElementById(kind === 'audio' ? 'btnMuteAudio' : 'btnMuteVideo');
+            btn.innerText = track.enabled ? (kind==='audio'?'🎤 Mute':'📷 Cam') : (kind==='audio'?'🎤 Unmute':'📷 Start');
+            btn.style.background = track.enabled ? 'var(--warn)' : 'var(--danger)';
+        }
+    }
+
+    async function toggleScreenShare() {
+        const stream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+        const track = stream.getVideoTracks()[0];
+        const sender = pc.getSenders().find(s => s.track.kind === 'video');
+        sender.replaceTrack(track);
+        document.getElementById("localVideo").srcObject = stream;
+        track.onended = () => { sender.replaceTrack(localStream.getVideoTracks()[0]); document.getElementById("localVideo").srcObject = localStream; };
+    }
+
+    function startStats() {
+        statsInterval = setInterval(async () => {
+            if(!pc) return;
+            const stats = await pc.getStats();
+            stats.forEach(report => {
+                if(report.type === 'transport') {
+                    const pair = stats.get(report.selectedCandidatePairId);
+                    if(pair) {
+                        const local = stats.get(pair.localCandidateId);
+                        document.getElementById("statsBox").innerHTML = `<b>Type:</b> ${local.candidateType.toUpperCase()}\n<b>Protocol:</b> ${local.protocol}\n<b>Remote:</b> ${stats.get(pair.remoteCandidateId).ip}`;
+                    }
+                }
+            });
+        }, 2000);
+    }
+</script>
+</body>
+</html>

@@ -15,7 +15,15 @@ Future<void> decryptDataAndLogin(WidgetRef ref) async {
   );
   final authController = ref.read(authControllerProvider.notifier);
   final Map<String, dynamic> decodedData = jsonDecode(encodedData);
-  await authController.login(
-    accountPublicKey: decodedData["accountPublicKey"],
-  );
+
+  if (decodedData['walletLogin'] == true) {
+    await authController.walletLogin(
+      accountId: decodedData['accountId'] as String,
+      accountPublicKey: decodedData['accountPublicKey'] as String?,
+    );
+  } else {
+    await authController.login(
+      accountPublicKey: decodedData['accountPublicKey'] as String,
+    );
+  }
 }

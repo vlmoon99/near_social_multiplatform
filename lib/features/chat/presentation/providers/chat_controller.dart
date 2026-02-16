@@ -103,11 +103,19 @@ class ChatController extends _$ChatController {
   // --- Signaling ---
 
   Future<void> _connectSignaling() async {
-    final accountId = ref.read(authControllerProvider).accountId;
-    if (accountId.isEmpty) return;
+    final auth = ref.read(authControllerProvider);
+    if (auth.accountId.isEmpty) return;
+
+    final privateKey = base64.decode(auth.devicePrivateKey);
+    // Public key is the last 32 bytes of the 64-byte Ed25519 private key
+    final publicKey = Uint8List.sublistView(privateKey, 32, 64);
 
     _signaling = SignalingService();
-    await _signaling!.connect(accountId);
+    await _signaling!.connect(
+      auth.accountId,
+      privateKey: privateKey,
+      publicKey: publicKey,
+    );
     state = state.copyWith(signalingConnected: true);
 
     _subscriptions.add(
@@ -173,7 +181,7 @@ class ChatController extends _$ChatController {
     // Load saved history for this peer
     await _loadHistory(targetId);
 
-    _webrtc = WebRTCService();
+    _webrtc = WebRTCService(turnCredentials: _signaling?.turnCredentials);
     await _webrtc!.initPeerConnection();
     _listenWebRTC();
     await _webrtc!.createDataChannel('chat');
@@ -266,7 +274,7 @@ class ChatController extends _$ChatController {
 
   Future<void> _onCallAccepted() async {
     // Caller creates the offer after acceptance
-    _webrtc = WebRTCService();
+    _webrtc = WebRTCService(turnCredentials: _signaling?.turnCredentials);
     await _webrtc!.initPeerConnection();
     _listenWebRTC();
     await _webrtc!.createDataChannel('chat');
@@ -290,7 +298,7 @@ class ChatController extends _$ChatController {
 
   Future<void> _onOffer(String senderId, dynamic data) async {
     if (_webrtc == null) {
-      _webrtc = WebRTCService();
+      _webrtc = WebRTCService(turnCredentials: _signaling?.turnCredentials);
       await _webrtc!.initPeerConnection();
       _listenWebRTC();
     }

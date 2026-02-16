@@ -21,7 +21,7 @@
   <meta content="IE=Edge" http-equiv="X-UA-Compatible" />
   <meta name="description" content="Near Social Multiplatform Web App" />
   <!-- iOS meta tags & icons -->
-  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black" />
   <meta name="apple-mobile-web-app-title" content="Near Social Multiplatform" />
   <link rel="apple-touch-icon" href="icons/Icon-192.png" />
@@ -33,6 +33,42 @@
   <link rel="manifest" href="manifest.json" />
 
   <script type="application/javascript" src="flutter.js" defer></script>
+
+  <!-- near-connect: NEAR wallet connection for web auth -->
+  <script type="module">
+    import { NearConnector } from "https://cdn.jsdelivr.net/npm/@hot-labs/near-connect/+esm";
+
+    const connector = new NearConnector();
+
+    window.nearConnectWallet = function () {
+      return new Promise((resolve, reject) => {
+        const onSignIn = (event) => {
+          connector.off("wallet:signIn", onSignIn);
+          if (event.success && event.accounts && event.accounts.length > 0) {
+            const account = event.accounts[0];
+            resolve(JSON.stringify({
+              accountId: account.accountId,
+              publicKey: account.publicKey || null,
+            }));
+          } else {
+            reject(new Error("Wallet connection failed"));
+          }
+        };
+
+        connector.on("wallet:signIn", onSignIn);
+        connector.connect().catch((err) => {
+          connector.off("wallet:signIn", onSignIn);
+          reject(err);
+        });
+      });
+    };
+
+    window.nearConnectDisconnect = async function () {
+      try {
+        await connector.disconnect();
+      } catch (_) {}
+    };
+  </script>
 
 </head>
 
