@@ -6,6 +6,8 @@ import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:near_social_mobile/core/shared_widgets/spinner_loading_indicator.dart';
+import 'package:near_social_mobile/core/shared_widgets/web_image.dart'
+    if (dart.library.io) 'package:near_social_mobile/core/shared_widgets/web_image_stub.dart';
 
 class NearNetworkImage extends StatefulWidget {
   const NearNetworkImage({
@@ -32,6 +34,16 @@ class _NearNetworkImageState extends State<NearNetworkImage>
   @override
   Widget build(BuildContext context) {
     super.build(context);
+
+    // On web, render via native HTML <img> to bypass CORS entirely.
+    if (kIsWeb) {
+      return WebImage(
+        imageUrl: widget.imageUrl,
+        fit: widget.boxFit,
+        errorPlaceholder: widget.errorPlaceholder,
+      );
+    }
+
     return CachedNetworkImage(
       imageUrl: widget.imageUrl,
       httpHeaders: httpHeaders,

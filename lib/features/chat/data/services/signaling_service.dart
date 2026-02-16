@@ -38,6 +38,7 @@ class SignalingService {
   bool _disposed = false;
   int _reconnectAttempts = 0;
   Timer? _reconnectTimer;
+  Map<String, dynamic>? _cachedPayload;
 
   TurnCredentials? turnCredentials;
 
@@ -50,6 +51,9 @@ class SignalingService {
   Stream<Map<String, dynamic>> get messages => _messageController.stream;
   bool get isConnected => _channel != null;
 
+  /// The auth payload used for the last successful connection.
+  Map<String, dynamic>? get cachedPayload => _cachedPayload;
+
   /// Waits until signaling authentication is complete and TURN credentials
   /// are available.
   Future<void> get authenticated => _authCompleter.future;
@@ -61,9 +65,11 @@ class SignalingService {
   Future<void> connect(
     String accountId, {
     required AuthPayloadBuilder buildAuthPayload,
+    Map<String, dynamic>? savedPayload,
   }) async {
     _accountId = accountId;
     _buildAuthPayload = buildAuthPayload;
+    _cachedPayload = savedPayload;
     _disposed = false;
     await _doConnect();
     // Wait for auth response, but don't block forever — reconnect handles retries
@@ -81,12 +87,12 @@ class SignalingService {
       _channel = WebSocketChannel.connect(Uri.parse(_wsUrl));
       await _channel!.ready;
 
-      // Build auth message and payload via callback
-      final message =
-          'Authenticate to Signaling Server at ${DateTime.now().toUtc().toIso8601String()}';
-      final payload = await _buildAuthPayload!(message);
+      // Reuse cached payload on reconnect to avoid re-prompting the user
+      _cachedPayload ??= await _buildAuthPayload!(
+        'Authenticate to Signaling Server at ${DateTime.now().toUtc().toIso8601String()}',
+      );
 
-      _channel!.sink.add(jsonEncode(payload));
+      _channel!.sink.add(jsonEncode(_cachedPayload));
 
       _reconnectAttempts = 0;
 
@@ -123,9 +129,10 @@ class SignalingService {
       return;
     }
 
-    // Auth error — complete normally but leave turnCredentials null
+    // Auth error — clear cached payload so a fresh signature is requested
     if (msg['error'] != null) {
       authError = msg['error'].toString();
+      _cachedPayload = null;
       if (!_authCompleter.isCompleted) {
         _authCompleter.complete();
       }
@@ -172,6 +179,7 @@ class SignalingService {
     _reconnectTimer?.cancel();
     _channel?.sink.close();
     _channel = null;
+    _cachedPayload = null;
   }
 
   void dispose() {

@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:developer';
 import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:dio/dio.dart';
 import 'package:dio_smart_retry/dio_smart_retry.dart';
@@ -1206,7 +1207,7 @@ class NearSocialApi {
     Future<Map<String, dynamic>> getRawDataFromContract(
         Map<String, dynamic> args) async {
       final nftInfoResponse = await _dio.post(
-        NearUrls.blockchainRpc,
+        kIsWeb ? NearUrls.blockchainRpcWeb : NearUrls.blockchainRpc,
         data: {
           'jsonrpc': '2.0',
           'id': 'dontcare',

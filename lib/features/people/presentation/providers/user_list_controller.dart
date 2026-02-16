@@ -108,12 +108,11 @@ class UserListController extends _$UserListController {
 
   Future<void> loadAdditionalMetadata({required String accountId}) async {
     try {
-      final List<Follower> followings =
-          await _nearSocialApi.getFollowingsOfAccount(accountId: accountId);
-      final List<Follower> followers =
-          await _nearSocialApi.getFollowersOfAccount(accountId: accountId);
-      final List<String> userTags =
-          await _nearSocialApi.getUserTagsOfAccount(accountId: accountId);
+      final results = await Future.wait([
+        _nearSocialApi.getFollowingsOfAccount(accountId: accountId),
+        _nearSocialApi.getFollowersOfAccount(accountId: accountId),
+        _nearSocialApi.getUserTagsOfAccount(accountId: accountId),
+      ]);
 
       final user = state.activeUsers[accountId];
       if (user == null) return;
@@ -121,9 +120,9 @@ class UserListController extends _$UserListController {
       state = state.copyWith(
         activeUsers: Map.of(state.activeUsers)
           ..[accountId] = user.copyWith(
-            followings: followings,
-            followers: followers,
-            userTags: userTags,
+            followings: results[0] as List<Follower>,
+            followers: results[1] as List<Follower>,
+            userTags: results[2] as List<String>,
           ),
       );
     } catch (err) {
@@ -191,24 +190,23 @@ class UserListController extends _$UserListController {
 
   Future<void> reloadUserInfo({required String accountId}) async {
     try {
-      final generalAccountInfo =
-          await _nearSocialApi.getGeneralAccountInfo(accountId: accountId);
-      final List<Follower> followings =
-          await _nearSocialApi.getFollowingsOfAccount(accountId: accountId);
-      final List<Follower> followers =
-          await _nearSocialApi.getFollowersOfAccount(accountId: accountId);
-      final List<String> userTags =
-          await _nearSocialApi.getUserTagsOfAccount(accountId: accountId);
+      final results = await Future.wait([
+        _nearSocialApi.getGeneralAccountInfo(accountId: accountId),
+        _nearSocialApi.getFollowingsOfAccount(accountId: accountId),
+        _nearSocialApi.getFollowersOfAccount(accountId: accountId),
+        _nearSocialApi.getUserTagsOfAccount(accountId: accountId),
+      ]);
       final user = state.activeUsers[accountId];
       if (user == null) return;
 
+      final generalAccountInfo = results[0] as GeneralAccountInfo;
       state = state.copyWith(
         activeUsers: Map<String, FullUserInfo>.from(state.activeUsers)
           ..[accountId] = user.copyWith(
             generalAccountInfo: generalAccountInfo,
-            followings: followings,
-            followers: followers,
-            userTags: userTags,
+            followings: results[1] as List<Follower>,
+            followers: results[2] as List<Follower>,
+            userTags: results[3] as List<String>,
           ),
         cachedUsers: state.cachedUsers
           ..[accountId] = user.copyWith(

@@ -64,6 +64,7 @@ class NotificationTile extends ConsumerWidget {
 
     final fullAccountInfo = ref.read(userListControllerProvider)
         .getUserByAccountId(accountId: authInfo.accountId);
+    if (fullAccountInfo == null) return;
 
     await postsController.loadAndAddSinglePostIfNotExistToTempList(
       accountInfo: fullAccountInfo.generalAccountInfo,

@@ -33,6 +33,8 @@ class WebRTCService {
   MediaStream? localStream;
   MediaStream? remoteStream;
   MediaStream? screenStream;
+  bool _hasRemoteDescription = false;
+  final List<RTCIceCandidate> _pendingCandidates = [];
 
   final _onIceCandidate = StreamController<RTCIceCandidate>.broadcast();
   final _onDataChannelMessage = StreamController<String>.broadcast();
@@ -104,13 +106,25 @@ class WebRTCService {
 
   Future<void> setRemoteDescription(RTCSessionDescription description) async {
     await peerConnection!.setRemoteDescription(description);
+    _hasRemoteDescription = true;
+    // Flush any ICE candidates that arrived before the remote description
+    for (final candidate in _pendingCandidates) {
+      await peerConnection!.addCandidate(candidate);
+    }
+    _pendingCandidates.clear();
   }
 
   Future<void> addCandidate(RTCIceCandidate candidate) async {
-    await peerConnection!.addCandidate(candidate);
+    if (_hasRemoteDescription && peerConnection != null) {
+      await peerConnection!.addCandidate(candidate);
+    } else {
+      _pendingCandidates.add(candidate);
+    }
   }
 
   Future<void> startLocalMedia({bool video = true, bool audio = true}) async {
+    // At least one track must be requested
+    if (!video && !audio) return;
     final constraints = <String, dynamic>{
       'audio': audio,
       'video': video ? {'facingMode': 'user'} : false,

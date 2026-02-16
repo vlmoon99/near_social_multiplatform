@@ -19,8 +19,8 @@ abstract class UsersList with _$UsersList {
     @Default({}) Map<String, FullUserInfo> activeUsers,
   }) = _UsersList;
 
-  FullUserInfo getUserByAccountId({required String accountId}) {
-    return activeUsers[accountId] ?? cachedUsers[accountId]!;
+  FullUserInfo? getUserByAccountId({required String accountId}) {
+    return activeUsers[accountId] ?? cachedUsers[accountId];
   }
 
   factory UsersList.fromJson(Map<String, dynamic> json) =>

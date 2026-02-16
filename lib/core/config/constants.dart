@@ -4,6 +4,7 @@ class StorageKeys {
   static const networkType = 'network_type';
   static const appPolicyAccepted = 'app_policy_accepted';
   static const filters = 'filters';
+  static const signalingAuthPayload = 'signaling_auth_payload';
 }
 
 class NearAssets {
@@ -19,6 +20,7 @@ class NearAssets {
 
 class NearUrls {
   static const blockchainRpc = "https://free.rpc.fastnear.com/";
+  static const blockchainRpcWeb = "https://rpc.mainnet.near.org";
   static const nearSocialApi = "https://api.near.social";
   static const nearSocialIpfsMediaHosting = "https://ipfs.near.social/ipfs/";
 }

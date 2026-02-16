@@ -26,7 +26,7 @@ class _NftsViewState extends ConsumerState<NftsView> {
         final userListController = ref.read(userListControllerProvider.notifier);
         final user = ref.read(userListControllerProvider)
             .getUserByAccountId(accountId: widget.accountIdOfUser);
-        if (user.nfts == null) {
+        if (user?.nfts == null) {
           userListController
               .loadNftsOfAccount(accountId: widget.accountIdOfUser);
         }
@@ -39,7 +39,7 @@ class _NftsViewState extends ConsumerState<NftsView> {
     final userListState = ref.watch(userListControllerProvider);
     final nfts = userListState
         .getUserByAccountId(accountId: widget.accountIdOfUser)
-        .nfts;
+        ?.nfts;
     if (nfts == null) {
       return const Center(child: SpinnerLoadingIndicator());
     } else if (nfts.isEmpty) {

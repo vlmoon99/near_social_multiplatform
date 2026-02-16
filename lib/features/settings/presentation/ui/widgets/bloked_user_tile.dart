@@ -5,7 +5,6 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import 'package:near_social_mobile/core/config/constants.dart';
 import 'package:near_social_mobile/core/config/theme.dart';
-import 'package:near_social_mobile/features/people/data/models/user_list_state.dart';
 import 'package:near_social_mobile/features/people/presentation/providers/user_list_controller.dart';
 import 'package:near_social_mobile/core/router/routes.dart';
 import 'package:near_social_mobile/core/shared_widgets/custom_button.dart';
@@ -70,9 +69,9 @@ class _BlockedUserTileState extends ConsumerState<BlockedUserTile> {
                       userListState.cachedUsers
                           .containsKey(widget.accountIdOfBlockedUser))
                   ? Builder(builder: (context) {
-                      final FullUserInfo user = userListState
+                      final user = userListState
                           .getUserByAccountId(
-                              accountId: widget.accountIdOfBlockedUser);
+                              accountId: widget.accountIdOfBlockedUser)!;
                       return Row(
                         children: [
                           Container(

@@ -44,6 +44,7 @@ dependencies:
   riverpod_annotation: 3.0.3
   tap_debouncer: 2.2.0
   url_launcher: 6.3.2
+  web: ^1.1.0
   web_socket_channel: ^3.0.2
 
 dev_dependencies:

@@ -4,6 +4,7 @@ import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_webrtc/flutter_webrtc.dart';
+import 'package:near_social_mobile/core/config/constants.dart';
 import 'package:near_social_mobile/core/providers/service_providers.dart';
 import 'package:near_social_mobile/core/services/crypto_service.dart';
 import 'package:near_social_mobile/core/services/near_connect_service_stub.dart'
@@ -110,6 +111,23 @@ class ChatController extends _$ChatController {
     final auth = ref.read(authControllerProvider);
     if (auth.accountId.isEmpty) return;
 
+    // Try to load a previously saved auth payload from storage
+    final storage = ref.read(secureStorageProvider);
+    Map<String, dynamic>? savedPayload;
+    try {
+      final raw = await storage.read(key: StorageKeys.signalingAuthPayload);
+      if (raw != null) {
+        savedPayload = jsonDecode(raw) as Map<String, dynamic>;
+        // Make sure saved payload belongs to the current account
+        if (savedPayload['accountId'] != auth.accountId) {
+          savedPayload = null;
+          await storage.delete(key: StorageKeys.signalingAuthPayload);
+        }
+      }
+    } catch (_) {
+      savedPayload = null;
+    }
+
     // Build the appropriate auth payload builder based on login type.
     final AuthPayloadBuilder buildAuthPayload;
 
@@ -153,6 +171,7 @@ class ChatController extends _$ChatController {
       await _signaling!.connect(
         auth.accountId,
         buildAuthPayload: buildAuthPayload,
+        savedPayload: savedPayload,
       );
     } catch (_) {
       // Connection failed (network error etc.)
@@ -162,9 +181,22 @@ class ChatController extends _$ChatController {
 
     // Check if auth was rejected by the server
     if (_signaling!.authError != null) {
+      // Clear saved payload — it's no longer valid
+      await storage.delete(key: StorageKeys.signalingAuthPayload);
       _signaling!.disconnect();
       _signaling = null;
       return;
+    }
+
+    // Persist the auth payload for future sessions
+    final payload = _signaling!.cachedPayload;
+    if (payload != null) {
+      try {
+        await storage.write(
+          key: StorageKeys.signalingAuthPayload,
+          value: jsonEncode(payload),
+        );
+      } catch (_) {}
     }
 
     // Store TEE attestation (null if server is in dev mode)
@@ -186,6 +218,10 @@ class ChatController extends _$ChatController {
       sub.cancel();
     }
     _subscriptions.clear();
+    // Clear saved auth payload on logout
+    ref.read(secureStorageProvider).delete(
+          key: StorageKeys.signalingAuthPayload,
+        );
     state = state.copyWith(signalingConnected: false);
   }
 

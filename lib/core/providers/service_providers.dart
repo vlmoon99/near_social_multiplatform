@@ -1,6 +1,7 @@
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:dio/dio.dart';
 import 'package:dio_smart_retry/dio_smart_retry.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:near_social_mobile/core/config/constants.dart';
 import 'package:near_social_mobile/core/network/interceptors/retry_on_connection_changed_interceptor.dart';
@@ -44,7 +45,10 @@ Dio dio(Ref ref) {
 @Riverpod(keepAlive: true)
 NearRpcService nearRpcService(Ref ref) {
   final dio = ref.watch(dioProvider);
-  return NearRpcService(dio: dio, rpcUrl: NearUrls.blockchainRpc);
+  return NearRpcService(
+    dio: dio,
+    rpcUrl: kIsWeb ? NearUrls.blockchainRpcWeb : NearUrls.blockchainRpc,
+  );
 }
 
 @Riverpod(keepAlive: true)

@@ -25,6 +25,8 @@ import 'package:near_social_mobile/core/shared_widgets/near_network_image.dart';
 import 'package:near_social_mobile/core/shared_widgets/app_toast.dart';
 import 'package:near_social_mobile/core/shared_widgets/tappable_scale_widget.dart';
 import 'package:near_social_mobile/core/router/routes.dart';
+import 'package:near_social_mobile/features/chat/presentation/providers/chat_controller.dart';
+import 'package:near_social_mobile/features/chat/presentation/logic/chat_events.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -63,12 +65,13 @@ class _UserPageState extends ConsumerState<UserPage>
 
     final postsController = ref.read(postsControllerProvider.notifier);
 
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      if (!user.allMetadataLoaded) {
-        await userListController.loadAdditionalMetadata(
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (user == null || !user.allMetadataLoaded) {
+        // Load metadata and posts in parallel
+        userListController.loadAdditionalMetadata(
             accountId: widget.accountId);
         if (ref.read(postsControllerProvider).postsOfAccounts[widget.accountId] == null) {
-          await postsController.loadPosts(
+          postsController.loadPosts(
             postsViewMode: PostsViewMode.account,
             postsOfAccountId: widget.accountId,
           );
@@ -223,6 +226,9 @@ class _UserPageState extends ConsumerState<UserPage>
   Widget _buildContent(bool isDark, bool userIsBlocked, Size screenSize) {
     final usersList = ref.watch(userListControllerProvider);
     final user = usersList.getUserByAccountId(accountId: widget.accountId);
+    if (user == null) {
+      return const Center(child: CircularProgressIndicator());
+    }
     final authInfo = ref.read(authControllerProvider);
     final isOwnProfile = widget.accountId == authInfo.accountId;
 
@@ -520,6 +526,21 @@ class _UserPageState extends ConsumerState<UserPage>
                                 onTap: () {
                                   context.push(
                                     '${AppRoutes.chatRoom}?targetAccountId=${user.generalAccountInfo.accountId}',
+                                  );
+                                },
+                              ),
+                              const SizedBox(width: 10),
+                              _actionChip(
+                                icon: CupertinoIcons.phone_fill,
+                                label: "Call",
+                                color: CupertinoColors.activeGreen,
+                                isDark: isDark,
+                                onTap: () {
+                                  ref.read(chatControllerProvider.notifier).onEvent(
+                                    StartCallEvent(
+                                      targetAccountId: user.generalAccountInfo.accountId,
+                                      video: false,
+                                    ),
                                   );
                                 },
                               ),
