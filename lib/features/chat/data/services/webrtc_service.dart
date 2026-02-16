@@ -109,14 +109,18 @@ class WebRTCService {
     _hasRemoteDescription = true;
     // Flush any ICE candidates that arrived before the remote description
     for (final candidate in _pendingCandidates) {
-      await peerConnection!.addCandidate(candidate);
+      try {
+        await peerConnection!.addCandidate(candidate);
+      } catch (_) {}
     }
     _pendingCandidates.clear();
   }
 
   Future<void> addCandidate(RTCIceCandidate candidate) async {
     if (_hasRemoteDescription && peerConnection != null) {
-      await peerConnection!.addCandidate(candidate);
+      try {
+        await peerConnection!.addCandidate(candidate);
+      } catch (_) {}
     } else {
       _pendingCandidates.add(candidate);
     }

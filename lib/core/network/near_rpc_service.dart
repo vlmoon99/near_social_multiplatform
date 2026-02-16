@@ -608,6 +608,7 @@ class NearRpcService {
       },
       options: Options(
         headers: {'Content-Type': 'application/json'},
+        extra: {'withCredentials': false},
       ),
     );
   }

@@ -20,7 +20,6 @@ class NearAssets {
 
 class NearUrls {
   static const blockchainRpc = "https://free.rpc.fastnear.com/";
-  static const blockchainRpcWeb = "https://rpc.mainnet.near.org";
   static const nearSocialApi = "https://api.near.social";
   static const nearSocialIpfsMediaHosting = "https://ipfs.near.social/ipfs/";
 }
