@@ -30,59 +30,62 @@ void showChatSecurityInfoDialog(BuildContext context) {
                     color: isDark ? Colors.white12 : Colors.black12,
                   ),
                 ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      CupertinoIcons.lock_shield_fill,
-                      size: 40,
-                      color: isDark
-                          ? CupertinoColors.activeGreen
-                          : CupertinoColors.activeGreen.darkColor,
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      'chat.security_title'.tr(),
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w700,
-                        color: isDark ? Colors.white : Colors.black,
+                child: Material(
+                  type: MaterialType.transparency,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        CupertinoIcons.lock_shield_fill,
+                        size: 40,
+                        color: isDark
+                            ? CupertinoColors.activeGreen
+                            : CupertinoColors.activeGreen.darkColor,
                       ),
-                    ),
-                    const SizedBox(height: 20),
-                    _section(
-                      icon: CupertinoIcons.lock_fill,
-                      text: 'chat.security_e2e'.tr(),
-                      isDark: isDark,
-                    ),
-                    const SizedBox(height: 14),
-                    _section(
-                      icon: CupertinoIcons.device_phone_portrait,
-                      text: 'chat.security_local_storage'.tr(),
-                      isDark: isDark,
-                    ),
-                    const SizedBox(height: 14),
-                    _section(
-                      icon: CupertinoIcons.exclamationmark_triangle_fill,
-                      text: 'chat.security_warning'.tr(),
-                      isDark: isDark,
-                      isWarning: true,
-                    ),
-                    const SizedBox(height: 14),
-                    _section(
-                      icon: CupertinoIcons.arrow_right_arrow_left,
-                      text: 'chat.security_no_server'.tr(),
-                      isDark: isDark,
-                    ),
-                    const SizedBox(height: 24),
-                    SizedBox(
-                      width: double.infinity,
-                      child: CupertinoButton.filled(
-                        onPressed: () => Navigator.of(context).pop(),
-                        child: Text('common.close'.tr()),
+                      const SizedBox(height: 12),
+                      Text(
+                        'chat.security_title'.tr(),
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                          color: isDark ? Colors.white : Colors.black,
+                        ),
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 20),
+                      _section(
+                        icon: CupertinoIcons.lock_fill,
+                        text: 'chat.security_e2e'.tr(),
+                        isDark: isDark,
+                      ),
+                      const SizedBox(height: 14),
+                      _section(
+                        icon: CupertinoIcons.device_phone_portrait,
+                        text: 'chat.security_local_storage'.tr(),
+                        isDark: isDark,
+                      ),
+                      const SizedBox(height: 14),
+                      _section(
+                        icon: CupertinoIcons.exclamationmark_triangle_fill,
+                        text: 'chat.security_warning'.tr(),
+                        isDark: isDark,
+                        isWarning: true,
+                      ),
+                      const SizedBox(height: 14),
+                      _section(
+                        icon: CupertinoIcons.arrow_right_arrow_left,
+                        text: 'chat.security_no_server'.tr(),
+                        isDark: isDark,
+                      ),
+                      const SizedBox(height: 24),
+                      SizedBox(
+                        width: double.infinity,
+                        child: CupertinoButton.filled(
+                          onPressed: () => Navigator.of(context).pop(),
+                          child: Text('common.close'.tr()),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
