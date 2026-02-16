@@ -40,6 +40,9 @@ class SignalingService {
 
   TurnCredentials? turnCredentials;
 
+  /// Raw attestation data from the server (null if not provided / dev mode).
+  dynamic attestation;
+
   Stream<Map<String, dynamic>> get messages => _messageController.stream;
   bool get isConnected => _channel != null;
 
@@ -114,6 +117,7 @@ class SignalingService {
           password: turn['password'] as String? ?? '',
         );
       }
+      attestation = msg['attestation'];
       if (!_authCompleter.isCompleted) {
         _authCompleter.complete();
       }

@@ -5,7 +5,7 @@ import 'package:near_social_mobile/core/config/constants.dart';
 import 'package:near_social_mobile/core/services/crypto_service.dart';
 import 'package:near_social_mobile/core/services/secure_storage_service.dart';
 
-Future<void> encryptDataAndLogin(String accountPublicKey) async {
+Future<void> encryptDataAndLogin(String accountKey) async {
   final secureStorage = const FlutterSecureStorage();
 
   final cryptoStorageService =
@@ -17,7 +17,7 @@ Future<void> encryptDataAndLogin(String accountPublicKey) async {
 
   await cryptoStorageService.write(
     storageKey: StorageKeys.authInfo,
-    data: jsonEncode({'accountPublicKey': accountPublicKey}),
+    data: jsonEncode({'accountKey': accountKey}),
   );
 
   await const FlutterSecureStorage()

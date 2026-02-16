@@ -31,8 +31,8 @@ class AuthController extends _$AuthController {
 
   Future<void> onEvent(AuthEvent event) async {
     switch (event) {
-      case LoginEvent(:final accountPublicKey):
-        await login(accountPublicKey: accountPublicKey);
+      case LoginEvent(:final accountKey):
+        await login(accountKey: accountKey);
       case WalletLoginEvent(:final accountId, :final accountPublicKey):
         await walletLogin(
             accountId: accountId, accountPublicKey: accountPublicKey);
@@ -43,9 +43,33 @@ class AuthController extends _$AuthController {
     }
   }
 
-  Future<void> login({required String accountPublicKey}) async {
+  Future<void> login({required String accountKey}) async {
     try {
-      // 1. Parse and validate public key
+      // 1. Detect if input is a private key (64 bytes) or public key (32 bytes)
+      final rawKey = accountKey.startsWith('ed25519:')
+          ? accountKey.substring(8)
+          : accountKey;
+      final keyData = Base58.decode(rawKey);
+
+      String accountPublicKey;
+      String accountPrivKeyStr = '';
+
+      if (keyData.length == 64) {
+        // Private key (seed+pub) — derive public key from it
+        final privKeyBytes = CryptoService.privateKeyFromBase58(accountKey);
+        final pubKeyBytes = Uint8List.sublistView(privKeyBytes, 32, 64);
+        accountPublicKey = CryptoService.publicKeyToBase58(pubKeyBytes);
+        accountPrivKeyStr = base64.encode(privKeyBytes);
+      } else if (keyData.length == 32) {
+        // Could be a public key or a seed-only private key.
+        // Try as public key first.
+        accountPublicKey = accountKey.startsWith('ed25519:')
+            ? accountKey
+            : 'ed25519:$rawKey';
+      } else {
+        throw FormatException('Invalid key length: ${keyData.length} bytes');
+      }
+
       final pubKeyBytes = CryptoService.publicKeyFromBase58(accountPublicKey);
 
       // 2. Derive implicit accountId (hex of public key bytes)
@@ -87,6 +111,7 @@ class AuthController extends _$AuthController {
       state = state.copyWith(
         accountId: accountId,
         accountPublicKey: accountPublicKey,
+        accountPrivateKey: accountPrivKeyStr,
         devicePublicKey: devicePubKeyStr,
         devicePrivateKey: devicePrivKeyStr,
         status: AuthInfoStatus.authenticated,

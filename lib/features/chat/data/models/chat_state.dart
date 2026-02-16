@@ -17,5 +17,6 @@ abstract class ChatState with _$ChatState {
     @Default(false) bool isScreenSharing,
     @Default(null) String? incomingCallFrom,
     @Default(null) String? peerPublicKey,
+    @Default(null) String? teeAttestation,
   }) = _ChatState;
 }

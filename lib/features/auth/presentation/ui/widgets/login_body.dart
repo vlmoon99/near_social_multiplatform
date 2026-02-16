@@ -147,8 +147,8 @@ class LoginBody extends ConsumerWidget {
             if (input.isEmpty) return;
 
             try {
-              final publicKey = QRFormatter.parsePublicKey(input);
-              await encryptDataAndLogin(publicKey);
+              final accountKey = QRFormatter.parseKey(input);
+              await encryptDataAndLogin(accountKey);
               await decryptDataAndLogin(ref);
               if (dialogContext.mounted) Navigator.of(dialogContext).pop();
             } on FormatException {

@@ -1,8 +1,8 @@
 sealed class AuthEvent {}
 
 class LoginEvent extends AuthEvent {
-  final String accountPublicKey;
-  LoginEvent({required this.accountPublicKey});
+  final String accountKey;
+  LoginEvent({required this.accountKey});
 }
 
 class LogoutEvent extends AuthEvent {}

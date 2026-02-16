@@ -22,8 +22,9 @@ Future<void> decryptDataAndLogin(WidgetRef ref) async {
       accountPublicKey: decodedData['accountPublicKey'] as String?,
     );
   } else {
-    await authController.login(
-      accountPublicKey: decodedData['accountPublicKey'] as String,
-    );
+    // Support both old format (accountPublicKey) and new format (accountKey)
+    final key = (decodedData['accountKey'] as String?) ??
+        (decodedData['accountPublicKey'] as String);
+    await authController.login(accountKey: key);
   }
 }

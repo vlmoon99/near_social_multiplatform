@@ -106,9 +106,18 @@ class ChatController extends _$ChatController {
     final auth = ref.read(authControllerProvider);
     if (auth.accountId.isEmpty) return;
 
-    final privateKey = base64.decode(auth.devicePrivateKey);
-    // Public key is the last 32 bytes of the 64-byte Ed25519 private key
-    final publicKey = Uint8List.sublistView(privateKey, 32, 64);
+    // Use the NEAR account key for signaling auth (on-chain key).
+    // Fall back to device key if account private key is not available.
+    final Uint8List privateKey;
+    final Uint8List publicKey;
+
+    if (auth.accountPrivateKey.isNotEmpty) {
+      privateKey = base64.decode(auth.accountPrivateKey);
+      publicKey = Uint8List.sublistView(privateKey, 32, 64);
+    } else {
+      privateKey = base64.decode(auth.devicePrivateKey);
+      publicKey = Uint8List.sublistView(privateKey, 32, 64);
+    }
 
     _signaling = SignalingService();
     await _signaling!.connect(
@@ -116,7 +125,12 @@ class ChatController extends _$ChatController {
       privateKey: privateKey,
       publicKey: publicKey,
     );
-    state = state.copyWith(signalingConnected: true);
+    // Store TEE attestation (null if server is in dev mode)
+    final att = _signaling!.attestation;
+    state = state.copyWith(
+      signalingConnected: true,
+      teeAttestation: att is String ? att : att?.toString(),
+    );
 
     _subscriptions.add(
       _signaling!.messages.listen(_handleSignalingMessage),

@@ -41,8 +41,8 @@ class _QRReaderScreenState extends State<QRReaderScreen> {
 
   Future<void> _processQRCode(String code) async {
     try {
-      final accountPublicKey = QRFormatter.parsePublicKey(code);
-      await encryptDataAndLogin(accountPublicKey);
+      final accountKey = QRFormatter.parseKey(code);
+      await encryptDataAndLogin(accountKey);
       if (mounted) {
         context.go(AppRoutes.home);
       }

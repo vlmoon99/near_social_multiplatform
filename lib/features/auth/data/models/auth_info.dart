@@ -12,6 +12,7 @@ abstract class AuthInfo with _$AuthInfo {
   const factory AuthInfo({
     @Default("") String accountId,
     @Default("") String accountPublicKey,
+    @Default("") String accountPrivateKey,
     @Default("") String devicePublicKey,
     @Default("") String devicePrivateKey,
     @Default(AuthInfoStatus.unauthenticated) AuthInfoStatus status,

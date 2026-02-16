@@ -11,6 +11,7 @@ import 'package:near_social_mobile/features/chat/data/models/chat_state.dart';
 import 'package:near_social_mobile/features/chat/presentation/providers/chat_controller.dart';
 import 'package:near_social_mobile/features/chat/presentation/ui/widgets/chat_security_info_dialog.dart';
 import 'package:near_social_mobile/features/chat/presentation/ui/widgets/incoming_call_dialog.dart';
+import 'package:near_social_mobile/features/feed/presentation/ui/widgets/tee_attestation_badge.dart';
 
 class ChatListPage extends ConsumerStatefulWidget {
   const ChatListPage({super.key, this.onScroll});
@@ -93,6 +94,8 @@ class _ChatListPageState extends ConsumerState<ChatListPage>
                       ),
                     ),
                     const Spacer(),
+                    const TeeAttestationBadge(),
+                    const SizedBox(width: 8),
                     GestureDetector(
                       onTap: () => showChatSecurityInfoDialog(context),
                       child: Icon(
