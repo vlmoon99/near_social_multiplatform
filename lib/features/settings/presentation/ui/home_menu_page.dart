@@ -96,7 +96,10 @@ class _HomeMenuPageState extends ConsumerState<HomeMenuPage>
     showDialog(
       context: context,
       barrierColor: Colors.black54,
-      builder: (context) => _buildLogoutDialog(isDark),
+      builder: (context) => Material(
+        type: MaterialType.transparency,
+        child: _buildLogoutDialog(isDark),
+      ),
     ).then((value) async {
       if (value != null && value) {
         await ref.read(authControllerProvider.notifier).logout();
@@ -112,9 +115,11 @@ class _HomeMenuPageState extends ConsumerState<HomeMenuPage>
 
   Widget _buildLogoutDialog(bool isDark) {
     return Center(
-      child: Container(
-        margin: const EdgeInsets.all(40),
-        child: ClipRRect(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 500),
+        child: Container(
+          margin: const EdgeInsets.all(40),
+          child: ClipRRect(
           borderRadius: BorderRadius.circular(28),
           child: BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
@@ -224,6 +229,7 @@ class _HomeMenuPageState extends ConsumerState<HomeMenuPage>
                 ],
               ),
             ),
+          ),
           ),
         ),
       ),

@@ -68,6 +68,18 @@
         await connector.disconnect();
       } catch (_) {}
     };
+
+    window.nearConnectSignMessage = async function (message, recipient) {
+      const wallet = await connector.wallet();
+      const nonce = crypto.getRandomValues(new Uint8Array(32));
+      const result = await wallet.signMessage({ message, recipient, nonce });
+      return JSON.stringify({
+        signature: result.signature,
+        publicKey: result.publicKey,
+        accountId: result.accountId,
+        nonce: btoa(String.fromCharCode(...nonce)),
+      });
+    };
   </script>
 
 </head>

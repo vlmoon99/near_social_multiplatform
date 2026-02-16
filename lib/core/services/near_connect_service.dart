@@ -9,6 +9,10 @@ external JSPromise<JSString> _nearConnectWallet();
 @JS('nearConnectDisconnect')
 external JSPromise<JSAny?> _nearConnectDisconnect();
 
+@JS('nearConnectSignMessage')
+external JSPromise<JSString> _nearConnectSignMessage(
+    JSString message, JSString recipient);
+
 class NearConnectService {
   /// Waits until the near-connect module script has loaded and set the
   /// global `nearConnectWallet` function on `window`.
@@ -38,5 +42,29 @@ class NearConnectService {
   static Future<void> disconnect() async {
     await _waitForReady();
     await _nearConnectDisconnect().toDart;
+  }
+
+  /// Signs a message using the connected wallet (NEP-413).
+  ///
+  /// Returns a record with the signature, publicKey, accountId, and nonce.
+  static Future<
+      ({
+        String signature,
+        String publicKey,
+        String accountId,
+        String nonce,
+      })> signMessage(String message, String recipient) async {
+    await _waitForReady();
+    final jsResult = await _nearConnectSignMessage(
+      message.toJS,
+      recipient.toJS,
+    ).toDart;
+    final json = jsonDecode(jsResult.toDart) as Map<String, dynamic>;
+    return (
+      signature: json['signature'] as String,
+      publicKey: json['publicKey'] as String,
+      accountId: json['accountId'] as String,
+      nonce: json['nonce'] as String,
+    );
   }
 }

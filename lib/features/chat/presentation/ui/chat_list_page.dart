@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:near_social_mobile/core/router/routes.dart';
 import 'package:near_social_mobile/core/shared_widgets/app_toast.dart';
 import 'package:near_social_mobile/core/shared_widgets/glassmorphism_components.dart';
+import 'package:near_social_mobile/features/auth/presentation/providers/auth_controller.dart';
 import 'package:near_social_mobile/features/chat/data/models/chat_state.dart';
 import 'package:near_social_mobile/features/chat/presentation/providers/chat_controller.dart';
 import 'package:near_social_mobile/features/chat/presentation/ui/widgets/chat_security_info_dialog.dart';
@@ -139,6 +140,8 @@ class _ChatListPageState extends ConsumerState<ChatListPage>
                           ? () {
                               final targetId = _peerIdController.text.trim();
                               if (targetId.isEmpty) return;
+                              final myId = ref.read(authControllerProvider).accountId;
+                              if (targetId == myId) return;
                               context.push(
                                 '${AppRoutes.chatRoom}?targetAccountId=$targetId',
                               );

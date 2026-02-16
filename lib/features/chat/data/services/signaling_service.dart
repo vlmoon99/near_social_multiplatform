@@ -1,9 +1,11 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:typed_data';
 
-import 'package:near_social_mobile/core/services/crypto_service.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
+
+/// Callback that builds the JSON auth payload given a message string to sign.
+typedef AuthPayloadBuilder = Future<Map<String, dynamic>> Function(
+    String message);
 
 /// TURN credentials received from the signaling server after authentication.
 class TurnCredentials {
@@ -31,8 +33,7 @@ class SignalingService {
   final _authCompleter = Completer<void>();
 
   String? _accountId;
-  Uint8List? _privateKey;
-  Uint8List? _publicKey;
+  AuthPayloadBuilder? _buildAuthPayload;
 
   bool _disposed = false;
   int _reconnectAttempts = 0;
@@ -43,6 +44,9 @@ class SignalingService {
   /// Raw attestation data from the server (null if not provided / dev mode).
   dynamic attestation;
 
+  /// Non-null if signaling auth was rejected by the server.
+  String? authError;
+
   Stream<Map<String, dynamic>> get messages => _messageController.stream;
   bool get isConnected => _channel != null;
 
@@ -50,44 +54,39 @@ class SignalingService {
   /// are available.
   Future<void> get authenticated => _authCompleter.future;
 
-  /// Connect with NEAR signature-based authentication.
+  /// Connect with authentication via the provided [buildAuthPayload] callback.
   ///
-  /// [accountId] — the NEAR account id.
-  /// [privateKey] — 64-byte Ed25519 private key used for signing.
-  /// [publicKey] — 32-byte Ed25519 public key (sent to server as ed25519:base58).
+  /// The callback receives a message string and must return a JSON-encodable
+  /// map that will be sent to the server as the auth payload.
   Future<void> connect(
     String accountId, {
-    required Uint8List privateKey,
-    required Uint8List publicKey,
+    required AuthPayloadBuilder buildAuthPayload,
   }) async {
     _accountId = accountId;
-    _privateKey = privateKey;
-    _publicKey = publicKey;
+    _buildAuthPayload = buildAuthPayload;
     _disposed = false;
     await _doConnect();
+    // Wait for auth response, but don't block forever — reconnect handles retries
+    await _authCompleter.future.timeout(
+      const Duration(seconds: 15),
+      onTimeout: () {},
+    );
   }
 
   Future<void> _doConnect() async {
-    if (_disposed || _accountId == null) return;
+    if (_disposed || _accountId == null || _buildAuthPayload == null) return;
 
     try {
       _channel?.sink.close();
       _channel = WebSocketChannel.connect(Uri.parse(_wsUrl));
       await _channel!.ready;
 
-      // Authenticate via NEAR signature
+      // Build auth message and payload via callback
       final message =
           'Authenticate to Signaling Server at ${DateTime.now().toUtc().toIso8601String()}';
-      final messageBytes = Uint8List.fromList(utf8.encode(message));
-      final signature = CryptoService.signMessage(_privateKey!, messageBytes);
+      final payload = await _buildAuthPayload!(message);
 
-      final authPayload = jsonEncode({
-        'accountId': _accountId,
-        'publicKey': 'ed25519:${Base58.encode(_publicKey!)}',
-        'signature': Base58.encode(signature),
-        'message': message,
-      });
-      _channel!.sink.add(authPayload);
+      _channel!.sink.add(jsonEncode(payload));
 
       _reconnectAttempts = 0;
 
@@ -124,11 +123,11 @@ class SignalingService {
       return;
     }
 
-    // Auth error
+    // Auth error — complete normally but leave turnCredentials null
     if (msg['error'] != null) {
+      authError = msg['error'].toString();
       if (!_authCompleter.isCompleted) {
-        _authCompleter.completeError(
-            Exception('Signaling auth failed: ${msg['error']}'));
+        _authCompleter.complete();
       }
       _channel?.sink.close();
       return;

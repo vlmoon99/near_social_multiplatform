@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:near_social_mobile/core/config/animation_constants.dart';
 import 'package:near_social_mobile/features/settings/presentation/ui/home_menu_page.dart';
@@ -11,16 +12,17 @@ import 'package:near_social_mobile/features/feed/presentation/ui/posts_feed_page
 import 'package:near_social_mobile/core/shared_widgets/glassmorphism_components.dart';
 import 'package:near_social_mobile/core/shared_widgets/tappable_scale_widget.dart';
 import 'package:near_social_mobile/core/utils/check_for_jailbreak.dart';
+import 'package:near_social_mobile/features/chat/presentation/providers/chat_controller.dart';
 import 'package:near_social_mobile/features/chat/presentation/ui/chat_list_page.dart';
 
-class HomePage extends StatefulWidget {
+class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
 
   @override
-  State<HomePage> createState() => _HomePageState();
+  ConsumerState<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage>
+class _HomePageState extends ConsumerState<HomePage>
     with TickerProviderStateMixin, WidgetsBindingObserver {
   int _currentIndex = 0;
   final ValueNotifier<bool> _showBars = ValueNotifier(true);
@@ -41,6 +43,9 @@ class _HomePageState extends State<HomePage>
         AnimationController(vsync: this, duration: const Duration(seconds: 1))
           ..repeat();
     _particles = [];
+
+    // Eagerly initialize ChatController so signaling connects at login
+    ref.read(chatControllerProvider);
   }
 
   @override

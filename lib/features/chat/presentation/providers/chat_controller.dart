@@ -2,8 +2,12 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:near_social_mobile/core/providers/service_providers.dart';
+import 'package:near_social_mobile/core/services/crypto_service.dart';
+import 'package:near_social_mobile/core/services/near_connect_service_stub.dart'
+    if (dart.library.js_interop) 'package:near_social_mobile/core/services/near_connect_service.dart';
 import 'package:near_social_mobile/features/auth/presentation/providers/auth_controller.dart';
 import 'package:near_social_mobile/features/chat/data/models/chat_message.dart';
 import 'package:near_social_mobile/features/chat/data/models/chat_state.dart';
@@ -106,25 +110,63 @@ class ChatController extends _$ChatController {
     final auth = ref.read(authControllerProvider);
     if (auth.accountId.isEmpty) return;
 
-    // Use the NEAR account key for signaling auth (on-chain key).
-    // Fall back to device key if account private key is not available.
-    final Uint8List privateKey;
-    final Uint8List publicKey;
+    // Build the appropriate auth payload builder based on login type.
+    final AuthPayloadBuilder buildAuthPayload;
 
     if (auth.accountPrivateKey.isNotEmpty) {
-      privateKey = base64.decode(auth.accountPrivateKey);
-      publicKey = Uint8List.sublistView(privateKey, 32, 64);
+      // Key login: sign with raw Ed25519 private key
+      final privateKey = base64.decode(auth.accountPrivateKey);
+      final publicKey = Uint8List.sublistView(privateKey, 32, 64);
+      buildAuthPayload = (message) async => {
+            'accountId': auth.accountId,
+            'publicKey': 'ed25519:${Base58.encode(publicKey)}',
+            'signature': Base58.encode(
+              CryptoService.signMessage(
+                  privateKey, Uint8List.fromList(utf8.encode(message))),
+            ),
+            'message': message,
+          };
+    } else if (kIsWeb) {
+      // Wallet login on web: use NEP-413 signMessage
+      buildAuthPayload = (message) async {
+        final result = await NearConnectService.signMessage(
+          message,
+          'signaling-server',
+        );
+        return {
+          'authType': 'nep413',
+          'accountId': auth.accountId,
+          'publicKey': result.publicKey,
+          'signature': result.signature,
+          'message': message,
+          'nonce': result.nonce,
+          'recipient': 'signaling-server',
+        };
+      };
     } else {
-      privateKey = base64.decode(auth.devicePrivateKey);
-      publicKey = Uint8List.sublistView(privateKey, 32, 64);
+      // No private key and not on web — cannot authenticate
+      return;
     }
 
     _signaling = SignalingService();
-    await _signaling!.connect(
-      auth.accountId,
-      privateKey: privateKey,
-      publicKey: publicKey,
-    );
+    try {
+      await _signaling!.connect(
+        auth.accountId,
+        buildAuthPayload: buildAuthPayload,
+      );
+    } catch (_) {
+      // Connection failed (network error etc.)
+      _signaling = null;
+      return;
+    }
+
+    // Check if auth was rejected by the server
+    if (_signaling!.authError != null) {
+      _signaling!.disconnect();
+      _signaling = null;
+      return;
+    }
+
     // Store TEE attestation (null if server is in dev mode)
     final att = _signaling!.attestation;
     state = state.copyWith(
@@ -187,6 +229,7 @@ class ChatController extends _$ChatController {
   // --- Chat (Data Channel) ---
 
   Future<void> _startChat(String targetId) async {
+    if (targetId == _myAccountId) return;
     state = state.copyWith(
       remotePeerId: targetId,
       peerStatus: PeerConnectionStatus.connecting,
@@ -249,6 +292,7 @@ class ChatController extends _$ChatController {
   // --- Calls ---
 
   Future<void> _startCall(String targetId, bool video) async {
+    if (targetId == _myAccountId) return;
     state = state.copyWith(
       remotePeerId: targetId,
       peerStatus: PeerConnectionStatus.connecting,
